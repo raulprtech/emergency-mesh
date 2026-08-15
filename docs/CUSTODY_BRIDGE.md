@@ -33,7 +33,7 @@ For durable deployments, `connectCustodyReceiver()` accepts an explicit ACK-prod
 
 ## Security boundary
 
-Control v0.1 ACKs are not signed. Matching a reported physical source address and node identifier provides correlation, not cryptographic peer authentication. A concrete raw-frame port must document whether its addressing is authenticated. Until control messages are cryptographically bound to an authenticated session, ACK evidence must not be treated as proof of a real-world identity, truth, human receipt, or responder action.
+Inner control v0.1 ACKs are not signed. Without `ackAuthentication`, matching a reported physical source address and node identifier provides correlation only. With `ackAuthentication`, both peers wrap ACKs in canonical CBOR authenticated by a 128-bit HMAC-SHA-256 tag and reject unwrapped downgrade attempts. This authenticates possession of the provisioned link secret, not a real-world identity, report truth, human receipt, responder action, or future retention. Key provisioning, rotation, revocation, and protected storage remain deployment responsibilities.
 
 Reassembly limits, frame MTU, timeout, pending sends, and accepted-ACK memory are bounded. The adapter is unicast-only to avoid broadcast ACK storms and ambiguous custody.
 
@@ -43,4 +43,4 @@ Reassembly limits, frame MTU, timeout, pending sends, and accepted-ACK memory ar
 2. Run crash-injection and abrupt-power-loss tests against the target device filesystem and select an appropriate SQLite synchronization mode.
 3. Exercise device queue backpressure, disconnects, reboots, loss, duplicate delivery, and reordering on two radios.
 4. Measure end-to-end timing so the bridge ACK timeout is appropriate for each modem preset and fragment count.
-5. Add authenticated control messages or bind them to a transport session with an explicit trust model.
+5. Validate shared-key provisioning, protected storage, rotation, and revocation on the target devices.

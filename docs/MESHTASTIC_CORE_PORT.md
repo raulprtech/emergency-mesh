@@ -44,7 +44,8 @@ A deployment, not the core library, is responsible for:
 3. Passing that object to `MeshtasticCoreFramePort`.
 4. Pairing the port with a peer-specific `CustodyBridgeTransportAdapter` using the peer's canonical `!xxxxxxxx` address.
 5. Connecting a `SqliteCustodyQueue` through `connectCustodyReceiver()` so queue admission and ACK persistence are atomic across restart.
-6. Disposing bridge, port, and queue when the device session ends.
+6. Configuring the same provisioned `ackAuthentication` key id and secret on both peer bridges so legacy or forged ACKs fail closed.
+7. Disposing bridge, port, and queue when the device session ends.
 
 Because no SDK package is installed here, upstream API drift cannot be caught by this repository alone. A deployable integration package must pin an exact SDK version and run contract tests against the real package.
 

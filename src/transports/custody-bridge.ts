@@ -1,6 +1,7 @@
 import { fragmentEnvelope, FragmentReassembler, type ReassemblyOptions } from "../protocol/fragmentation.ts";
 import type { EmergencyEnvelope } from "../protocol/types.ts";
 import { createPeerAcknowledgement } from "./ack.ts";
+import { decodeAuthenticatedControlMessage, encodeAuthenticatedControlMessage, type ControlFrameAuthentication } from "./authenticated-control.ts";
 import { CONTROL_PROTOCOL_VERSION, decodeControlMessage, encodeControlMessage } from "./control.ts";
 import type { RawFramePort, RawFrameReceipt } from "./raw-frame-port.ts";
 import type {
@@ -21,6 +22,7 @@ export interface CustodyBridgeOptions {
   acceptedCacheTtlMs?: number;
   maxAcceptedCacheEntries?: number;
   maximumClockSkewMs?: number;
+  ackAuthentication?: ControlFrameAuthentication;
   reassembly?: ReassemblyOptions;
   capabilities?: Partial<TransportCapabilities>;
   now?: () => number;
@@ -48,9 +50,10 @@ function packetKey(eventId: string, packetId: string): string {
 export class CustodyBridgeTransportAdapter implements TransportAdapter {
   readonly id: string;
   private readonly port: RawFramePort;
-  private readonly options: Required<Omit<CustodyBridgeOptions, "reassembly" | "capabilities">>;
+  private readonly options: Required<Omit<CustodyBridgeOptions, "reassembly" | "capabilities" | "ackAuthentication">>;
   private readonly capabilityOverrides: Partial<TransportCapabilities>;
   private readonly reassembler: FragmentReassembler;
+  private readonly ackAuthentication?: ControlFrameAuthentication;
   private readonly handlers = new Set<Receiver>();
   private readonly pending = new Map<string, PendingSend>();
   private readonly accepted = new Map<string, AcceptedPacket>();
@@ -65,6 +68,18 @@ export class CustodyBridgeTransportAdapter implements TransportAdapter {
     }
     this.id = id;
     this.port = port;
+    if (options.ackAuthentication) {
+      if (!/^[A-Za-z0-9._:-]{1,64}$/.test(options.ackAuthentication.keyId)) {
+        throw new Error("control authentication keyId is invalid");
+      }
+      if (!(options.ackAuthentication.secret instanceof Uint8Array) || options.ackAuthentication.secret.length < 32) {
+        throw new Error("control authentication secret must contain at least 32 bytes");
+      }
+      this.ackAuthentication = {
+        keyId: options.ackAuthentication.keyId,
+        secret: options.ackAuthentication.secret.slice(),
+      };
+    }
     this.options = {
       localNodeId: options.localNodeId,
       peerNodeId: options.peerNodeId,
@@ -124,12 +139,10 @@ export class CustodyBridgeTransportAdapter implements TransportAdapter {
     catch (error) {
       return { accepted: false, acknowledgement: "NONE", detail: error instanceof Error ? error.message : "fragmentation failed" };
     }
-    const expectedAcknowledgement = encodeControlMessage({
-      kind: "ACK",
-      controlVersion: CONTROL_PROTOCOL_VERSION,
-      senderNodeId: this.options.peerNodeId,
-      acknowledgement: createPeerAcknowledgement(this.options.peerNodeId, envelope, this.options.now()),
-    });
+    const expectedAcknowledgement = this.encodeAcknowledgement(
+      createPeerAcknowledgement(this.options.peerNodeId, envelope, this.options.now()),
+      this.options.peerNodeId,
+    );
     if (expectedAcknowledgement.length > this.maximumPayloadSize()) {
       return { accepted: false, acknowledgement: "NONE", detail: "custody ACK exceeds physical frame limit" };
     }
@@ -243,7 +256,11 @@ export class CustodyBridgeTransportAdapter implements TransportAdapter {
 
   private handleAcknowledgement(receipt: RawFrameReceipt): boolean {
     let message;
-    try { message = decodeControlMessage(receipt.payload); }
+    try {
+      message = this.ackAuthentication
+        ? decodeAuthenticatedControlMessage(receipt.payload, this.ackAuthentication)
+        : decodeControlMessage(receipt.payload);
+    }
     catch { return false; }
     if (message.kind !== "ACK") return true;
     const acknowledgement = message.acknowledgement;
@@ -280,15 +297,22 @@ export class CustodyBridgeTransportAdapter implements TransportAdapter {
   }
 
   private async sendAcknowledgement(acknowledgement: DeliveryAcknowledgement, destination: string): Promise<void> {
-    const frame = encodeControlMessage({
-      kind: "ACK",
-      controlVersion: CONTROL_PROTOCOL_VERSION,
-      senderNodeId: this.options.localNodeId,
-      acknowledgement,
-    });
+    const frame = this.encodeAcknowledgement(acknowledgement, this.options.localNodeId);
     if (frame.length > this.maximumPayloadSize()) return;
     try { await this.port.sendFrame(frame, { destination, requestRoutingAck: true }); }
     catch { /* Custody remains remote; sender will retry when its ACK times out. */ }
+  }
+
+  private encodeAcknowledgement(acknowledgement: DeliveryAcknowledgement, senderNodeId: string): Uint8Array {
+    const message = {
+      kind: "ACK" as const,
+      controlVersion: CONTROL_PROTOCOL_VERSION,
+      senderNodeId,
+      acknowledgement,
+    };
+    return this.ackAuthentication
+      ? encodeAuthenticatedControlMessage(message, this.ackAuthentication)
+      : encodeControlMessage(message);
   }
 
   private rememberAccepted(key: string, acknowledgement: DeliveryAcknowledgement, envelopeExpiresAt: number): void {

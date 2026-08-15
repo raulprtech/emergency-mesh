@@ -32,7 +32,7 @@ If `node` is already on `PATH`, the equivalent commands are `npm test`, `npm run
 - `src/protocol`: v0.1 data model, deterministic CBOR/JSON codecs, Ed25519 pseudonymous identity, recipient-bound protected-payload encryption, and bounded MTU fragmentation/reassembly.
 - `src/routing`: deterministic, replaceable adapter selection and bounded critical multipath.
 - `src/storage`: bounded in-memory and SQLite store-and-forward queues with expiration, backoff, replay retention, priority-safe eviction, and atomic restart-safe custody ACK receipts.
-- `src/transports`: common adapter contract, direct mock/Internet links, a custody-safe fragmented small-MTU adapter, and a physical raw-frame boundary, Meshtastic policy/core compatibility port, and a peer-custody bridge with optional durable receiver admission.
+- `src/transports`: common adapter contract, direct mock/Internet links, a custody-safe fragmented small-MTU adapter, and a physical raw-frame boundary, Meshtastic policy/core compatibility port, and a peer-custody bridge with optional durable receiver admission and downgrade-resistant HMAC-authenticated ACKs.
 - `src/simulator`: virtual nodes and the end-to-end connectivity-loss scenario.
 - `src/gateway` and `src/backend`: semantics-preserving gateway, ingest, deduplication, status projection, and policy-governed geographic/temporal aggregation.
 - `src/mobile-client`: installable offline PWA, browser Ed25519 identity, IndexedDB outbox, honest delivery states, and backend synchronization.

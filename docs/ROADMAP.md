@@ -14,7 +14,7 @@
 - Bounded memory/SQLite queues with priority-safe eviction and honest custody rejection.
 - Exact signed-byte retention, configurable backend pruning, and declarative topology/timeline scenarios.
 - Configurable public spatial/time aggregation with low-count suppression and raw-event API disabled by default.
-- Versioned CBOR ACK/egress control messages with freshness-based UNKNOWN, REPORTED, CONFIRMED, and STALE states.
+- Versioned CBOR ACK/egress control messages with freshness-based UNKNOWN, REPORTED, CONFIRMED, and STALE states, plus an optional canonical HMAC-SHA-256-128 wrapper with downgrade rejection for peer custody ACKs.
 - Installable mobile PWA with four primary actions plus third-party, last-seen, and person-found flows.
 - Offline IndexedDB custody, browser Ed25519 identity, deterministic CBOR interoperability, manual synchronization, and honest CREATED/QUEUED/FORWARDED/GATEWAY_FOUND/SYNCED/EXPIRED states.
 - Approximate-location minimization, unsigned fallback disclosure, bilingual Spanish/English high-stress UI, keyboard/focus support, reduced-motion/high-contrast preferences, and real-browser offline smoke coverage.
@@ -33,6 +33,6 @@
 2. Crash-test the SQLite custody transaction and synchronization policy on the target device filesystem.
 3. Revisit Bitchat only when a stable upstream arbitrary-application-payload boundary is available.
 4. Measure MTU, packet loss, reordering, background behavior, battery, custody acknowledgement, and practical range under recorded conditions.
-5. Cryptographically bind control acknowledgements to an authenticated transport session.
+5. Validate authenticated shared-key provisioning, protected storage, rotation, and revocation on target devices.
 
 Wi-Fi Direct/Aware, LAN, SMS, satellite, digital radio, and other community transports remain later adapters. Kubernetes, Kafka, blockchain, machine-learning routing, responder verification, dispatch, government integration, and custom hardware remain out of scope.

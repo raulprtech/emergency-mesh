@@ -13,7 +13,7 @@ Assets include human safety information, precise locations, subject descriptions
 | Extended replay lifetime | Signed `validUntil`; envelope cannot exceed it | Clock-skew policy and trusted receipt timestamps |
 | Flooding/broadcast storms | Seen set, hop limit, expiration, bounded multipath, retry backoff | Per-key/radio quotas, admission control, storage budgets |
 | False reports or locations | Signatures provide continuity only; trust is explicitly unassessed | Corroboration and instance-defined moderation |
-| False egress claims | Egress state distinguishes reported and confirmed conceptually | Backend ACK challenge, freshness decay, anti-spoofing |
+| False egress/custody claims | Egress state distinguishes reported and confirmed; peer custody ACKs optionally require downgrade-resistant HMAC authentication | Authenticated backend ACK challenges, shared-key lifecycle, and deployment anti-spoofing |
 | Precise-location disclosure | Public API exposes coarse aggregates; protected payload uses authenticated X25519/HKDF/AES-GCM recipient encryption and is never decrypted by the public backend | Authenticated key distribution, isolated decryption service, access audit, short plaintext retention |
 | Linkability | No account required; pseudonymous device key | Key rotation policy and unlinkable emergency identities |
 | Compromised device/gateway | End-to-end report signature detects semantic changes; gateways have no protected-payload private keys | Platform key protection, authorized endpoint hardening, key rotation and revocation |
