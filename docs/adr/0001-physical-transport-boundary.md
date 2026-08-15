@@ -14,7 +14,7 @@ Expose a narrow `RawFramePort` below the existing `TransportAdapter`. It moves b
 ## Consequences
 
 - Core fragmentation stays transport-neutral and third-party routing remains untouched.
-- A future bridge must add remote reassembly-and-enqueue acknowledgements before it can implement `TransportAdapter.send()` with `accepted: true`.
+- The reference custody bridge implements remote reassembly-and-enqueue acknowledgements before returning `accepted: true`; a concrete SDK port must preserve that invariant.
 - Meshtastic routing ACKs remain useful diagnostics without becoming false delivery claims.
 - Physical integration code and its license obligations can remain optional and isolated from the Apache-2.0 core.
 - Hardware testing is mandatory before the adapter can be advertised as supported.

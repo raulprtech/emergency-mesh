@@ -13,6 +13,8 @@ An acknowledgement contains its id, `eventId`, `packetId`, level, time, issuer, 
 
 Only GATEWAY or BACKEND evidence may confirm egress. No ACK means a person read the message, validated its truth, dispatched help, or guaranteed future retention.
 
+The raw-frame custody bridge carries a compact `PEER` ACK only after the configured receiver accepts a fully reassembled envelope. Local-port and radio-routing ACKs remain below this level. Control v0.1 is unsigned, so source/node matching is correlation rather than cryptographic authentication.
+
 ## Egress lifecycle
 
 ```text

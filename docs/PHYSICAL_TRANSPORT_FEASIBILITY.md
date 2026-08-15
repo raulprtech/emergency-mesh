@@ -6,7 +6,7 @@ Status: design spike only. No physical radio has been connected or certified by 
 
 Implement the first hardware experiment against Meshtastic's supported PhoneAPI. Keep Bitchat as a deferred native-integration candidate until its project exposes or accepts a stable application-payload boundary. Emergency Mesh owns its signed envelope, fragmentation, reassembly, queue, and custody semantics; the underlying product continues to own discovery, radio links, routing, encryption, retries, and power management.
 
-The code boundary is `RawFramePort`. A physical adapter receives opaque, already-fragmented bytes and reports only local or routing acceptance. Neither a local device queue nor a radio routing ACK permits the sender to remove its Emergency Mesh queue entry. `PEER` custody still requires the remote Emergency Mesh endpoint to reassemble, validate, enqueue, and return a protocol-level custody acknowledgement.
+The physical code boundary is `RawFramePort`. A physical port receives opaque, already-fragmented bytes and reports only local or routing acceptance. Neither a local device queue nor a radio routing ACK permits the sender to remove its Emergency Mesh queue entry. The reference `CustodyBridgeTransportAdapter` now implements the next layer: unicast reassembly, remote queue acceptance, a correlated protocol-level `PEER` ACK, timeout-safe sender retention, and bounded lost-ACK replay. It remains hardware-independent and does not make any radio supported.
 
 ## Feasibility matrix
 
