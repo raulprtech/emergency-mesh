@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "name": "fragmented-network-eventual-egress",
+  "startAt": 1800000000000,
+  "seed": 42,
+  "nodes": [
+    { "id": "node-a", "batteryPercent": 70 },
+    { "id": "node-b", "batteryPercent": 40, "internetInitiallyOnline": false }
+  ],
+  "links": [
+    { "id": "local-a-b", "from": "node-a", "to": "node-b", "lossRate": 0, "initiallyAvailable": true }
+  ],
+  "actions": [
+    { "at": 0, "type": "CREATE", "nodeId": "node-a", "eventId": "scenario-sos-1", "eventType": "SOS", "reportMode": "SELF", "priority": "CRITICAL" },
+    { "at": 0, "type": "FLUSH", "nodeId": "node-a" },
+    { "at": 0, "type": "FLUSH", "nodeId": "node-b" },
+    { "at": 1000, "type": "SET_LINK", "linkId": "local-a-b", "available": false },
+    { "at": 1000, "type": "SET_INTERNET", "nodeId": "node-b", "online": true },
+    { "at": 2000, "type": "FLUSH", "nodeId": "node-b" }
+  ]
+}

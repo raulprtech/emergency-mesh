@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#9e2a2b">
+  <title>Emergency Mesh</title>
+  <link rel="manifest" href="/mobile/manifest.webmanifest">
+  <link rel="stylesheet" href="/mobile/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content" data-i18n="skipToContent">Saltar al contenido principal</a>
+  <header>
+    <div><span class="eyebrow">Emergency Mesh</span><h1 data-i18n="question">¿Qué necesitas comunicar?</h1></div>
+    <div class="header-controls">
+      <label for="language" class="visually-hidden" data-i18n="language">Idioma</label>
+      <select id="language" aria-label="Idioma"><option value="es">ES</option><option value="en">EN</option></select>
+      <div id="network" class="pill" role="status">Comprobando red…</div>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="warning" aria-label="Aviso importante" data-i18n-aria-label="warningLabel">
+      <span data-i18n="warningPrefix">Este sistema intenta transportar tu reporte.</span>
+      <strong data-i18n="warningStrong">No garantiza entrega, atención ni que la ayuda esté en camino.</strong>
+    </section>
+
+    <section id="actions" class="actions" aria-label="Acciones principales" data-i18n-aria-label="primaryActions">
+      <button data-action="SAFE" class="action safe"><span aria-hidden="true">✓</span><span data-action-label>Estoy bien</span></button>
+      <button data-action="RESOURCE_REQUEST" class="action resource"><span aria-hidden="true">◫</span><span data-action-label>Necesito recursos</span></button>
+      <button data-action="ASSISTANCE_REQUEST" class="action assistance"><span aria-hidden="true">!</span><span data-action-label>Necesito asistencia</span></button>
+      <button data-action="SOS" class="action sos"><span aria-hidden="true">SOS</span><span data-action-label>Emergencia crítica</span></button>
+    </section>
+
+    <section class="secondary" aria-label="Reportes sobre otras personas" data-i18n-aria-label="otherPeople">
+      <button data-action="THIRD_PARTY">Reportar a otra persona</button>
+      <button data-action="LAST_SEEN">Persona vista por última vez</button>
+      <button data-action="PERSON_FOUND">Persona encontrada</button>
+    </section>
+
+    <section id="composer" class="panel hidden" aria-labelledby="composer-title">
+      <div class="panel-heading"><h2 id="composer-title">Crear reporte</h2><button id="close-composer" class="quiet" aria-label="Cerrar formulario" data-i18n="close" data-i18n-aria-label="closeForm">Cerrar</button></div>
+      <form id="report-form">
+        <input type="hidden" id="action" name="action">
+        <label id="subject-field" class="hidden"><span data-i18n="subject">Identificador pseudónimo de la persona</span>
+          <input id="subject-id" autocomplete="off" placeholder="Ej. chamarra-azul-01" data-i18n-placeholder="subjectPlaceholder">
+          <small data-i18n="subjectHelp">No necesitas escribir su nombre.</small>
+        </label>
+        <label id="related-field" class="hidden"><span data-i18n="related">ID del reporte anterior, si lo conoces</span>
+          <input id="related-event-id" autocomplete="off">
+        </label>
+        <label id="observed-field" class="hidden"><span data-i18n="observed">Fecha y hora en que la viste</span>
+          <input id="observed-at" type="datetime-local">
+        </label>
+        <fieldset id="needs-field" class="hidden"><legend data-i18n="needs">Necesidades</legend>
+          <div class="checks">
+            <label><input type="checkbox" name="need" value="WATER"> <span data-need-label="WATER">Agua</span></label>
+            <label><input type="checkbox" name="need" value="FOOD"> <span data-need-label="FOOD">Alimentos</span></label>
+            <label><input type="checkbox" name="need" value="MEDICATION"> <span data-need-label="MEDICATION">Medicamentos</span></label>
+            <label><input type="checkbox" name="need" value="MEDICAL_CARE"> <span data-need-label="MEDICAL_CARE">Atención médica</span></label>
+            <label><input type="checkbox" name="need" value="EXTRACTION"> <span data-need-label="EXTRACTION">Extracción</span></label>
+            <label><input type="checkbox" name="need" value="SHELTER"> <span data-need-label="SHELTER">Refugio</span></label>
+            <label><input type="checkbox" name="need" value="ENERGY"> <span data-need-label="ENERGY">Energía</span></label>
+            <label><input type="checkbox" name="need" value="COMMUNICATION"> <span data-need-label="COMMUNICATION">Comunicación</span></label>
+          </div>
+        </fieldset>
+        <label><span data-i18n="shortMessage">Mensaje breve</span>
+          <textarea id="short-message" rows="3" maxlength="280" placeholder="Describe únicamente lo esencial" data-i18n-placeholder="messagePlaceholder"></textarea>
+        </label>
+        <div class="location-row">
+          <button type="button" id="get-location" class="outline" data-i18n="addLocation">Añadir ubicación aproximada</button>
+          <span id="location-status" role="status">Sin ubicación</span>
+        </div>
+        <small data-i18n="locationHelp">El MVP redondea la ubicación y nunca la presenta como garantía de ubicación actual.</small>
+        <div id="form-error" class="error" role="alert"></div>
+        <button type="submit" class="submit" data-i18n="createAndQueue">Crear y guardar en cola</button>
+      </form>
+    </section>
+
+    <section class="outbox" aria-labelledby="outbox-title">
+      <div class="panel-heading"><div><span class="eyebrow" data-i18n="device">Dispositivo</span><h2 id="outbox-title" data-i18n="savedReports">Reportes guardados</h2></div><button id="sync" class="outline" data-i18n="sync">Intentar sincronizar</button></div>
+      <p id="identity-status" class="muted"></p>
+      <div id="outbox-list" aria-live="polite"></div>
+      <button id="rotate-identity" class="quiet" data-i18n="rotateIdentity">Rotar identidad pseudónima</button>
+    </section>
+  </main>
+  <script type="module" src="/mobile/app.js"></script>
+</body>
+</html>

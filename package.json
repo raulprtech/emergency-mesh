@@ -1,0 +1,22 @@
+{
+  "name": "emergency-mesh",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Transport-agnostic, store-and-forward emergency information infrastructure MVP",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "demo": "node src/simulator/demo.ts",
+    "vectors": "node examples/generate-protocol-vector.ts",
+    "protected:demo": "node examples/protected-payload-demo.ts",
+    "fragmentation:demo": "node examples/fragmentation-demo.ts",
+    "scenario": "node examples/run-scenario.ts examples/scenario-fragmented-network.json",
+    "scenario:mtu": "node examples/run-scenario.ts examples/scenario-small-mtu.json",
+    "start": "node src/server.ts",
+    "test": "node --test tests/*.test.ts",
+    "check": "node --test tests/*.test.ts && node src/simulator/demo.ts"
+  },
+  "license": "Apache-2.0"
+}

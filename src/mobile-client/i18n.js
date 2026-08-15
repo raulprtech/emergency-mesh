@@ -1,0 +1,123 @@
+export const SUPPORTED_LOCALES = ["es", "en"];
+
+const catalogs = {
+  es: {
+    skipToContent: "Saltar al contenido principal",
+    question: "¿Qué necesitas comunicar?",
+    checkingNetwork: "Comprobando red…",
+    online: "Red disponible",
+    offline: "Sin Internet · modo offline",
+    warningLabel: "Aviso importante",
+    warningPrefix: "Este sistema intenta transportar tu reporte.",
+    warningStrong: "No garantiza entrega, atención ni que la ayuda esté en camino.",
+    primaryActions: "Acciones principales",
+    otherPeople: "Reportes sobre otras personas",
+    close: "Cerrar",
+    closeForm: "Cerrar formulario",
+    subject: "Identificador pseudónimo de la persona",
+    subjectPlaceholder: "Ej. chamarra-azul-01",
+    subjectHelp: "No necesitas escribir su nombre.",
+    related: "ID del reporte anterior, si lo conoces",
+    observed: "Fecha y hora en que la viste",
+    needs: "Necesidades",
+    shortMessage: "Mensaje breve",
+    messagePlaceholder: "Describe únicamente lo esencial",
+    addLocation: "Añadir ubicación aproximada",
+    noLocation: "Sin ubicación",
+    unavailableLocation: "Ubicación no disponible",
+    gettingLocation: "Obteniendo…",
+    locationFailed: "No se obtuvo ubicación",
+    approximateLocation: "Ubicación aproximada · ±{meters} m",
+    locationHelp: "El MVP redondea la ubicación y nunca la presenta como garantía de ubicación actual.",
+    createAndQueue: "Crear y guardar en cola",
+    device: "Dispositivo",
+    savedReports: "Reportes guardados",
+    sync: "Intentar sincronizar",
+    rotateIdentity: "Rotar identidad pseudónima",
+    localIdentity: "Identidad pseudónima local: {id}",
+    unsignedIdentity: "Modo sin firma: el navegador no ofrece Ed25519. El reporte sigue siendo anónimo, pero no demuestra continuidad criptográfica.",
+    emptyOutbox: "Aún no hay reportes guardados.",
+    lastAttempt: "Último intento: {error}",
+    rotateWarning: "Rotar la identidad impedirá vincular criptográficamente reportes nuevos con los anteriores. ¿Continuar?",
+    createFailed: "No fue posible crear el reporte",
+    language: "Idioma",
+    actions: {
+      SAFE: "Estoy bien", RESOURCE_REQUEST: "Necesito recursos", ASSISTANCE_REQUEST: "Necesito asistencia", SOS: "Emergencia crítica",
+      THIRD_PARTY: "Reportar a otra persona", LAST_SEEN: "Persona vista por última vez", PERSON_FOUND: "Persona encontrada",
+    },
+    needNames: { WATER: "Agua", FOOD: "Alimentos", MEDICATION: "Medicamentos", MEDICAL_CARE: "Atención médica", EXTRACTION: "Extracción", SHELTER: "Refugio", ENERGY: "Energía", COMMUNICATION: "Comunicación" },
+    states: {
+      CREATED: "Creado localmente", QUEUED: "En cola; aún no hay confirmación de entrega", FORWARDED: "Enviado a un transporte; entrega no confirmada",
+      GATEWAY_FOUND: "Gateway alcanzado; atención humana no confirmada", SYNCED: "Recibido por un backend; no confirma atención ni ayuda", EXPIRED: "Expirado sin confirmación final",
+    },
+    errors: {
+      unsupportedAction: "Acción no compatible", messageTooLong: "El mensaje excede 280 bytes", subjectRequired: "Se requiere un identificador pseudónimo de la persona",
+      observationRequired: "Se requiere la fecha y hora de la observación", foundReferenceRequired: "Persona encontrada requiere una referencia", needRequired: "Selecciona al menos una necesidad",
+    },
+  },
+  en: {
+    skipToContent: "Skip to main content",
+    question: "What do you need to communicate?",
+    checkingNetwork: "Checking network…",
+    online: "Network available",
+    offline: "No Internet · offline mode",
+    warningLabel: "Important notice",
+    warningPrefix: "This system attempts to transport your report.",
+    warningStrong: "It does not guarantee delivery, attention, or that help is on the way.",
+    primaryActions: "Primary actions",
+    otherPeople: "Reports about other people",
+    close: "Close",
+    closeForm: "Close form",
+    subject: "Pseudonymous identifier for the person",
+    subjectPlaceholder: "Example: blue-jacket-01",
+    subjectHelp: "You do not need to enter their name.",
+    related: "Previous report ID, if known",
+    observed: "Date and time when you saw them",
+    needs: "Needs",
+    shortMessage: "Short message",
+    messagePlaceholder: "Describe only what is essential",
+    addLocation: "Add approximate location",
+    noLocation: "No location",
+    unavailableLocation: "Location unavailable",
+    gettingLocation: "Getting location…",
+    locationFailed: "Location could not be obtained",
+    approximateLocation: "Approximate location · ±{meters} m",
+    locationHelp: "The MVP rounds location and never presents it as a guarantee of current position.",
+    createAndQueue: "Create and save to queue",
+    device: "Device",
+    savedReports: "Saved reports",
+    sync: "Try to synchronize",
+    rotateIdentity: "Rotate pseudonymous identity",
+    localIdentity: "Local pseudonymous identity: {id}",
+    unsignedIdentity: "Unsigned mode: this browser does not provide Ed25519. The report remains anonymous but cannot demonstrate cryptographic continuity.",
+    emptyOutbox: "No reports have been saved yet.",
+    lastAttempt: "Last attempt: {error}",
+    rotateWarning: "Rotating the identity prevents new reports from being cryptographically linked to earlier ones. Continue?",
+    createFailed: "The report could not be created",
+    language: "Language",
+    actions: {
+      SAFE: "I am safe", RESOURCE_REQUEST: "I need resources", ASSISTANCE_REQUEST: "I need assistance", SOS: "Critical emergency",
+      THIRD_PARTY: "Report another person", LAST_SEEN: "Person last seen", PERSON_FOUND: "Person found",
+    },
+    needNames: { WATER: "Water", FOOD: "Food", MEDICATION: "Medication", MEDICAL_CARE: "Medical care", EXTRACTION: "Extraction", SHELTER: "Shelter", ENERGY: "Energy", COMMUNICATION: "Communication" },
+    states: {
+      CREATED: "Created locally", QUEUED: "Queued; delivery has not been confirmed", FORWARDED: "Sent to a transport; delivery is unconfirmed",
+      GATEWAY_FOUND: "Gateway reached; human attention is unconfirmed", SYNCED: "Received by a backend; attention and assistance are not confirmed", EXPIRED: "Expired without final confirmation",
+    },
+    errors: {
+      unsupportedAction: "Unsupported action", messageTooLong: "The message exceeds 280 bytes", subjectRequired: "A pseudonymous identifier for the person is required",
+      observationRequired: "The observation date and time are required", foundReferenceRequired: "A found-person report requires a reference", needRequired: "Select at least one need",
+    },
+  },
+};
+
+export function normalizeLocale(value) {
+  const locale = String(value ?? "").toLowerCase().split("-")[0];
+  return SUPPORTED_LOCALES.includes(locale) ? locale : "es";
+}
+
+export function getCatalog(locale) { return catalogs[normalizeLocale(locale)]; }
+
+export function formatMessage(template, values = {}) {
+  return template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? `{${key}}`));
+}

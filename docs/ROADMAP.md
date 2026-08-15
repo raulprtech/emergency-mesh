@@ -1,0 +1,35 @@
+# Roadmap
+
+## Completed: vertical slice v0.1
+
+- Immutable signed report plus mutable delivery envelope.
+- Deterministic CBOR and readable JSON.
+- SELF, THIRD_PARTY, LAST_SEEN, and PERSON_FOUND semantics.
+- Prioritized store-and-forward, hop TTL, signed expiration, deduplication, retry backoff.
+- Replaceable deterministic routing and bounded SOS multipath.
+- Mock and Internet adapters, gateway, in-memory backend, aggregate map.
+- Automated end-to-end and protocol tests.
+- Restart-safe SQLite queue/backend, persistent deduplication, virtual time, seeded packet loss, and battery accounting.
+- Published deterministic Ed25519/CBOR interoperability vector.
+- Bounded memory/SQLite queues with priority-safe eviction and honest custody rejection.
+- Exact signed-byte retention, configurable backend pruning, and declarative topology/timeline scenarios.
+- Configurable public spatial/time aggregation with low-count suppression and raw-event API disabled by default.
+- Versioned CBOR ACK/egress control messages with freshness-based UNKNOWN, REPORTED, CONFIRMED, and STALE states.
+- Installable mobile PWA with four primary actions plus third-party, last-seen, and person-found flows.
+- Offline IndexedDB custody, browser Ed25519 identity, deterministic CBOR interoperability, manual synchronization, and honest CREATED/QUEUED/FORWARDED/GATEWAY_FOUND/SYNCED/EXPIRED states.
+- Approximate-location minimization, unsigned fallback disclosure, bilingual Spanish/English high-stress UI, keyboard/focus support, reduced-motion/high-contrast preferences, and real-browser offline smoke coverage.
+- Versioned X25519/HKDF-SHA-256/AES-256-GCM protected payload with report-bound AAD, authenticated recipient policy, Node/browser interoperability, strict size limits, and zero-decryption public backend.
+- Versioned deterministic-CBOR MTU fragmentation with exact frame sizing, SHA-256 reassembly integrity, bounded memory/time/count, duplicate/conflict handling, custody-safe retry, and declarative 180-byte-link simulation.
+
+## Next: client hardening
+
+- Validate with screen readers, reduced-motion settings, low-end phones, and high-stress usability sessions.
+- Evaluate native secure-key storage and background transport without weakening the web fallback.
+
+## Physical transport experiments
+
+1. Bitchat/BLE adapter feasibility spike using its public integration boundary without changing internal routing.
+2. Independent Meshtastic adapter spike using existing hardware and its supported API.
+3. Compare MTU, fragmentation requirements, background behavior, battery, custody acknowledgement, and licensing.
+
+Wi-Fi Direct/Aware, LAN, SMS, satellite, digital radio, and other community transports remain later adapters. Kubernetes, Kafka, blockchain, machine-learning routing, responder verification, dispatch, government integration, and custom hardware remain out of scope.

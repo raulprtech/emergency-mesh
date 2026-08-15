@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "name": "small-mtu-fragmentation",
+  "startAt": 1800000000000,
+  "seed": 77,
+  "nodes": [
+    { "id": "field-node", "batteryPercent": 80 },
+    { "id": "gateway-node", "batteryPercent": 60, "internetInitiallyOnline": true }
+  ],
+  "links": [
+    {
+      "id": "small-mtu-link",
+      "from": "field-node",
+      "to": "gateway-node",
+      "lossRate": 0,
+      "maximumPayloadSize": 180,
+      "fragmentation": true
+    }
+  ],
+  "actions": [
+    { "at": 0, "type": "CREATE", "nodeId": "field-node", "eventId": "small-mtu-sos", "eventType": "SOS", "reportMode": "SELF", "priority": "CRITICAL" },
+    { "at": 0, "type": "FLUSH", "nodeId": "field-node" },
+    { "at": 0, "type": "FLUSH", "nodeId": "gateway-node" }
+  ]
+}
