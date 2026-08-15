@@ -43,7 +43,8 @@ A deployment, not the core library, is responsible for:
 2. Constructing and configuring its `MeshDevice`.
 3. Passing that object to `MeshtasticCoreFramePort`.
 4. Pairing the port with a peer-specific `CustodyBridgeTransportAdapter` using the peer's canonical `!xxxxxxxx` address.
-5. Disposing both bridge and port when the device session ends.
+5. Connecting a `SqliteCustodyQueue` through `connectCustodyReceiver()` so queue admission and ACK persistence are atomic across restart.
+6. Disposing bridge, port, and queue when the device session ends.
 
 Because no SDK package is installed here, upstream API drift cannot be caught by this repository alone. A deployable integration package must pin an exact SDK version and run contract tests against the real package.
 

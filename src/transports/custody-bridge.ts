@@ -11,6 +11,7 @@ import type {
 } from "./transport.ts";
 
 type Receiver = (envelope: EmergencyEnvelope) => boolean | void | Promise<boolean | void>;
+export type DurableCustodyReceiver = (envelope: EmergencyEnvelope) => DeliveryAcknowledgement | undefined | Promise<DeliveryAcknowledgement | undefined>;
 
 export interface CustodyBridgeOptions {
   localNodeId: string;
@@ -53,6 +54,7 @@ export class CustodyBridgeTransportAdapter implements TransportAdapter {
   private readonly handlers = new Set<Receiver>();
   private readonly pending = new Map<string, PendingSend>();
   private readonly accepted = new Map<string, AcceptedPacket>();
+  private custodyReceiver?: DurableCustodyReceiver;
   private readonly unsubscribePort: () => void;
   private disposed = false;
 
@@ -161,8 +163,16 @@ export class CustodyBridgeTransportAdapter implements TransportAdapter {
   }
 
   receive(handler: Receiver): () => void {
+    if (this.custodyReceiver) throw new Error("durable custody receiver is already connected");
     this.handlers.add(handler);
     return () => this.handlers.delete(handler);
+  }
+
+  /** Connect one receiver that atomically persists queue custody and its ACK. */
+  connectCustodyReceiver(handler: DurableCustodyReceiver): () => void {
+    if (this.handlers.size > 0 || this.custodyReceiver) throw new Error("custody bridge already has a receiver");
+    this.custodyReceiver = handler;
+    return () => { if (this.custodyReceiver === handler) this.custodyReceiver = undefined; };
   }
 
   estimatedCost(): number { return 0; }
@@ -182,6 +192,7 @@ export class CustodyBridgeTransportAdapter implements TransportAdapter {
     this.unsubscribePort();
     for (const [key] of this.pending) this.failPending(key, "custody bridge disposed");
     this.handlers.clear();
+    this.custodyReceiver = undefined;
     this.accepted.clear();
   }
 
@@ -201,6 +212,14 @@ export class CustodyBridgeTransportAdapter implements TransportAdapter {
     if (reassembled.status !== "COMPLETE" || !reassembled.envelope) return;
     const envelope = reassembled.envelope;
     const key = packetKey(envelope.report.eventId, envelope.packetId);
+    if (this.custodyReceiver) {
+      let acknowledgement: DeliveryAcknowledgement | undefined;
+      try { acknowledgement = await this.custodyReceiver(structuredClone(envelope)); }
+      catch { return; }
+      if (!acknowledgement || !this.isMatchingReceiverAcknowledgement(acknowledgement, envelope)) return;
+      await this.sendAcknowledgement(acknowledgement, receipt.source);
+      return;
+    }
     this.pruneAccepted();
     const prior = this.accepted.get(key);
     if (prior) {
@@ -247,6 +266,17 @@ export class CustodyBridgeTransportAdapter implements TransportAdapter {
       evidence: structuredClone(acknowledgement),
     });
     return true;
+  }
+
+  private isMatchingReceiverAcknowledgement(acknowledgement: DeliveryAcknowledgement, envelope: EmergencyEnvelope): boolean {
+    return Boolean(acknowledgement.acknowledgementId)
+      && acknowledgement.eventId === envelope.report.eventId
+      && acknowledgement.packetId === envelope.packetId
+      && acknowledgement.level === "PEER"
+      && acknowledgement.issuerId === this.options.localNodeId
+      && (acknowledgement.status === "CUSTODY_ACCEPTED" || acknowledgement.status === "DUPLICATE")
+      && Number.isFinite(acknowledgement.acknowledgedAt)
+      && acknowledgement.acknowledgedAt <= this.options.now() + this.options.maximumClockSkewMs;
   }
 
   private async sendAcknowledgement(acknowledgement: DeliveryAcknowledgement, destination: string): Promise<void> {

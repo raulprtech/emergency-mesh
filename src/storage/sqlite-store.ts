@@ -16,8 +16,8 @@ type QueueRow = {
 };
 
 export class SqliteStoreAndForwardQueue implements StoreAndForwardStore {
-  private readonly database: DatabaseSync;
-  private readonly limits: Required<QueueLimits>;
+  protected readonly database: DatabaseSync;
+  protected readonly limits: Required<QueueLimits>;
 
   constructor(path: string, limits: QueueLimits = {}) {
     this.limits = resolveQueueLimits(limits);
@@ -128,7 +128,7 @@ export class SqliteStoreAndForwardQueue implements StoreAndForwardStore {
     return removed;
   }
 
-  private makeRoom(byteSize: number, incomingRank: number): boolean {
+  protected makeRoom(byteSize: number, incomingRank: number): boolean {
     const totals = this.database.prepare("SELECT COUNT(*) AS items, COALESCE(SUM(length(envelope)), 0) AS bytes FROM forward_queue").get() as { items: number; bytes: number };
     let items = Number(totals.items) + 1;
     let bytes = Number(totals.bytes) + byteSize;
