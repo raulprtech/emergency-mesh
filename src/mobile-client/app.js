@@ -1,4 +1,5 @@
-import { ACTIONS, createOutboxItem, synchronizeOutbox, validateClientInput } from "./core.js";
+import { ACTIONS, createOutboxItem, validateClientInput } from "./core.js";
+import { OUTBOX_SYNC_TAG, synchronizeOutboxExclusively } from "./background-sync.js";
 import { createBrowserIdentity, createUnsignedIdentity } from "./crypto.js";
 import { openClientDatabase } from "./idb.js";
 import { formatMessage, getCatalog, normalizeLocale } from "./i18n.js";
@@ -8,6 +9,7 @@ let identity = await db.getSetting("identity");
 let locale = normalizeLocale(await db.getSetting("locale") ?? navigator.language);
 let catalog = getCatalog(locale);
 let pendingLocation;
+let serviceWorkerRegistration;
 
 async function newIdentity() {
   try { return await createBrowserIdentity(); }
@@ -83,6 +85,16 @@ byId("get-location").addEventListener("click", () => {
   }, () => { byId("location-status").textContent = catalog.locationFailed; }, { enableHighAccuracy: false, timeout: 8_000, maximumAge: 5 * 60_000 });
 });
 
+async function scheduleBackgroundSync() {
+  if (!("serviceWorker" in navigator)) return false;
+  try {
+    const registration = serviceWorkerRegistration ?? await navigator.serviceWorker.ready;
+    if (!("sync" in registration)) return false;
+    await registration.sync.register(OUTBOX_SYNC_TAG);
+    return true;
+  } catch { return false; }
+}
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   byId("form-error").textContent = "";
@@ -100,6 +112,7 @@ form.addEventListener("submit", async (event) => {
     if (errors.length) throw new Error(errors.join("; "));
     const item = await createOutboxItem(input, identity);
     await db.put(item);
+    await scheduleBackgroundSync();
     form.reset(); composer.classList.add("hidden"); pendingLocation = undefined; await render();
     if (navigator.onLine) await sync();
   } catch (error) { byId("form-error").textContent = error instanceof Error ? error.message : catalog.createFailed; }
@@ -125,7 +138,10 @@ async function render() {
 
 async function sync() {
   byId("sync").disabled = true;
-  try { await synchronizeOutbox(db); }
+  try {
+    const results = await synchronizeOutboxExclusively(db);
+    if (results.some((item) => item.state === "QUEUED")) await scheduleBackgroundSync();
+  }
   finally { byId("sync").disabled = false; await render(); }
 }
 byId("sync").addEventListener("click", sync);
@@ -135,5 +151,12 @@ byId("rotate-identity").addEventListener("click", async () => {
 });
 window.addEventListener("online", () => { networkStatus(); sync(); });
 window.addEventListener("offline", networkStatus);
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("/mobile/sw.js");
+if ("serviceWorker" in navigator) {
+  try {
+    serviceWorkerRegistration = await navigator.serviceWorker.register("/mobile/sw.js", { type: "module" });
+    navigator.serviceWorker.addEventListener("message", (event) => {
+      if (event.data?.type === "OUTBOX_UPDATED") void render();
+    });
+  } catch { /* Offline reporting still works without service-worker support. */ }
+}
 applyLocale(); await render(); if (navigator.onLine) await sync();

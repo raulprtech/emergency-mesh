@@ -15,7 +15,7 @@ Secondary flows create THIRD_PARTY SOS, PERSON_LAST_SEEN, and PERSON_FOUND repor
 
 ## Offline behavior
 
-After the first successful visit, a Service Worker caches the application shell. Reports are created and saved in IndexedDB before any network attempt. The outbox retries when connectivity returns and never removes custody merely because a transport attempt began.
+After the first successful visit, a Service Worker caches the application shell. Reports are created and saved in IndexedDB before any network attempt. The outbox retries when connectivity returns and never removes custody merely because a transport attempt began. When one-shot Background Sync is available, the app registers the queued outbox after durable local storage; a module service worker reopens the same IndexedDB database and retries even when the page is no longer active.
 
 Delivery states are intentionally narrow:
 
@@ -25,6 +25,8 @@ Delivery states are intentionally narrow:
 - Gateway reached, without human-attention confirmation.
 - Received by a backend, without attention or assistance confirmation.
 - Expired without final confirmation.
+
+Foreground and background attempts share a Web Locks mutex when available, while backend idempotency remains the duplicate-ingest boundary. A failed background attempt rejects its sync task so the browser may schedule another opportunity. Browsers without Background Sync or Web Locks retain the existing open-app, manual, and online-event fallbacks. No identity private key is read by the worker because queued envelopes are already signed.
 
 Uncached API and asset requests fail honestly offline; only navigation within `/mobile/` may fall back to the cached application shell. The last synchronization error remains visible. HTTP acceptance includes explicit BACKEND evidence, which advances the local state to SYNCED.
 
@@ -46,4 +48,4 @@ The interface uses semantic buttons, labelled fields, fieldsets, live status reg
 
 ## Verification
 
-Unit tests cover every action mapping, person semantics, location reduction, deterministic CBOR compatibility, cross-runtime Ed25519 verification, valid state transitions, offline custody, ACK synchronization, expiration, catalog parity, and accessibility landmarks. `examples/browser-smoke.mjs` drives a real local Chromium session through online initialization, locale persistence, a service-worker reload with transport disabled, offline IndexedDB custody, and synchronization after reconnection.
+Unit tests cover Background Sync retry and locking, every action mapping, person semantics, location reduction, deterministic CBOR compatibility, cross-runtime Ed25519 verification, valid state transitions, offline custody, ACK synchronization, expiration, catalog parity, and accessibility landmarks. `examples/browser-smoke.mjs` drives a real local Chromium session through online initialization, locale persistence, a service-worker reload with transport disabled, offline IndexedDB custody, and synchronization after reconnection.
