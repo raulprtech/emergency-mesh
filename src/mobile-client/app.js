@@ -10,6 +10,7 @@ let locale = normalizeLocale(await db.getSetting("locale") ?? navigator.language
 let catalog = getCatalog(locale);
 let pendingLocation;
 let serviceWorkerRegistration;
+let composerTrigger;
 
 async function newIdentity() {
   try { return await createBrowserIdentity(); }
@@ -51,7 +52,8 @@ function applyLocale() {
   locationStatus();
 }
 
-function configureForm(action) {
+function configureForm(action, trigger) {
+  composerTrigger = trigger;
   byId("action").value = action;
   byId("composer-title").textContent = catalog.actions[action];
   byId("subject-field").classList.toggle("hidden", !["THIRD_PARTY", "LAST_SEEN", "PERSON_FOUND"].includes(action));
@@ -68,8 +70,18 @@ function configureForm(action) {
   byId("short-message").focus();
 }
 
-document.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => configureForm(button.dataset.action)));
-byId("close-composer").addEventListener("click", () => composer.classList.add("hidden"));
+function closeComposer() {
+  composer.classList.add("hidden");
+  composerTrigger?.focus();
+}
+
+document.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", (event) => configureForm(button.dataset.action, event.currentTarget)));
+byId("close-composer").addEventListener("click", closeComposer);
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || composer.classList.contains("hidden")) return;
+  event.preventDefault();
+  closeComposer();
+});
 byId("language").addEventListener("change", async (event) => {
   locale = normalizeLocale(event.target.value);
   await db.setSetting("locale", locale);
@@ -113,7 +125,7 @@ form.addEventListener("submit", async (event) => {
     const item = await createOutboxItem(input, identity);
     await db.put(item);
     await scheduleBackgroundSync();
-    form.reset(); composer.classList.add("hidden"); pendingLocation = undefined; await render();
+    form.reset(); closeComposer(); pendingLocation = undefined; await render();
     if (navigator.onLine) await sync();
   } catch (error) { byId("form-error").textContent = error instanceof Error ? error.message : catalog.createFailed; }
 });

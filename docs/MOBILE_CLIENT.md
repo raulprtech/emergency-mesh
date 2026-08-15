@@ -44,7 +44,13 @@ The MVP requests location only after an explicit button press, uses low-accuracy
 
 ## Accessibility and safety language
 
-The interface uses semantic buttons, labelled fields, fieldsets, live status regions, a skip link, visible keyboard focus, minimum touch targets, and responsive action cards. It honors reduced-motion and increased-contrast preferences. A persistent selector provides complete Spanish and English catalogs, updates the document language, and preserves equivalent non-guarantee language in both locales.
+The interface uses semantic buttons, labelled fields, fieldsets, live status regions, a skip link, visible keyboard focus, minimum touch targets, and responsive action cards. Opening a report moves focus into the composer; Escape, cancel, and successful queue admission return it to the action that opened the flow. It honors reduced-motion and increased-contrast preferences. A persistent selector provides complete Spanish and English catalogs, updates the document language, and preserves equivalent non-guarantee language in both locales.
+
+## Automated browser accessibility profile
+
+`examples/accessibility-smoke.mjs` uses the Chromium accessibility tree plus a 360 × 640 CSS-pixel touch viewport, 2× device scale, five touch points, and 4× CPU throttling. It fails on unnamed interactive controls, missing landmarks or key labels, buttons below 44 × 44 CSS pixels, horizontal overflow, a multi-column primary-action layout, an invisible focused skip link, broken composer focus or keyboard dismissal, inactive reduced-motion or increased-contrast media queries, and page diagnostics. Run it through `npm run smoke:accessibility -- [debug-port] [target-url] [debug-host]` while the local server and a Chromium remote-debugging endpoint are active.
+
+This is deterministic regression coverage, not assistive-technology certification. Manual testing with current screen readers, switch or voice input, low-end physical phones, and people performing high-stress tasks remains required.
 
 ## Verification
 

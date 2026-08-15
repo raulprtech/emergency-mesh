@@ -17,7 +17,7 @@
 - Versioned CBOR ACK/egress control messages with freshness-based UNKNOWN, REPORTED, CONFIRMED, and STALE states, plus an optional canonical HMAC-SHA-256-128 wrapper with downgrade rejection for peer custody ACKs.
 - Installable mobile PWA with four primary actions plus third-party, last-seen, and person-found flows, including progressive one-shot Background Sync with serialized IndexedDB retries.
 - Offline IndexedDB custody, browser Ed25519 identity, deterministic CBOR interoperability, manual synchronization, and honest CREATED/QUEUED/FORWARDED/GATEWAY_FOUND/SYNCED/EXPIRED states.
-- Approximate-location minimization, unsigned fallback disclosure, bilingual Spanish/English high-stress UI, keyboard/focus support, reduced-motion/high-contrast preferences, and real-browser offline smoke coverage.
+- Approximate-location minimization, unsigned fallback disclosure, bilingual Spanish/English high-stress UI, keyboard/focus restoration and Escape dismissal, reduced-motion/high-contrast preferences, real-browser offline smoke coverage, and automated Chromium AX/constrained-mobile validation.
 - Versioned X25519/HKDF-SHA-256/AES-256-GCM protected payload with report-bound AAD, authenticated recipient policy, Node/browser interoperability, strict size limits, and zero-decryption public backend.
 - Versioned deterministic-CBOR MTU fragmentation with exact frame sizing, SHA-256 reassembly integrity, bounded memory/time/count, duplicate/conflict handling, custody-safe retry, and declarative 180-byte-link simulation.
 - Physical raw-frame boundary, Meshtastic private-app policy, active-SDK-compatible structural port, isolated exact-version serial bench and contract check, Bitchat/Meshtastic feasibility decision, and unicast reassembly-to-queue custody ACK bridge with bounded in-memory recovery and atomic restart-safe SQLite receipts.
@@ -25,7 +25,7 @@
 ## Next: client hardening
 
 - Validate with screen readers, reduced-motion settings, low-end phones, and high-stress usability sessions.
-- Evaluate native secure-key storage and background transport without weakening the web fallback.
+- Evaluate native secure-key storage without weakening the web fallback; progressive background transport is now implemented.
 
 ## Physical transport experiments
 
