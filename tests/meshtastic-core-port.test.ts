@@ -166,3 +166,25 @@ test("Meshtastic core ports compose with custody bridges and node queues", async
   assert.equal(sender.deliveryEvidence.get(report.eventId)?.[0].issuerId, "node-b");
   bridgeA.dispose(); bridgeB.dispose(); portA.dispose(); portB.dispose();
 });
+
+
+test("Meshtastic SDK port exposes isolated frame diagnostics", async () => {
+  const client = new FakeMeshtasticClient();
+  const port = new MeshtasticCoreFramePort("meshtastic-stats", client, { initialAvailable: true });
+  await port.sendFrame(Uint8Array.of(1, 2, 3), { destination: "!1234abcd", requestRoutingAck: true });
+  client.failure = new Error("routing timeout");
+  await port.sendFrame(Uint8Array.of(4, 5), { destination: "!1234abcd", requestRoutingAck: true });
+  client.privatePackets.emit({
+    id: 90, type: "direct", from: 0x1111_2222, to: 0x3333_4444, channel: 0, data: Uint8Array.of(6, 7, 8, 9),
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(port.stats(), {
+    sdkSendAttempts: 2,
+    routingAcknowledgedFrames: 1,
+    failedFrames: 1,
+    outboundBytesAttempted: 5,
+    inboundFrames: 1,
+    inboundBytes: 4,
+  });
+  port.dispose();
+});

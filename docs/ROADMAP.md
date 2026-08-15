@@ -20,7 +20,7 @@
 - Approximate-location minimization, unsigned fallback disclosure, bilingual Spanish/English high-stress UI, keyboard/focus support, reduced-motion/high-contrast preferences, and real-browser offline smoke coverage.
 - Versioned X25519/HKDF-SHA-256/AES-256-GCM protected payload with report-bound AAD, authenticated recipient policy, Node/browser interoperability, strict size limits, and zero-decryption public backend.
 - Versioned deterministic-CBOR MTU fragmentation with exact frame sizing, SHA-256 reassembly integrity, bounded memory/time/count, duplicate/conflict handling, custody-safe retry, and declarative 180-byte-link simulation.
-- Physical raw-frame boundary, Meshtastic private-app policy and structural core-SDK compatibility port, Bitchat/Meshtastic feasibility decision, and unicast reassembly-to-queue custody ACK bridge with bounded in-memory recovery and atomic restart-safe SQLite receipts.
+- Physical raw-frame boundary, Meshtastic private-app policy, active-SDK-compatible structural port, isolated exact-version serial bench and contract check, Bitchat/Meshtastic feasibility decision, and unicast reassembly-to-queue custody ACK bridge with bounded in-memory recovery and atomic restart-safe SQLite receipts.
 
 ## Next: client hardening
 
@@ -29,7 +29,7 @@
 
 ## Physical transport experiments
 
-1. Connect `MeshtasticCoreFramePort` to a pinned official transport package and bench-test two physical devices.
+1. Run the prepared `MeshtasticSdkFramePort` serial bench against two physical devices and record the complete matrix.
 2. Crash-test the SQLite custody transaction and synchronization policy on the target device filesystem.
 3. Revisit Bitchat only when a stable upstream arbitrary-application-payload boundary is available.
 4. Measure MTU, packet loss, reordering, background behavior, battery, custody acknowledgement, and practical range under recorded conditions.

@@ -16,7 +16,9 @@
     "scenario:mtu": "node examples/run-scenario.ts examples/scenario-small-mtu.json",
     "start": "node src/server.ts",
     "test": "node --test tests/*.test.ts",
-    "check": "node --test tests/*.test.ts && node src/simulator/demo.ts"
+    "check": "node --test tests/*.test.ts && node src/simulator/demo.ts",
+    "meshtastic:contract": "npm --prefix integrations/meshtastic-node-serial run contract",
+    "meshtastic:bench": "node integrations/meshtastic-node-serial/bench.mjs"
   },
   "license": "Apache-2.0"
 }

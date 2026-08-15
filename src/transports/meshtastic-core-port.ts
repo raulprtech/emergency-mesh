@@ -12,7 +12,9 @@ import {
   type RawFrameSendResult,
 } from "./raw-frame-port.ts";
 
-export const MESHTASTIC_CORE_DEVICE_CONFIGURED = 7;
+export const MESHTASTIC_DEVICE_CONFIGURED = 7;
+/** Backward-compatible name for the archived @meshtastic/core adapter. */
+export const MESHTASTIC_CORE_DEVICE_CONFIGURED = MESHTASTIC_DEVICE_CONFIGURED;
 
 export interface MeshtasticSubscription {
   unsubscribe(): void;
@@ -33,11 +35,11 @@ export interface MeshtasticPrivatePacket {
 }
 
 /**
- * Structural subset of the published @meshtastic/core 2.6.x MeshDevice API.
- * Keeping this as an injected boundary avoids a runtime GPL dependency in the
- * Apache-2.0 core while allowing a deployment composition root to use it.
+ * Structural subset shared by the active @meshtastic/sdk 1.0 MeshClient and
+ * the archived published @meshtastic/core 2.6.7 MeshDevice. Injection keeps
+ * GPL runtime packages outside the Apache-2.0 core dependency graph.
  */
-export interface MeshtasticCoreClient {
+export interface MeshtasticSdkClient {
   events: {
     onPrivatePacket: MeshtasticEvent<MeshtasticPrivatePacket>;
     onDeviceStatus?: MeshtasticEvent<number>;
@@ -53,10 +55,25 @@ export interface MeshtasticCoreClient {
   ): Promise<number>;
 }
 
-export interface MeshtasticCoreFramePortOptions {
+/** Backward-compatible structural name for the archived published client. */
+export type MeshtasticCoreClient = MeshtasticSdkClient;
+
+export interface MeshtasticSdkFramePortOptions {
   channel?: number;
   initialAvailable?: boolean;
 }
+
+export interface MeshtasticSdkFramePortStats {
+  sdkSendAttempts: number;
+  routingAcknowledgedFrames: number;
+  failedFrames: number;
+  outboundBytesAttempted: number;
+  inboundFrames: number;
+  inboundBytes: number;
+}
+
+/** Backward-compatible options name. */
+export type MeshtasticCoreFramePortOptions = MeshtasticSdkFramePortOptions;
 
 function release(subscription: MeshtasticSubscription | (() => void) | void): void {
   if (typeof subscription === "function") subscription();
@@ -76,21 +93,29 @@ export function parseMeshtasticNodeAddress(address: string): number {
 }
 
 /**
- * PRIVATE_APP raw-frame port for the published @meshtastic/core 2.6.x client.
- * It is intentionally unicast-only: that SDK's sendPacket promise is completed
- * by a routing ACK, while firmware clears ACK requests for broadcasts.
+ * PRIVATE_APP raw-frame port for compatible Meshtastic SDK clients. It is
+ * intentionally unicast-only because sendPacket completion represents a
+ * routing ACK while firmware suppresses ACK requests for broadcasts.
  */
-export class MeshtasticCoreFramePort implements RawFramePort {
+export class MeshtasticSdkFramePort implements RawFramePort {
   readonly id: string;
-  private readonly client: MeshtasticCoreClient;
+  private readonly client: MeshtasticSdkClient;
   private readonly channel: number;
   private readonly handlers = new Set<(receipt: RawFrameReceipt) => void | Promise<void>>();
   private readonly privateSubscription: MeshtasticSubscription | (() => void) | void;
   private readonly statusSubscription: MeshtasticSubscription | (() => void) | void;
+  private readonly statistics: MeshtasticSdkFramePortStats = {
+    sdkSendAttempts: 0,
+    routingAcknowledgedFrames: 0,
+    failedFrames: 0,
+    outboundBytesAttempted: 0,
+    inboundFrames: 0,
+    inboundBytes: 0,
+  };
   private enabled: boolean;
   private disposed = false;
 
-  constructor(id: string, client: MeshtasticCoreClient, options: MeshtasticCoreFramePortOptions = {}) {
+  constructor(id: string, client: MeshtasticSdkClient, options: MeshtasticSdkFramePortOptions = {}) {
     if (!id) throw new Error("Meshtastic frame port id is required");
     const channel = options.channel ?? 0;
     if (!Number.isInteger(channel) || channel < 0 || channel > 7) throw new Error("Meshtastic channel must be an integer from 0 to 7");
@@ -100,12 +125,14 @@ export class MeshtasticCoreFramePort implements RawFramePort {
     this.enabled = options.initialAvailable ?? false;
     this.privateSubscription = client.events.onPrivatePacket.subscribe((packet) => { void this.handlePrivatePacket(packet); });
     this.statusSubscription = client.events.onDeviceStatus?.subscribe((status) => {
-      this.enabled = status === MESHTASTIC_CORE_DEVICE_CONFIGURED;
+      this.enabled = status === MESHTASTIC_DEVICE_CONFIGURED;
     });
   }
 
   available(): boolean { return !this.disposed && this.enabled; }
   setAvailable(available: boolean): void { this.enabled = available; }
+  stats(): Readonly<MeshtasticSdkFramePortStats> { return { ...this.statistics }; }
+
 
   capabilities(): RawFramePortCapabilities {
     return {
@@ -121,9 +148,9 @@ export class MeshtasticCoreFramePort implements RawFramePort {
 
   async sendFrame(frame: Uint8Array, options: RawFrameSendOptions = {}): Promise<RawFrameSendResult> {
     if (!this.available()) return { acceptedByLocalPort: false, acceptance: "NONE", detail: "Meshtastic device is not configured" };
-    if (options.broadcast) return { acceptedByLocalPort: false, acceptance: "NONE", detail: "@meshtastic/core 2.6 frame port is unicast-only" };
+    if (options.broadcast) return { acceptedByLocalPort: false, acceptance: "NONE", detail: "Meshtastic SDK frame port is unicast-only" };
     if (options.requestRoutingAck !== true) {
-      return { acceptedByLocalPort: false, acceptance: "NONE", detail: "@meshtastic/core 2.6 requires routing-ACKed unicast" };
+      return { acceptedByLocalPort: false, acceptance: "NONE", detail: "Meshtastic SDK requires routing-ACKed unicast" };
     }
     let destination: number;
     try {
@@ -134,6 +161,8 @@ export class MeshtasticCoreFramePort implements RawFramePort {
     } catch (error) {
       return { acceptedByLocalPort: false, acceptance: "NONE", detail: error instanceof Error ? error.message : "invalid Meshtastic frame" };
     }
+    this.statistics.sdkSendAttempts += 1;
+    this.statistics.outboundBytesAttempted += frame.length;
     try {
       const packetId = await this.client.sendPacket(
         frame.slice(),
@@ -145,12 +174,14 @@ export class MeshtasticCoreFramePort implements RawFramePort {
         false,
       );
       if (!Number.isSafeInteger(packetId) || packetId < 0 || packetId > 0xffff_ffff) throw new Error("Meshtastic SDK returned an invalid packet id");
+      this.statistics.routingAcknowledgedFrames += 1;
       return {
         acceptedByLocalPort: true,
         acceptance: "ROUTING_ACK",
         transportPacketId: String(packetId),
       };
     } catch (error) {
+      this.statistics.failedFrames += 1;
       return {
         acceptedByLocalPort: false,
         acceptance: "NONE",
@@ -183,6 +214,8 @@ export class MeshtasticCoreFramePort implements RawFramePort {
       source = meshtasticNodeAddress(packet.from);
       destination = packet.to === MESHTASTIC_BROADCAST_NODE ? undefined : meshtasticNodeAddress(packet.to);
     } catch { return; }
+    this.statistics.inboundFrames += 1;
+    this.statistics.inboundBytes += packet.data.length;
     const receipt: RawFrameReceipt = {
       payload: packet.data.slice(),
       source,
@@ -196,3 +229,6 @@ export class MeshtasticCoreFramePort implements RawFramePort {
     }
   }
 }
+
+/** Backward-compatible class name retained for existing deployments. */
+export { MeshtasticSdkFramePort as MeshtasticCoreFramePort };
