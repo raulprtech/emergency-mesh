@@ -20,6 +20,7 @@
 - Approximate-location minimization, unsigned fallback disclosure, bilingual Spanish/English high-stress UI, keyboard/focus support, reduced-motion/high-contrast preferences, and real-browser offline smoke coverage.
 - Versioned X25519/HKDF-SHA-256/AES-256-GCM protected payload with report-bound AAD, authenticated recipient policy, Node/browser interoperability, strict size limits, and zero-decryption public backend.
 - Versioned deterministic-CBOR MTU fragmentation with exact frame sizing, SHA-256 reassembly integrity, bounded memory/time/count, duplicate/conflict handling, custody-safe retry, and declarative 180-byte-link simulation.
+- Physical raw-frame boundary, Meshtastic private-app mapping, and Bitchat/Meshtastic feasibility decision with honest non-custody ACK semantics.
 
 ## Next: client hardening
 
@@ -28,8 +29,9 @@
 
 ## Physical transport experiments
 
-1. Bitchat/BLE adapter feasibility spike using its public integration boundary without changing internal routing.
-2. Independent Meshtastic adapter spike using existing hardware and its supported API.
-3. Compare MTU, fragmentation requirements, background behavior, battery, custody acknowledgement, and licensing.
+1. Bench-test the Meshtastic raw-frame mapping on two physical devices through an official PhoneAPI SDK.
+2. Add remote reassembly-and-enqueue custody ACKs before exposing a production `TransportAdapter`.
+3. Revisit Bitchat only when a stable upstream arbitrary-application-payload boundary is available.
+4. Measure MTU, packet loss, reordering, background behavior, battery, custody acknowledgement, and practical range under recorded conditions.
 
 Wi-Fi Direct/Aware, LAN, SMS, satellite, digital radio, and other community transports remain later adapters. Kubernetes, Kafka, blockchain, machine-learning routing, responder verification, dispatch, government integration, and custom hardware remain out of scope.

@@ -32,7 +32,7 @@ If `node` is already on `PATH`, the equivalent commands are `npm test`, `npm run
 - `src/protocol`: v0.1 data model, deterministic CBOR/JSON codecs, Ed25519 pseudonymous identity, recipient-bound protected-payload encryption, and bounded MTU fragmentation/reassembly.
 - `src/routing`: deterministic, replaceable adapter selection and bounded critical multipath.
 - `src/storage`: bounded in-memory and SQLite store-and-forward queues with expiration, backoff, replay retention, and priority-safe eviction.
-- `src/transports`: common adapter contract, direct mock/Internet links, and a custody-safe fragmented small-MTU adapter.
+- `src/transports`: common adapter contract, direct mock/Internet links, a custody-safe fragmented small-MTU adapter, and a physical raw-frame boundary with Meshtastic policy.
 - `src/simulator`: virtual nodes and the end-to-end connectivity-loss scenario.
 - `src/gateway` and `src/backend`: semantics-preserving gateway, ingest, deduplication, status projection, and policy-governed geographic/temporal aggregation.
 - `src/mobile-client`: installable offline PWA, browser Ed25519 identity, IndexedDB outbox, honest delivery states, and backend synchronization.
@@ -55,6 +55,7 @@ Signatures demonstrate integrity and pseudonymous continuity, **not truth, autho
 - [Declarative scenario format](docs/SCENARIO_FORMAT.md)
 - [Routing, egress, multipath, and energy](docs/ROUTING_AND_EGRESS.md)
 - [MTU fragmentation and reassembly](docs/FRAGMENTATION.md)
+- [Physical transport feasibility](docs/PHYSICAL_TRANSPORT_FEASIBILITY.md)
 - [ACK and egress control messages](docs/CONTROL_MESSAGES.md)
 - [Offline mobile client](docs/MOBILE_CLIENT.md)
 - [Reference backend API](docs/REFERENCE_API.md)
@@ -63,4 +64,4 @@ Signatures demonstrate integrity and pseudonymous continuity, **not truth, autho
 
 ## Status
 
-The simulated vertical slice and bilingual offline mobile PWA are implemented and tested, including a real Chromium disconnect/reconnect smoke test. No physical BLE, Bitchat, Meshtastic, LoRa, Wi-Fi, or SMS integration exists yet.
+The simulated vertical slice and bilingual offline mobile PWA are implemented and tested, including a real Chromium disconnect/reconnect smoke test. Meshtastic now has a researched raw-frame policy but has not been tested on physical hardware; no physical BLE, Bitchat, LoRa, Wi-Fi, or SMS integration exists yet.
