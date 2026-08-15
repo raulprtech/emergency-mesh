@@ -20,7 +20,7 @@
 - Approximate-location minimization, unsigned fallback disclosure, bilingual Spanish/English high-stress UI, keyboard/focus support, reduced-motion/high-contrast preferences, and real-browser offline smoke coverage.
 - Versioned X25519/HKDF-SHA-256/AES-256-GCM protected payload with report-bound AAD, authenticated recipient policy, Node/browser interoperability, strict size limits, and zero-decryption public backend.
 - Versioned deterministic-CBOR MTU fragmentation with exact frame sizing, SHA-256 reassembly integrity, bounded memory/time/count, duplicate/conflict handling, custody-safe retry, and declarative 180-byte-link simulation.
-- Physical raw-frame boundary, Meshtastic private-app mapping, Bitchat/Meshtastic feasibility decision, and unicast reassembly-to-queue custody ACK bridge with bounded duplicate recovery.
+- Physical raw-frame boundary, Meshtastic private-app policy and structural core-SDK compatibility port, Bitchat/Meshtastic feasibility decision, and unicast reassembly-to-queue custody ACK bridge with bounded duplicate recovery.
 
 ## Next: client hardening
 
@@ -29,7 +29,7 @@
 
 ## Physical transport experiments
 
-1. Bench-test the Meshtastic raw-frame mapping on two physical devices through an official PhoneAPI SDK.
+1. Connect `MeshtasticCoreFramePort` to a pinned official transport package and bench-test two physical devices.
 2. Persist receiver duplicate/ACK correlation atomically with durable custody before production use.
 3. Revisit Bitchat only when a stable upstream arbitrary-application-payload boundary is available.
 4. Measure MTU, packet loss, reordering, background behavior, battery, custody acknowledgement, and practical range under recorded conditions.

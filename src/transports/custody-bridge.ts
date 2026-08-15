@@ -257,7 +257,7 @@ export class CustodyBridgeTransportAdapter implements TransportAdapter {
       acknowledgement,
     });
     if (frame.length > this.maximumPayloadSize()) return;
-    try { await this.port.sendFrame(frame, { destination, requestRoutingAck: false }); }
+    try { await this.port.sendFrame(frame, { destination, requestRoutingAck: true }); }
     catch { /* Custody remains remote; sender will retry when its ACK times out. */ }
   }
 

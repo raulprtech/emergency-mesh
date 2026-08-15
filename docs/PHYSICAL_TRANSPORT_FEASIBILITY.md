@@ -12,7 +12,7 @@ The physical code boundary is `RawFramePort`. A physical port receives opaque, a
 
 | Criterion | Meshtastic | Bitchat/BLE |
 | --- | --- | --- |
-| Supported host boundary | PhoneAPI over BLE, serial, TCP, or HTTP; official SDKs exist | Native application's internal `Transport` abstraction; no documented external arbitrary-payload API found |
+| Supported host boundary | PhoneAPI over BLE, serial, TCP, or HTTP; structural `@meshtastic/core` 2.6 compatibility port implemented | Native application's internal `Transport` abstraction; no documented external arbitrary-payload API found |
 | Application payload | `Data.payload`, `PRIVATE_APP` port 256 | Typed Bitchat packet/application messages; adding an Emergency Mesh type requires upstream/native work |
 | Payload ceiling | 233 bytes per `Data.payload`; Emergency Mesh fragmentation can target this ceiling | Link fragmentation is internal and currently described around 469-byte chunks, but it is not a stable external contract |
 | Routing | Owned by Meshtastic firmware | Owned by Bitchat |
@@ -32,6 +32,7 @@ Licensing notes are engineering risk flags, not legal advice. The Apache-2.0 cor
 - A unicast may request a Meshtastic routing ACK, but that ACK is diagnostic evidence only.
 - The adapter must respect PhoneAPI queue status/backpressure and must not assume a large radio queue.
 - The adapter must subscribe only to port 256 traffic intended for this application and pass the raw payload to bounded reassembly.
+- `MeshtasticCoreFramePort` maps the published 2.6.x `sendPacket` and `onPrivatePacket` surface without importing the GPL runtime into the core.
 - Region, frequency, duty-cycle, channel, and transmit-power configuration remain deployment responsibilities and must comply with local rules.
 
 ## Bitchat integration guardrails

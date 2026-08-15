@@ -39,7 +39,7 @@ Reassembly limits, frame MTU, timeout, pending sends, and accepted-ACK memory ar
 
 ## Remaining physical work
 
-1. Implement a Meshtastic `RawFramePort` with an official PhoneAPI SDK.
+1. Connect `MeshtasticCoreFramePort` to a pinned official BLE, serial, TCP, or HTTP transport and two physical radios.
 2. Persist receiver duplicate/ACK correlation atomically with durable custody.
 3. Exercise device queue backpressure, disconnects, reboots, loss, duplicate delivery, and reordering on two radios.
 4. Measure end-to-end timing so the bridge ACK timeout is appropriate for each modem preset and fragment count.
