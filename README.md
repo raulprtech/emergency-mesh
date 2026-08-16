@@ -60,6 +60,7 @@ Signatures demonstrate integrity and pseudonymous continuity, **not truth, autho
 - [Meshtastic SDK compatibility and serial bench](docs/MESHTASTIC_CORE_PORT.md)
 - [ACK and egress control messages](docs/CONTROL_MESSAGES.md)
 - [Offline mobile client](docs/MOBILE_CLIENT.md)
+- [Phone-to-command-center pilot](docs/PHONE_PILOT.md)
 - [Reference backend API](docs/REFERENCE_API.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)

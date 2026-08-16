@@ -1,14 +1,25 @@
+import { mkdirSync } from "node:fs";
 import { createServer } from "node:http";
+import { dirname, resolve } from "node:path";
 import { PUBLIC_AGGREGATION_POLICY } from "./backend/aggregation.ts";
 import { IngestAdmissionController, type AdmissionRejection } from "./backend/admission.ts";
+import { SqliteBackend } from "./backend/sqlite-backend.ts";
 import { createBackendAcknowledgement } from "./transports/ack.ts";
 import { mobileAsset } from "./mobile-client/assets.ts";
 import { deserializeEnvelope } from "./protocol/codec.ts";
 import { runVerticalSlice } from "./simulator/scenario.ts";
 import { mapHtml } from "./web/map.ts";
 
-const { backend } = await runVerticalSlice();
+function persistentBackend(path: string): SqliteBackend {
+  if (path !== ":memory:") mkdirSync(dirname(resolve(path)), { recursive: true });
+  return new SqliteBackend(path);
+}
+
+const databasePath = process.env.EMERGENCY_MESH_DATABASE_PATH?.trim();
+const backend = databasePath ? persistentBackend(databasePath) : (await runVerticalSlice()).backend;
 const port = Number(process.env.PORT ?? 8787);
+if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new Error("PORT must be an integer from 1 through 65535");
+const host = process.env.EMERGENCY_MESH_HOST?.trim() || "127.0.0.1";
 const ingestAdmission = new IngestAdmissionController({
   windowMs: Number(process.env.EMERGENCY_MESH_INGEST_WINDOW_SECONDS ?? 60) * 1_000,
   maximumGlobalRequests: Number(process.env.EMERGENCY_MESH_INGEST_GLOBAL_REQUESTS ?? 600),
@@ -52,7 +63,7 @@ const server = createServer((request, response) => {
     });
     return response.end(request.method === "HEAD" ? undefined : asset.body);
   }
-  if (request.method === "GET" && request.url === "/health") return json(response, 200, { status: "ok", protocolVersion: "0.1" });
+  if (request.method === "GET" && request.url === "/health") return json(response, 200, { status: "ok", protocolVersion: "0.1", storage: databasePath ? "sqlite" : "memory" });
   if (request.method === "GET" && request.url === "/api/events" && process.env.EMERGENCY_MESH_ENABLE_DEBUG_EVENTS === "1") return json(response, 200, backend.list());
   if (request.method === "GET" && request.url === "/api/areas") return json(response, 200, backend.publicAggregate(publicPolicy));
   if (request.method === "POST" && request.url === "/api/packets") {
@@ -90,4 +101,21 @@ const server = createServer((request, response) => {
   return json(response, 404, { error: "not found" });
 });
 
-server.listen(port, "127.0.0.1", () => console.log(`Emergency Map: http://127.0.0.1:${port}`));
+let shuttingDown = false;
+function shutdown(): void {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  server.close(() => {
+    if (backend instanceof SqliteBackend) backend.close();
+    process.exit(0);
+  });
+}
+process.once("SIGINT", shutdown);
+process.once("SIGTERM", shutdown);
+
+server.listen(port, host, () => {
+  const displayHost = host === "0.0.0.0" ? "127.0.0.1" : host;
+  console.log(`Emergency Map: http://${displayHost}:${port} (listening on ${host}; storage=${databasePath ? "sqlite" : "memory"})`);
+  if (!new Set(["127.0.0.1", "::1", "localhost"]).has(host)) console.warn("Network listener uses HTTP; place it behind trusted HTTPS before phone or public access");
+  if (publicPolicy.minimumGroupSize < 3) console.warn("Public aggregation threshold is below the privacy-preserving default of 3");
+});

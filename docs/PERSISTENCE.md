@@ -32,6 +32,8 @@ bridge.connectCustodyReceiver((envelope) =>
 
 `SqliteBackend` stores one immutable JSON report, the exact canonical CBOR bytes covered by its signature, and every arrival separately. The duplicate check and first insert run inside one immediate transaction, so concurrent ingests cannot create two semantic reports. Arrival evidence retains packet id, receipt time, signature result, and transport history.
 
+The reference HTTP server selects this backend when `EMERGENCY_MESH_DATABASE_PATH` is set, creates the parent directory when necessary, reports the storage mode through `/health`, and closes SQLite on `SIGINT` or `SIGTERM`. Without that variable it retains the seeded in-memory demonstration behavior.
+
 ```ts
 const backend = new SqliteBackend("backend.sqlite");
 const gateway = new Gateway("community-gateway", backend);

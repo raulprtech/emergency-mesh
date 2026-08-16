@@ -12,6 +12,7 @@ const files = new Map<string, { file: string; contentType: string }>([
   ["/mobile/sw.js", { file: "sw.js", contentType: "text/javascript; charset=utf-8" }],
   ["/mobile/styles.css", { file: "styles.css", contentType: "text/css; charset=utf-8" }],
   ["/mobile/manifest.webmanifest", { file: "manifest.webmanifest", contentType: "application/manifest+json; charset=utf-8" }],
+  ["/mobile/icon.svg", { file: "icon.svg", contentType: "image/svg+xml" }],
 ]);
 
 export function mobileAsset(path: string): { body: Buffer; contentType: string } | undefined {
