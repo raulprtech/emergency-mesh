@@ -26,7 +26,7 @@ Delivery states are intentionally narrow:
 - Received by a backend, without attention or assistance confirmation.
 - Expired without final confirmation.
 
-Foreground and background attempts share a Web Locks mutex when available, while backend idempotency remains the duplicate-ingest boundary. A failed background attempt rejects its sync task so the browser may schedule another opportunity. Browsers without Background Sync or Web Locks retain the existing open-app, manual, and online-event fallbacks. No identity private key is read by the worker because queued envelopes are already signed.
+HTTP 429 admission responses leave the report in `QUEUED`, persist a bounded `nextAttemptAt`, and suppress foreground and background retries until that time. Server guidance is capped locally at one hour and never extends beyond signed expiration. Foreground and background attempts share a Web Locks mutex when available, while backend idempotency remains the duplicate-ingest boundary. A failed background attempt rejects its sync task so the browser may schedule another opportunity. Browsers without Background Sync or Web Locks retain the existing open-app, manual, and online-event fallbacks. No identity private key is read by the worker because queued envelopes are already signed.
 
 Uncached API and asset requests fail honestly offline; only navigation within `/mobile/` may fall back to the cached application shell. The last synchronization error remains visible. HTTP acceptance includes explicit BACKEND evidence, which advances the local state to SYNCED.
 

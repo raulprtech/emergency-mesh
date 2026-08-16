@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { PUBLIC_AGGREGATION_POLICY } from "./backend/aggregation.ts";
+import { IngestAdmissionController, type AdmissionRejection } from "./backend/admission.ts";
 import { createBackendAcknowledgement } from "./transports/ack.ts";
 import { mobileAsset } from "./mobile-client/assets.ts";
 import { deserializeEnvelope } from "./protocol/codec.ts";
@@ -8,6 +9,12 @@ import { mapHtml } from "./web/map.ts";
 
 const { backend } = await runVerticalSlice();
 const port = Number(process.env.PORT ?? 8787);
+const ingestAdmission = new IngestAdmissionController({
+  windowMs: Number(process.env.EMERGENCY_MESH_INGEST_WINDOW_SECONDS ?? 60) * 1_000,
+  maximumGlobalRequests: Number(process.env.EMERGENCY_MESH_INGEST_GLOBAL_REQUESTS ?? 600),
+  maximumRequestsPerIdentity: Number(process.env.EMERGENCY_MESH_INGEST_IDENTITY_REQUESTS ?? 60),
+  maximumTrackedIdentities: Number(process.env.EMERGENCY_MESH_INGEST_MAX_IDENTITIES ?? 10_000),
+});
 const publicPolicy = {
   ...PUBLIC_AGGREGATION_POLICY,
   spatialPrecisionDecimals: Number(process.env.EMERGENCY_MESH_PUBLIC_SPATIAL_DECIMALS ?? PUBLIC_AGGREGATION_POLICY.spatialPrecisionDecimals),
@@ -17,9 +24,19 @@ const publicPolicy = {
 };
 backend.publicAggregate(publicPolicy);
 
-function json(response: import("node:http").ServerResponse, status: number, value: unknown): void {
-  response.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
+function json(response: import("node:http").ServerResponse, status: number, value: unknown, headers: Record<string, string> = {}): void {
+  response.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...headers });
   response.end(JSON.stringify(value));
+}
+
+function rateLimited(response: import("node:http").ServerResponse, decision: AdmissionRejection): void {
+  const retryAfterMs = decision.retryAfterMs;
+  json(response, 429, {
+    status: "RATE_LIMITED",
+    error: "ingest admission limit exceeded",
+    scope: decision.scope,
+    retryAfterMs,
+  }, { "retry-after": String(Math.max(1, Math.ceil(retryAfterMs / 1_000))) });
 }
 
 const server = createServer((request, response) => {
@@ -39,6 +56,8 @@ const server = createServer((request, response) => {
   if (request.method === "GET" && request.url === "/api/events" && process.env.EMERGENCY_MESH_ENABLE_DEBUG_EVENTS === "1") return json(response, 200, backend.list());
   if (request.method === "GET" && request.url === "/api/areas") return json(response, 200, backend.publicAggregate(publicPolicy));
   if (request.method === "POST" && request.url === "/api/packets") {
+    const requestAdmission = ingestAdmission.admitRequest();
+    if (!requestAdmission.allowed) { request.resume(); rateLimited(response, requestAdmission); return; }
     const chunks: Buffer[] = [];
     let receivedBytes = 0;
     let tooLarge = false;
@@ -51,6 +70,8 @@ const server = createServer((request, response) => {
       if (tooLarge) return json(response, 413, { status: "INVALID", error: "packet exceeds 65536 bytes" });
       try {
         const envelope = deserializeEnvelope(Buffer.concat(chunks));
+        const identityAdmission = ingestAdmission.admitIdentity(envelope.report.anonymousDeviceId);
+        if (!identityAdmission.allowed) return rateLimited(response, identityAdmission);
         const acknowledgedAt = Date.now();
         const result = backend.ingest(envelope, acknowledgedAt);
         const accepted = result.status === "ACCEPTED" || result.status === "DUPLICATE";

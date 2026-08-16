@@ -13,7 +13,7 @@
 - Published deterministic Ed25519/CBOR interoperability vector.
 - Bounded memory/SQLite queues with priority-safe eviction and honest custody rejection.
 - Exact signed-byte retention, configurable backend pruning, and declarative topology/timeline scenarios.
-- Configurable public spatial/time aggregation with low-count suppression and raw-event API disabled by default.
+- Configurable public spatial/time aggregation with low-count suppression and raw-event API disabled by default, plus bounded global/per-pseudonym ingest admission with explicit retry semantics and no false custody ACK.
 - Versioned CBOR ACK/egress control messages with freshness-based UNKNOWN, REPORTED, CONFIRMED, and STALE states, plus an optional canonical HMAC-SHA-256-128 wrapper with downgrade rejection for peer custody ACKs.
 - Installable mobile PWA with four primary actions plus third-party, last-seen, and person-found flows, including progressive one-shot Background Sync with serialized IndexedDB retries.
 - Offline IndexedDB custody, browser Ed25519 identity, deterministic CBOR interoperability, manual synchronization, and honest CREATED/QUEUED/FORWARDED/GATEWAY_FOUND/SYNCED/EXPIRED states.
