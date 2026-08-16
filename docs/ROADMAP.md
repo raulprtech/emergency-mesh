@@ -21,7 +21,7 @@
 - Versioned X25519/HKDF-SHA-256/AES-256-GCM protected payload with report-bound AAD, authenticated recipient policy, Node/browser interoperability, strict size limits, and zero-decryption public backend.
 - Versioned deterministic-CBOR MTU fragmentation with exact frame sizing, SHA-256 reassembly integrity, bounded memory/time/count, duplicate/conflict handling, custody-safe retry, and declarative 180-byte-link simulation.
 - Physical raw-frame boundary, Meshtastic private-app policy, active-SDK-compatible structural port, isolated exact-version serial bench and contract check, Bitchat/Meshtastic feasibility decision, and unicast reassembly-to-queue custody ACK bridge with bounded in-memory recovery and atomic restart-safe SQLite receipts.
-- Phone-pilot receiver mode with configurable network binding, durable SQLite ingest across restart, explicit low-threshold privacy warnings, and a documented trusted-HTTPS boundary.
+- Phone-pilot receiver mode with configurable network binding, durable SQLite ingest across restart, optional direct TLS, short-lived non-overwriting local certificate generation, explicit low-threshold privacy warnings, and a documented trusted-HTTPS boundary.
 
 ## Next: client hardening
 

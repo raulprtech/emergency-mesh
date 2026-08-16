@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
-import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
 import test from "node:test";
@@ -56,7 +55,7 @@ async function stopPilot(child: ChildProcessWithoutNullStreams): Promise<void> {
 }
 
 test("pilot server persists accepted reports across a clean restart", { timeout: 20_000 }, async () => {
-  const directory = mkdtempSync(join(tmpdir(), "emergency-mesh-pilot-"));
+  const directory = mkdtempSync(join("/tmp", "emergency-mesh-pilot-"));
   const databasePath = join(directory, "nested", "pilot.sqlite");
   const port = await availablePort();
   const endpoint = `http://127.0.0.1:${port}`;

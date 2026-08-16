@@ -1,10 +1,10 @@
 # Reference backend API
 
-The MVP server is intentionally small and in-memory. It documents the compatibility seam, not a production deployment.
+The MVP server is intentionally small and uses either a seeded in-memory backend or configured SQLite persistence. It documents the compatibility seam, not a production deployment.
 
 | Method | Path | Purpose |
 |---|---|---|
-| `GET` | `/health` | Protocol and process health. |
+| `GET` | `/health` | Health, protocol version, storage mode, and direct-HTTPS status. |
 | `POST` | `/api/packets` | Accept `application/cbor` encoded `EmergencyEnvelope`. |
 | `GET` | `/api/events` | Disabled by default; development-only raw reports when explicitly enabled. |
 | `GET` | `/api/areas` | Policy metadata plus coarse, bucketed, threshold-suppressed areas. |

@@ -18,6 +18,7 @@
     "test": "node --test tests/*.test.ts",
     "check": "node --test tests/*.test.ts && node src/simulator/demo.ts",
     "fuzz:cbor": "node examples/fuzz-cbor.ts",
+    "pilot:cert": "node scripts/generate-pilot-cert.mjs",
     "smoke:browser": "node examples/browser-smoke.mjs",
     "smoke:accessibility": "node examples/accessibility-smoke.mjs",
     "meshtastic:contract": "npm --prefix integrations/meshtastic-node-serial run contract",

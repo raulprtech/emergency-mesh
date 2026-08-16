@@ -27,13 +27,31 @@ Keep `EMERGENCY_MESH_ENABLE_DEBUG_EVENTS` disabled on a network-accessible insta
 
 ## HTTPS is mandatory for the phone
 
-The reference Node server intentionally speaks plain HTTP. Place it behind a trusted HTTPS reverse proxy or tunnel that forwards to `http://127.0.0.1:8787`. Open the resulting HTTPS origin on the phone:
+The receiver can terminate TLS directly for an isolated LAN pilot. First identify the exact IP address or DNS name that the phone will use. It must route to the WSL2 listener and remain stable for the exercise. Generate fresh, short-lived pilot material on the Ubuntu filesystem, never under `/mnt/c`:
+
+```bash
+npm run pilot:cert -- 192.0.2.10
+```
+
+Replace the documentation-only address with the real phone-visible address. The generator creates a 30-day local CA and a 7-day server certificate under `.data/pilot-tls`, refuses to overwrite existing material, and fails if the filesystem cannot enforce private-key permissions. Install only `.data/pilot-tls/ca-cert.pem` as a trusted local CA on the test phone. Never copy `ca-key.pem` or `server-key.pem` from the Ubuntu command center.
+
+Start the durable HTTPS receiver:
+
+```bash
+EMERGENCY_MESH_HOST=0.0.0.0 \
+EMERGENCY_MESH_DATABASE_PATH=.data/pilot.sqlite \
+EMERGENCY_MESH_TLS_CERT_PATH=.data/pilot-tls/server-cert.pem \
+EMERGENCY_MESH_TLS_KEY_PATH=.data/pilot-tls/server-key.pem \
+npm start
+```
+
+`GET /health` must return `"https":true`. Open the resulting HTTPS origin on the phone and confirm there is no certificate warning before installing:
 
 - `/mobile/` — installable user PWA.
 - `/` — public aggregate map.
 - `/health` — receiver readiness.
 
-Do not expose port 8787 directly to the public Internet. The HTTPS layer should terminate TLS, restrict administrative access, apply network-level request limits, and forward the original request body unchanged. A locally generated certificate works only after the phone trusts its issuing authority; an untrusted certificate is not sufficient for a reliable PWA, Service Worker, or geolocation test.
+Direct TLS does not make the receiver suitable for public Internet exposure. Keep this pilot on a trusted isolated network. A public deployment still needs a reviewed reverse proxy or tunnel, network-level limits, monitoring, domain validation, and an automatically renewed public certificate. Remove the temporary CA from the phone and securely delete its private key when the exercise ends.
 
 ## Privacy threshold
 

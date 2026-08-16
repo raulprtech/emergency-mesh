@@ -1,5 +1,6 @@
-import { mkdirSync } from "node:fs";
-import { createServer } from "node:http";
+import { mkdirSync, readFileSync } from "node:fs";
+import { createServer as createHttpServer } from "node:http";
+import { createServer as createHttpsServer } from "node:https";
 import { dirname, resolve } from "node:path";
 import { PUBLIC_AGGREGATION_POLICY } from "./backend/aggregation.ts";
 import { IngestAdmissionController, type AdmissionRejection } from "./backend/admission.ts";
@@ -20,6 +21,10 @@ const backend = databasePath ? persistentBackend(databasePath) : (await runVerti
 const port = Number(process.env.PORT ?? 8787);
 if (!Number.isInteger(port) || port < 1 || port > 65_535) throw new Error("PORT must be an integer from 1 through 65535");
 const host = process.env.EMERGENCY_MESH_HOST?.trim() || "127.0.0.1";
+const tlsCertificatePath = process.env.EMERGENCY_MESH_TLS_CERT_PATH?.trim();
+const tlsKeyPath = process.env.EMERGENCY_MESH_TLS_KEY_PATH?.trim();
+if (Boolean(tlsCertificatePath) !== Boolean(tlsKeyPath)) throw new Error("EMERGENCY_MESH_TLS_CERT_PATH and EMERGENCY_MESH_TLS_KEY_PATH must be configured together");
+const tlsEnabled = Boolean(tlsCertificatePath && tlsKeyPath);
 const ingestAdmission = new IngestAdmissionController({
   windowMs: Number(process.env.EMERGENCY_MESH_INGEST_WINDOW_SECONDS ?? 60) * 1_000,
   maximumGlobalRequests: Number(process.env.EMERGENCY_MESH_INGEST_GLOBAL_REQUESTS ?? 600),
@@ -50,7 +55,11 @@ function rateLimited(response: import("node:http").ServerResponse, decision: Adm
   }, { "retry-after": String(Math.max(1, Math.ceil(retryAfterMs / 1_000))) });
 }
 
-const server = createServer((request, response) => {
+const requestListener: import("node:http").RequestListener = (request, response) => {
+  response.setHeader("x-content-type-options", "nosniff");
+  response.setHeader("referrer-policy", "no-referrer");
+  response.setHeader("x-frame-options", "DENY");
+  if (tlsEnabled) response.setHeader("strict-transport-security", "max-age=86400");
   if (request.method === "GET" && request.url === "/mobile") { response.writeHead(302, { location: "/mobile/" }); return response.end(); }
   if ((request.method === "GET" || request.method === "HEAD") && request.url?.startsWith("/mobile/")) {
     const asset = mobileAsset(request.url);
@@ -63,7 +72,7 @@ const server = createServer((request, response) => {
     });
     return response.end(request.method === "HEAD" ? undefined : asset.body);
   }
-  if (request.method === "GET" && request.url === "/health") return json(response, 200, { status: "ok", protocolVersion: "0.1", storage: databasePath ? "sqlite" : "memory" });
+  if (request.method === "GET" && request.url === "/health") return json(response, 200, { status: "ok", protocolVersion: "0.1", storage: databasePath ? "sqlite" : "memory", https: tlsEnabled });
   if (request.method === "GET" && request.url === "/api/events" && process.env.EMERGENCY_MESH_ENABLE_DEBUG_EVENTS === "1") return json(response, 200, backend.list());
   if (request.method === "GET" && request.url === "/api/areas") return json(response, 200, backend.publicAggregate(publicPolicy));
   if (request.method === "POST" && request.url === "/api/packets") {
@@ -99,7 +108,11 @@ const server = createServer((request, response) => {
     return response.end(mapHtml);
   }
   return json(response, 404, { error: "not found" });
-});
+};
+
+const server = tlsEnabled
+  ? createHttpsServer({ cert: readFileSync(tlsCertificatePath!), key: readFileSync(tlsKeyPath!), minVersion: "TLSv1.2" }, requestListener)
+  : createHttpServer(requestListener);
 
 let shuttingDown = false;
 function shutdown(): void {
@@ -115,7 +128,8 @@ process.once("SIGTERM", shutdown);
 
 server.listen(port, host, () => {
   const displayHost = host === "0.0.0.0" ? "127.0.0.1" : host;
-  console.log(`Emergency Map: http://${displayHost}:${port} (listening on ${host}; storage=${databasePath ? "sqlite" : "memory"})`);
-  if (!new Set(["127.0.0.1", "::1", "localhost"]).has(host)) console.warn("Network listener uses HTTP; place it behind trusted HTTPS before phone or public access");
+  const scheme = tlsEnabled ? "https" : "http";
+  console.log(`Emergency Map: ${scheme}://${displayHost}:${port} (listening on ${host}; storage=${databasePath ? "sqlite" : "memory"})`);
+  if (!tlsEnabled && !new Set(["127.0.0.1", "::1", "localhost"]).has(host)) console.warn("Network listener uses HTTP; place it behind trusted HTTPS before phone or public access");
   if (publicPolicy.minimumGroupSize < 3) console.warn("Public aggregation threshold is below the privacy-preserving default of 3");
 });
