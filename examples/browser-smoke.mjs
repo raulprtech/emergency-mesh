@@ -1,8 +1,11 @@
 const debuggingPort = Number(process.argv[2] ?? 9222);
+const debuggingHost = process.argv[4] ?? "127.0.0.1";
 const targetUrl = process.argv[3] ?? "http://127.0.0.1:8787/mobile/";
 const marker = `offline-smoke-${Date.now()}`;
-const target = await fetch(`http://127.0.0.1:${debuggingPort}/json/new?${encodeURIComponent(targetUrl)}`, { method: "PUT" }).then((response) => response.json());
-const socket = new WebSocket(target.webSocketDebuggerUrl);
+const target = await fetch(`http://${debuggingHost}:${debuggingPort}/json/new?${encodeURIComponent(targetUrl)}`, { method: "PUT" }).then((response) => response.json());
+const debuggerUrl = new URL(target.webSocketDebuggerUrl);
+debuggerUrl.hostname = debuggingHost;
+const socket = new WebSocket(debuggerUrl);
 const pending = new Map();
 const diagnostics = [];
 let sequence = 0;
@@ -60,6 +63,7 @@ const online = await evaluate(`({
   serviceWorker: Boolean(navigator.serviceWorker.controller)
 })`);
 
+const backgroundSyncSupported = await evaluate(`navigator.serviceWorker.ready.then((registration) => "sync" in registration)`);
 await setOffline(true);
 await send("Page.reload", { ignoreCache: true });
 await wait(2_000);
@@ -97,10 +101,10 @@ const storedAfterReconnect = await stored();
 const queuedMarker = queuedOffline.find((item) => item.message === marker);
 const syncedMarker = storedAfterReconnect.find((item) => item.message === marker);
 
-console.log(JSON.stringify({ online, offlineShell, queuedMarker, afterReconnect, syncedMarker, diagnostics }, null, 2));
+console.log(JSON.stringify({ online, backgroundSyncSupported, offlineShell, queuedMarker, afterReconnect, syncedMarker, diagnostics }, null, 2));
 socket.close();
 if (
   diagnostics.length || online.actions !== 7 || online.language !== "en" || online.heading !== "What do you need to communicate?" || !online.serviceWorker ||
   offlineShell.actions !== 7 || offlineShell.language !== "en" || offlineShell.network !== "No Internet · offline mode" || !offlineShell.serviceWorker || !offlineShell.transportOffline ||
-  queuedMarker?.state !== "QUEUED" || syncedMarker?.state !== "SYNCED" || afterReconnect.formError
+  !["QUEUED", ...(backgroundSyncSupported ? ["SYNCED"] : [])].includes(queuedMarker?.state) || syncedMarker?.state !== "SYNCED" || afterReconnect.formError
 ) process.exitCode = 1;

@@ -1,4 +1,5 @@
-import { ACTIONS, createOutboxItem, synchronizeOutbox, validateClientInput } from "./core.js";
+import { ACTIONS, createOutboxItem, validateClientInput } from "./core.js";
+import { OUTBOX_SYNC_TAG, synchronizeOutboxExclusively } from "./background-sync.js";
 import { createBrowserIdentity, createUnsignedIdentity } from "./crypto.js";
 import { openClientDatabase } from "./idb.js";
 import { formatMessage, getCatalog, normalizeLocale } from "./i18n.js";
@@ -8,6 +9,8 @@ let identity = await db.getSetting("identity");
 let locale = normalizeLocale(await db.getSetting("locale") ?? navigator.language);
 let catalog = getCatalog(locale);
 let pendingLocation;
+let serviceWorkerRegistration;
+let composerTrigger;
 
 async function newIdentity() {
   try { return await createBrowserIdentity(); }
@@ -49,7 +52,8 @@ function applyLocale() {
   locationStatus();
 }
 
-function configureForm(action) {
+function configureForm(action, trigger) {
+  composerTrigger = trigger;
   byId("action").value = action;
   byId("composer-title").textContent = catalog.actions[action];
   byId("subject-field").classList.toggle("hidden", !["THIRD_PARTY", "LAST_SEEN", "PERSON_FOUND"].includes(action));
@@ -66,8 +70,18 @@ function configureForm(action) {
   byId("short-message").focus();
 }
 
-document.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", () => configureForm(button.dataset.action)));
-byId("close-composer").addEventListener("click", () => composer.classList.add("hidden"));
+function closeComposer() {
+  composer.classList.add("hidden");
+  composerTrigger?.focus();
+}
+
+document.querySelectorAll("[data-action]").forEach((button) => button.addEventListener("click", (event) => configureForm(button.dataset.action, event.currentTarget)));
+byId("close-composer").addEventListener("click", closeComposer);
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape" || composer.classList.contains("hidden")) return;
+  event.preventDefault();
+  closeComposer();
+});
 byId("language").addEventListener("change", async (event) => {
   locale = normalizeLocale(event.target.value);
   await db.setSetting("locale", locale);
@@ -82,6 +96,16 @@ byId("get-location").addEventListener("click", () => {
     locationStatus();
   }, () => { byId("location-status").textContent = catalog.locationFailed; }, { enableHighAccuracy: false, timeout: 8_000, maximumAge: 5 * 60_000 });
 });
+
+async function scheduleBackgroundSync() {
+  if (!("serviceWorker" in navigator)) return false;
+  try {
+    const registration = serviceWorkerRegistration ?? await navigator.serviceWorker.ready;
+    if (!("sync" in registration)) return false;
+    await registration.sync.register(OUTBOX_SYNC_TAG);
+    return true;
+  } catch { return false; }
+}
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -100,7 +124,8 @@ form.addEventListener("submit", async (event) => {
     if (errors.length) throw new Error(errors.join("; "));
     const item = await createOutboxItem(input, identity);
     await db.put(item);
-    form.reset(); composer.classList.add("hidden"); pendingLocation = undefined; await render();
+    await scheduleBackgroundSync();
+    form.reset(); closeComposer(); pendingLocation = undefined; await render();
     if (navigator.onLine) await sync();
   } catch (error) { byId("form-error").textContent = error instanceof Error ? error.message : catalog.createFailed; }
 });
@@ -125,7 +150,10 @@ async function render() {
 
 async function sync() {
   byId("sync").disabled = true;
-  try { await synchronizeOutbox(db); }
+  try {
+    const results = await synchronizeOutboxExclusively(db);
+    if (results.some((item) => item.state === "QUEUED")) await scheduleBackgroundSync();
+  }
   finally { byId("sync").disabled = false; await render(); }
 }
 byId("sync").addEventListener("click", sync);
@@ -135,5 +163,12 @@ byId("rotate-identity").addEventListener("click", async () => {
 });
 window.addEventListener("online", () => { networkStatus(); sync(); });
 window.addEventListener("offline", networkStatus);
-if ("serviceWorker" in navigator) navigator.serviceWorker.register("/mobile/sw.js");
+if ("serviceWorker" in navigator) {
+  try {
+    serviceWorkerRegistration = await navigator.serviceWorker.register("/mobile/sw.js", { type: "module" });
+    navigator.serviceWorker.addEventListener("message", (event) => {
+      if (event.data?.type === "OUTBOX_UPDATED") void render();
+    });
+  } catch { /* Offline reporting still works without service-worker support. */ }
+}
 applyLocale(); await render(); if (navigator.onLine) await sync();

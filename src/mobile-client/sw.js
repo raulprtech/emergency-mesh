@@ -1,7 +1,10 @@
-const CACHE = "emergency-mesh-mobile-v4";
+import { OUTBOX_SYNC_TAG, runBackgroundSync } from "./background-sync.js";
+
+const CACHE = "emergency-mesh-mobile-v6";
 const ASSETS = [
   "/mobile/", "/mobile/styles.css", "/mobile/app.js", "/mobile/core.js",
-  "/mobile/crypto.js", "/mobile/idb.js", "/mobile/i18n.js", "/mobile/protected.js", "/mobile/manifest.webmanifest",
+  "/mobile/crypto.js", "/mobile/idb.js", "/mobile/i18n.js", "/mobile/protected.js",
+  "/mobile/background-sync.js", "/mobile/manifest.webmanifest", "/mobile/icon.svg",
 ];
 
 self.addEventListener("install", (event) => event.waitUntil(
@@ -24,5 +27,13 @@ self.addEventListener("fetch", (event) => {
     const url = new URL(event.request.url);
     if (event.request.mode === "navigate" && url.origin === self.location.origin && url.pathname.startsWith("/mobile/")) return caches.match("/mobile/");
     throw new TypeError("Offline and resource is not cached");
+  }));
+});
+
+self.addEventListener("sync", (event) => {
+  if (event.tag !== OUTBOX_SYNC_TAG) return;
+  event.waitUntil(runBackgroundSync().then(async () => {
+    const clients = await self.clients.matchAll({ type: "window" });
+    for (const client of clients) client.postMessage({ type: "OUTBOX_UPDATED" });
   }));
 });

@@ -19,6 +19,8 @@ const transitions = {
   EXPIRED: new Set(),
 };
 
+export const MAX_BACKEND_RETRY_AFTER_MS = 60 * 60_000;
+
 export const DELIVERY_LABELS = {
   CREATED: "Creado localmente",
   QUEUED: "En cola; aún no hay confirmación de entrega",
@@ -116,6 +118,7 @@ export async function synchronizeOutbox(store, fetcher = globalThis.fetch, endpo
     if (current.envelope.expiresAt <= now) {
       const expired = transitionDelivery(current, "EXPIRED", now); await store.put(expired); results.push(expired); continue;
     }
+    if (Number.isSafeInteger(current.nextAttemptAt) && current.nextAttemptAt > now) { results.push(current); continue; }
     let item = current.state === "FORWARDED" || current.state === "GATEWAY_FOUND"
       ? transitionDelivery(current, "QUEUED", now)
       : current;
@@ -125,14 +128,26 @@ export async function synchronizeOutbox(store, fetcher = globalThis.fetch, endpo
     try {
       const response = await fetcher(endpoint, { method: "POST", headers: { "content-type": "application/cbor" }, body: canonicalCbor(item.envelope) });
       const outcome = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(outcome.error ?? outcome.errors?.join("; ") ?? "HTTP " + response.status);
+      if (!response.ok) {
+        const bodyRetryAfter = Number(outcome.retryAfterMs);
+        const headerRetryAfter = Number(response.headers?.get?.("retry-after")) * 1_000;
+        const requestedRetryAfter = Number.isSafeInteger(bodyRetryAfter) && bodyRetryAfter > 0 ? bodyRetryAfter
+          : Number.isSafeInteger(headerRetryAfter) && headerRetryAfter > 0 ? headerRetryAfter
+          : undefined;
+        const failure = new Error(outcome.error ?? outcome.errors?.join("; ") ?? "HTTP " + response.status);
+        if (response.status === 429 && requestedRetryAfter) failure.retryAfterMs = Math.min(requestedRetryAfter, MAX_BACKEND_RETRY_AFTER_MS);
+        throw failure;
+      }
       if (outcome.status !== "ACCEPTED" && outcome.status !== "DUPLICATE") throw new Error(outcome.status ?? "backend rejected packet");
       item = transitionDelivery(item, "GATEWAY_FOUND", now);
       item = transitionDelivery(item, "SYNCED", now, outcome.evidence);
       item.lastError = undefined;
+      item.nextAttemptAt = undefined;
     } catch (error) {
       item = transitionDelivery(item, "QUEUED", now);
       item.lastError = error instanceof Error ? error.message : "Error de sincronización";
+      const retryAfterMs = error && typeof error === "object" ? error.retryAfterMs : undefined;
+      item.nextAttemptAt = Number.isSafeInteger(retryAfterMs) && retryAfterMs > 0 ? Math.min(now + retryAfterMs, item.envelope.expiresAt) : undefined;
     }
     await store.put(item);
     results.push(item);
