@@ -2,7 +2,7 @@
 
 ## Completed: vertical slice v0.1
 
-- Immutable signed report plus mutable delivery envelope, with bounded canonical CBOR decoding and deterministic malformed-input fuzz coverage.
+- Immutable signed report plus mutable delivery envelope, with bounded canonical CBOR decoding and multi-seed deterministic malformed-input fuzz coverage in pull requests and scheduled CI.
 - Deterministic CBOR and readable JSON.
 - SELF, THIRD_PARTY, LAST_SEEN, and PERSON_FOUND semantics.
 - Prioritized store-and-forward, hop TTL, signed expiration, deduplication, retry backoff.

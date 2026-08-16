@@ -17,7 +17,7 @@ Assets include human safety information, precise locations, subject descriptions
 | Precise-location disclosure | Public API exposes coarse aggregates; protected payload uses authenticated X25519/HKDF/AES-GCM recipient encryption and is never decrypted by the public backend | Authenticated key distribution, isolated decryption service, access audit, short plaintext retention |
 | Linkability | No account required; pseudonymous device key | Key rotation policy and unlinkable emergency identities |
 | Compromised device/gateway | End-to-end report signature detects semantic changes; gateways have no protected-payload private keys | Platform key protection, authorized endpoint hardening, key rotation and revocation |
-| Malformed packet | Bounded codec, validation, MTU checks, allocation/depth/item ceilings, duplicate/prototype-safe maps, and 5,000-case seeded regression fuzzing | Continuous coverage-guided fuzzing, corpus exchange, and process-level resource isolation |
+| Malformed packet | Bounded codec, validation, MTU checks, allocation/depth/item ceilings, duplicate/prototype-safe maps, and a 5,000-case unit corpus, plus multi-seed scheduled mutation fuzzing | Coverage-guided fuzzing, corpus exchange, and process-level resource isolation |
 | Fragment injection or mixing | Full-payload SHA-256, digest-derived transfer id, strict frame parser, duplicate/conflict checks, bounded reassembly | Per-neighborhood admission quotas and transport-authenticated frame sessions |
 | Clock manipulation | Separate created, observed, location, receipt, and expiry times | Skew scoring; never silently rewrite source times |
 
