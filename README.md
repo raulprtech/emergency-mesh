@@ -29,7 +29,7 @@ If `node` is already on `PATH`, the equivalent commands are `npm test`, `npm run
 
 ## Current modules
 
-- `src/protocol`: v0.1 data model, deterministic CBOR/JSON codecs, Ed25519 pseudonymous identity, recipient-bound protected-payload encryption, and bounded MTU fragmentation/reassembly.
+- `src/protocol`: v0.1 data model, bounded deterministic CBOR/JSON codecs, Ed25519 pseudonymous identity, recipient-bound protected-payload encryption, and bounded MTU fragmentation/reassembly.
 - `src/routing`: deterministic, replaceable adapter selection and bounded critical multipath.
 - `src/storage`: bounded in-memory and SQLite store-and-forward queues with expiration, backoff, replay retention, priority-safe eviction, and atomic restart-safe custody ACK receipts.
 - `src/transports`: common adapter contract, direct mock/Internet links, a custody-safe fragmented small-MTU adapter, a physical raw-frame boundary, Meshtastic policy/SDK compatibility with an isolated serial bench, and a peer-custody bridge with optional durable receiver admission and downgrade-resistant HMAC-authenticated ACKs.
