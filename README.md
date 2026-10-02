@@ -63,6 +63,7 @@ Signatures demonstrate integrity and pseudonymous continuity, **not truth, autho
 - [Phone-to-command-center pilot](docs/PHONE_PILOT.md)
 - [Reference backend API](docs/REFERENCE_API.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Coluvi development plan for InnovaFest Mérida](docs/COLUVI_INNOVAFEST_DEVELOPMENT_PLAN.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Status

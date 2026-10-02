@@ -23,7 +23,20 @@
 - Physical raw-frame boundary, Meshtastic private-app policy, active-SDK-compatible structural port, isolated exact-version serial bench and contract check, Bitchat/Meshtastic feasibility decision, and unicast reassembly-to-queue custody ACK bridge with bounded in-memory recovery and atomic restart-safe SQLite receipts.
 - Phone-pilot receiver mode with configurable network binding, durable SQLite ingest across restart, optional direct TLS, short-lived non-overwriting local certificate generation, explicit low-threshold privacy warnings, and a documented trusted-HTTPS boundary.
 
-## Next: client hardening
+## Next: Coluvi bidirectional climate-resilience pilot
+
+The Coluvi master product document and the InnovaFest Mérida preparation now guide the next increment. See the [development plan](COLUVI_INNOVAFEST_DEVELOPMENT_PLAN.md) for scope, dependencies, acceptance tests, proposed contracts, and the conservative submission timeline.
+
+- Stabilize the existing trusted-HTTPS Android-to-Ubuntu WSL2 pilot.
+- Specify authorized CHECKIN_REQUEST, correlated SAFE/NEEDS_HELP responses, and operational notices without conflating them with routing ACKs.
+- Add durable command storage, scoped operator access, a verified mobile inbox, and honest requested/received/responded metrics.
+- Add a geographic aggregate view with local map fallback, while preserving privacy suppression and separating devices from people.
+- Demonstrate a fictional flood/refuge scenario through deterministic simulation and measured Android/LAN tests. Physical mesh remains unvalidated.
+- Freeze a reproducible prototype and record evidence for the climate-change category; this is adaptation/resilience, not disaster prediction or a production emergency service.
+
+These items are planned, not implemented. Native apps, responder credentials/matching, external hazard feeds, federation, and ecosystem integrations are later product stages, not prerequisites for this pilot.
+
+## Client hardening
 
 - Validate with screen readers, reduced-motion settings, low-end phones, and high-stress usability sessions.
 - Evaluate native secure-key storage without weakening the web fallback; progressive background transport is now implemented.
@@ -36,4 +49,4 @@
 4. Measure MTU, packet loss, reordering, background behavior, battery, custody acknowledgement, and practical range under recorded conditions.
 5. Validate authenticated shared-key provisioning, protected storage, rotation, and revocation on target devices.
 
-Wi-Fi Direct/Aware, LAN, SMS, satellite, digital radio, and other community transports remain later adapters. Kubernetes, Kafka, blockchain, machine-learning routing, responder verification, dispatch, government integration, and custom hardware remain out of scope.
+Physical Wi-Fi Direct/Aware, SMS, satellite, digital radio, and other community transports remain later adapters. The direct HTTPS phone pilot can use an existing LAN without proving mesh connectivity. Kubernetes, Kafka, blockchain, machine-learning routing, automatic dispatch, mandatory government integration, and custom hardware remain out of scope for this delivery. Optional responder credentials and external hazard sources belong to later Coluvi phases.
