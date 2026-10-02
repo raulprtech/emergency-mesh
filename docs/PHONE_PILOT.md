@@ -70,6 +70,8 @@ The server emits a warning whenever this threshold is below three. Never use the
 
 ## Test sequence
 
+For the dated Ubuntu preparation, current LAN addressing, and pending Samsung tests, see the [October pilot record](PILOT_20261002.md). Its network setup is not evidence of Android validation until the phone steps are completed.
+
 1. Open the HTTPS `/mobile/` URL and install the PWA.
 2. Create a fictional help report while online and verify the `SYNCED` state.
 3. Enable airplane mode, create another report, and verify that it remains locally queued.

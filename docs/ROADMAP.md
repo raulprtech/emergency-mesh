@@ -36,6 +36,8 @@ The Coluvi master product document and the InnovaFest Mérida preparation now gu
 
 These items are planned, not implemented. Native apps, responder credentials/matching, external hazard feeds, federation, and ecosystem integrations are later product stages, not prerequisites for this pilot.
 
+Hito 0 preparation is recorded in the [October Android pilot record](PILOT_20261002.md): refreshed non-overwriting TLS material, isolated pilot database, extended HTTPS restart/privacy coverage, and strict browser offline custody with the entire fixture backend stopped. Windows LAN forwarding and physical Samsung validation remain pending; the hito is not complete.
+
 ## Client hardening
 
 - Validate with screen readers, reduced-motion settings, low-end phones, and high-stress usability sessions.

@@ -51,6 +51,7 @@ function httpsJson(port: number, ca: Buffer, path: string, method = "GET", body?
       });
     });
     call.once("error", reject);
+    call.setTimeout(5_000, () => call.destroy(new Error("HTTPS pilot request timed out")));
     if (payload) call.write(payload);
     call.end();
   });
@@ -70,7 +71,7 @@ test("TLS certificate and key configuration must be paired", () => {
   assert.match(result.stderr, /TLS_CERT_PATH and EMERGENCY_MESH_TLS_KEY_PATH must be configured together/);
 });
 
-test("trusted pilot HTTPS accepts a signed report and exposes secure headers", { timeout: 20_000, skip: !opensslAvailable }, async () => {
+test("trusted pilot HTTPS preserves privacy and durable receipt across restart", { timeout: 20_000, skip: !opensslAvailable }, async () => {
   const directory = mkdtempSync(join("/tmp", "emergency-mesh-https-"));
   const tlsDirectory = join(directory, "tls");
   const databasePath = join(directory, "pilot.sqlite");
@@ -97,26 +98,40 @@ test("trusted pilot HTTPS accepts a signed report and exposes secure headers", {
     assert.match(refused.stderr, /Refusing to overwrite existing TLS material/);
 
     const port = await availablePort();
-    child = spawn(process.execPath, ["src/server.ts"], {
-      cwd: repository,
-      env: {
-        ...process.env,
-        PORT: String(port),
-        EMERGENCY_MESH_HOST: "127.0.0.1",
-        EMERGENCY_MESH_DATABASE_PATH: databasePath,
-        EMERGENCY_MESH_TLS_CERT_PATH: certificatePath,
-        EMERGENCY_MESH_TLS_KEY_PATH: keyPath,
-      },
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    let diagnostics = "";
-    child.stderr.setEncoding("utf8");
-    child.stderr.on("data", (chunk) => { diagnostics += chunk; });
-    await new Promise<void>((resolve, reject) => {
-      child!.stdout.setEncoding("utf8");
-      child!.stdout.on("data", (chunk) => { if (chunk.includes("https://127.0.0.1")) resolve(); });
-      child!.once("exit", (code) => reject(new Error(`HTTPS pilot exited before ready (${code}): ${diagnostics}`)));
-    });
+    const start = async () => {
+      child = spawn(process.execPath, ["src/server.ts"], {
+        cwd: repository,
+        env: {
+          ...process.env,
+          PORT: String(port),
+          EMERGENCY_MESH_HOST: "127.0.0.1",
+          EMERGENCY_MESH_DATABASE_PATH: databasePath,
+          EMERGENCY_MESH_TLS_CERT_PATH: certificatePath,
+          EMERGENCY_MESH_TLS_KEY_PATH: keyPath,
+          EMERGENCY_MESH_ENABLE_DEBUG_EVENTS: "0",
+          EMERGENCY_MESH_PUBLIC_MIN_GROUP_SIZE: "3",
+          EMERGENCY_MESH_PUBLIC_BUCKET_MINUTES: "60",
+        },
+        stdio: ["pipe", "pipe", "pipe"],
+      });
+      const running = child;
+      let diagnostics = "";
+      running.stderr.setEncoding("utf8");
+      running.stderr.on("data", (chunk) => { diagnostics += chunk; });
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(`HTTPS pilot startup timed out: ${diagnostics}`)), 5_000);
+        running.stdout.setEncoding("utf8");
+        running.stdout.on("data", (chunk) => {
+          if (chunk.includes("https://127.0.0.1")) { clearTimeout(timer); resolve(); }
+        });
+        running.once("error", (error) => { clearTimeout(timer); reject(error); });
+        running.once("exit", (code) => {
+          clearTimeout(timer);
+          reject(new Error(`HTTPS pilot exited before ready (${code}): ${diagnostics}`));
+        });
+      });
+    };
+    await start();
 
     const ca = readFileSync(caPath);
     const health = await httpsJson(port, ca, "/health");
@@ -125,13 +140,43 @@ test("trusted pilot HTTPS accepts a signed report and exposes secure headers", {
     assert.equal((health.body as { storage?: string }).storage, "sqlite");
     assert.equal(health.headers["strict-transport-security"], "max-age=86400");
     assert.equal(health.headers["x-content-type-options"], "nosniff");
+    await assert.rejects(httpsJson(port, Buffer.alloc(0), "/health"), /certificate|issuer|self.signed/i);
+    assert.equal((await httpsJson(port, ca, "/api/events")).status, 404);
+    const manifest = await httpsJson(port, ca, "/mobile/manifest.webmanifest");
+    assert.equal(manifest.status, 200);
+    assert.equal((manifest.body as { start_url?: string }).start_url, "/mobile/");
 
     const node = new SimulatedNode("https-phone", new DeterministicRoutingManager());
-    const envelope = node.create(makeReport({ eventId: "https-pilot-event" }));
+    const createdAt = Date.now();
+    const envelope = node.create(makeReport({ eventId: "https-pilot-event", createdAt }));
     const accepted = await httpsJson(port, ca, "/api/packets", "POST", serializeEnvelope(envelope));
     assert.equal(accepted.status, 202);
     assert.equal((accepted.body as { status?: string }).status, "ACCEPTED");
     assert.equal((accepted.body as { evidence?: { level?: string } }).evidence?.level, "BACKEND");
+    const suppressed = await httpsJson(port, ca, "/api/areas");
+    assert.deepEqual((suppressed.body as { areas?: unknown[] }).areas, []);
+    assert.equal((suppressed.body as { privacy: { minimumGroupSize: number } }).privacy.minimumGroupSize, 3);
+
+    for (const eventId of ["https-pilot-second", "https-pilot-third"]) {
+      const extra = node.create(makeReport({ eventId, createdAt }));
+      const response = await httpsJson(port, ca, "/api/packets", "POST", serializeEnvelope(extra));
+      assert.equal(response.status, 202);
+      assert.equal((response.body as { status?: string }).status, "ACCEPTED");
+    }
+    const visible = await httpsJson(port, ca, "/api/areas");
+    assert.equal((visible.body as { areas: { total: number }[] }).areas.reduce((sum, area) => sum + area.total, 0), 3);
+    await stop(child!);
+    child = undefined;
+    await start();
+    const restarted = await httpsJson(port, ca, "/health");
+    assert.equal((restarted.body as { storage?: string }).storage, "sqlite");
+    const duplicate = await httpsJson(port, ca, "/api/packets", "POST", serializeEnvelope(envelope));
+    assert.equal(duplicate.status, 202);
+    assert.equal((duplicate.body as { status?: string }).status, "DUPLICATE");
+    assert.equal((duplicate.body as { evidence?: { level?: string } }).evidence?.level, "BACKEND");
+    const retained = await httpsJson(port, ca, "/api/areas");
+    assert.equal((retained.body as { areas: { total: number }[] }).areas.reduce((sum, area) => sum + area.total, 0), 3);
+    assert.equal((await httpsJson(port, ca, "/api/events")).status, 404);
   } finally {
     if (child) await stop(child);
     rmSync(directory, { recursive: true, force: true });

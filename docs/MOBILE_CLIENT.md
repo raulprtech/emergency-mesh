@@ -55,3 +55,11 @@ This is deterministic regression coverage, not assistive-technology certificatio
 ## Verification
 
 Unit tests cover Background Sync retry and locking, every action mapping, person semantics, location reduction, deterministic CBOR compatibility, cross-runtime Ed25519 verification, valid state transitions, offline custody, ACK synchronization, expiration, catalog parity, and accessibility landmarks. `examples/browser-smoke.mjs` drives a real local Chromium session through online initialization, locale persistence, a service-worker reload with transport disabled, offline IndexedDB custody, and synchronization after reconnection.
+
+For strict offline evidence, use an unused loopback port and the managed fixture mode:
+
+```bash
+npm run smoke:browser -- 9222 http://127.0.0.1:8798/mobile/ 127.0.0.1 --managed-server
+```
+
+This starts its own in-memory fixture server, stops the entire backend during the offline stage, and restarts it before reconnection. A page-only network override does not necessarily isolate a Service Worker. The smoke now requires the new marker to remain `QUEUED` while offline; `SYNCED` is not accepted as proof of offline custody even when Background Sync is available. The managed mode accepts only explicit HTTP loopback targets, refuses occupied ports, cleans up its own child, and never stops or changes an existing pilot server. HTTP localhost is a secure context for this browser fixture, not a substitute for trusted HTTPS on an Android LAN origin.

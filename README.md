@@ -61,6 +61,7 @@ Signatures demonstrate integrity and pseudonymous continuity, **not truth, autho
 - [ACK and egress control messages](docs/CONTROL_MESSAGES.md)
 - [Offline mobile client](docs/MOBILE_CLIENT.md)
 - [Phone-to-command-center pilot](docs/PHONE_PILOT.md)
+- [Preparación del piloto Samsung de octubre](docs/PILOT_20261002.md)
 - [Reference backend API](docs/REFERENCE_API.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Coluvi development plan for InnovaFest Mérida](docs/COLUVI_INNOVAFEST_DEVELOPMENT_PLAN.md)
