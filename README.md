@@ -37,7 +37,7 @@ If `node` is already on `PATH`, the equivalent commands are `npm test`, `npm run
 - `src/gateway` and `src/backend`: semantics-preserving gateway, bounded ingest admission, deduplication, status projection, and policy-governed geographic/temporal aggregation.
 - `src/mobile-client`: installable offline PWA, browser Ed25519 identity, IndexedDB outbox, honest delivery states, and backend synchronization.
 - `src/web`: deliberately minimal public aggregate view.
-- `src/commands`: Coluvi domain-separated authority, frozen check-in recipients, private additive SQLite state, late-response history, and signed received/shown evidence. UI and authenticated API integration are still pending.
+- `src/commands`: explicitly configured Coluvi private API, domain-separated authority, operator sessions/CSRF, proof-of-possession enrollment, persistent scoped credentials, frozen recipients, additive SQLite state, late-response history and signed received/shown evidence. PWA inbox and operator UI are still pending.
 
 ## Safety boundary
 

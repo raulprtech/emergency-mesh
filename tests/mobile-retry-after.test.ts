@@ -39,7 +39,10 @@ test("mobile outbox honors bounded backend retry guidance without losing custody
   await synchronizeOutbox(store, async () => ({
     ok: true,
     status: 202,
-    json: async () => ({ status: "ACCEPTED" }),
+    json: async () => ({ status: "ACCEPTED", evidence: {
+      acknowledgementId: "retry-ack", level: "BACKEND", eventId: item.eventId, packetId: item.envelope.packetId,
+      issuerId: "backend", status: "STORED", acknowledgedAt: now + MAX_BACKEND_RETRY_AFTER_MS,
+    } }),
   }), "/api/packets", now + MAX_BACKEND_RETRY_AFTER_MS);
   const synced = await store.get(item.eventId);
   assert.equal(synced?.state, "SYNCED");

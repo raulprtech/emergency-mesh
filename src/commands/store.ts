@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { canonicalReportBytes } from "../protocol/identity.ts";
 import { validateEnvelope, type EmergencyEnvelope, type EmergencyReport } from "../protocol/types.ts";
@@ -15,6 +15,7 @@ export interface CheckinProjection {
   command: EmergencyReport;
   units: "devices";
   counts: { requested: number; received: number; shown: number; responded: number; safe: number; needsHelp: number; unknown: number; pending: number; late: number };
+  pagination: { offset: number; limit: number; total: number; hasMore: boolean };
   recipients: { deviceId: string; state: "SAFE" | "NEEDS_HELP" | "UNKNOWN" | "PENDING"; received: boolean; shown: boolean; history: { report: EmergencyReport; receivedAt: number; late: boolean }[] }[];
 }
 
@@ -54,6 +55,9 @@ export class ColuviStore {
       CREATE TABLE IF NOT EXISTS coluvi_audit (
         sequence INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT NOT NULL, subject_id TEXT NOT NULL, at INTEGER NOT NULL
       );
+      CREATE TABLE IF NOT EXISTS coluvi_credentials (
+        device_id TEXT PRIMARY KEY REFERENCES coluvi_participants(device_id), token_hash TEXT NOT NULL UNIQUE, expires_at INTEGER NOT NULL
+      );
     `);
   }
 
@@ -62,7 +66,7 @@ export class ColuviStore {
     if (!this.authorities.some((item) => !item.revoked && item.zones.includes(zoneId))) throw new Error("Unauthorized enrollment zone");
     if (!/^[A-Za-z0-9_-]{59}$/.test(publicKey)) throw new Error("Invalid Ed25519 public key");
     const bytes = Buffer.from(publicKey, "base64url");
-    if (bytes.length !== 44 || bytes.subarray(0, 12).toString("hex") !== "302a300506032b6570032100") throw new Error("Invalid Ed25519 public key");
+    if (bytes.length !== 44 || bytes.toString("base64url") !== publicKey || bytes.subarray(0, 12).toString("hex") !== "302a300506032b6570032100") throw new Error("Invalid Ed25519 public key");
     const deviceId = createHash("sha256").update(bytes).digest("base64url").slice(0, 22);
     const existing = this.participant(deviceId);
     if (existing) {
@@ -87,6 +91,29 @@ export class ColuviStore {
 
   participant(deviceId: string): ParticipantRow | undefined {
     return this.database.prepare("SELECT device_id, public_key, zone_id, active FROM coluvi_participants WHERE device_id=?").get(deviceId) as ParticipantRow | undefined;
+  }
+
+  /** Called only after successful one-use proof of possession, never by device id alone. */
+  grantCredential(deviceId: string, now = Date.now()): { token: string; expiresAt: number } {
+    if (!this.participant(deviceId)?.active || !Number.isSafeInteger(now) || now < 0) throw new Error("Invalid credential participant or time");
+    const token = randomBytes(32).toString("base64url"); const expiresAt = now + 7 * 24 * 60 * 60_000;
+    this.transaction(() => {
+      this.database.prepare("INSERT INTO coluvi_credentials(device_id, token_hash, expires_at) VALUES (?, ?, ?) ON CONFLICT(device_id) DO UPDATE SET token_hash=excluded.token_hash, expires_at=excluded.expires_at")
+        .run(deviceId, createHash("sha256").update(token).digest("hex"), expiresAt);
+      this.audit("CREDENTIAL_GRANTED", deviceId, now);
+    });
+    return { token, expiresAt };
+  }
+
+  authenticateCredential(header: string | undefined, now = Date.now()): ParticipantRow | undefined {
+    if (!header || !/^Bearer [A-Za-z0-9_-]{43}$/.test(header)) return undefined;
+    const hash = createHash("sha256").update(header.slice(7)).digest("hex");
+    return this.database.prepare(`SELECT p.device_id, p.public_key, p.zone_id, p.active FROM coluvi_credentials c JOIN coluvi_participants p ON p.device_id=c.device_id
+      WHERE c.token_hash=? AND c.expires_at>? AND p.active=1`).get(hash, now) as ParticipantRow | undefined;
+  }
+
+  recordAccess(action: "OPERATOR_LOGIN" | "OPERATOR_LOGIN_FAILED" | "OPERATOR_LOGOUT", now = Date.now()): void {
+    this.audit(action, "pilot-operator", now);
   }
 
   issue(report: EmergencyReport, now = Date.now()): "ACCEPTED" | "DUPLICATE" {
@@ -145,6 +172,8 @@ export class ColuviStore {
         if (!Buffer.from(canonicalReportBytes(original)).equals(Buffer.from(canonicalReportBytes(report))) || original.signature!.value !== report.signature!.value) throw new Error("Response id conflict");
         return { status: "DUPLICATE", eventId: report.eventId, signatureValid: true };
       }
+      const count = this.database.prepare("SELECT COUNT(*) AS n FROM coluvi_responses WHERE command_id=? AND device_id=?").get(command.eventId, report.anonymousDeviceId) as { n: number };
+      if (count.n >= 100) throw new Error("Response history capacity exceeded");
       this.database.prepare("INSERT INTO coluvi_responses(event_id, command_id, device_id, nonce, report_json, received_at, observed_at, created_at, late) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .run(report.eventId, command.eventId, report.anonymousDeviceId, report.nonce, JSON.stringify(report), now, report.observedAt, report.createdAt, now >= commandPayload.promptUntil ? 1 : 0);
       this.audit("CHECKIN_RESPONSE", report.eventId, now);
@@ -175,12 +204,27 @@ export class ColuviStore {
     });
   }
 
-  projection(commandId: string, now = Date.now()): CheckinProjection {
+  projection(commandId: string, now = Date.now(), offset = 0, limit = 50): CheckinProjection {
+    if (!Number.isSafeInteger(offset) || offset < 0 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new Error("Invalid projection pagination");
     const command = this.command(commandId);
     if (!command) throw new Error("Unknown command");
     const payload = command.extensions!.coluvi as CheckinPayload;
-    const counts = { requested: 0, received: 0, shown: 0, responded: 0, safe: 0, needsHelp: 0, unknown: 0, pending: 0, late: 0 };
-    const rows = this.database.prepare("SELECT device_id FROM coluvi_recipients WHERE command_id=? ORDER BY device_id").all(commandId) as unknown as { device_id: string }[];
+    // Count all intended recipients in SQL, but return only a bounded page of private histories.
+    const totals = this.database.prepare(`WITH latest AS (
+      SELECT device_id, late, json_extract(report_json, '$.extensions.coluvi.status') AS state,
+        ROW_NUMBER() OVER (PARTITION BY device_id ORDER BY observed_at DESC, created_at DESC, event_id DESC) AS ordinal
+      FROM coluvi_responses WHERE command_id=?
+    ) SELECT COUNT(*) AS requested,
+      COALESCE(SUM(EXISTS(SELECT 1 FROM coluvi_receipts e WHERE e.command_id=r.command_id AND e.device_id=r.device_id AND e.kind='RECEIVED')),0) AS received,
+      COALESCE(SUM(EXISTS(SELECT 1 FROM coluvi_receipts e WHERE e.command_id=r.command_id AND e.device_id=r.device_id AND e.kind='SHOWN')),0) AS shown,
+      COALESCE(SUM(l.state IS NOT NULL),0) AS responded,
+      COALESCE(SUM(l.state='SAFE'),0) AS safe, COALESCE(SUM(l.state='NEEDS_HELP'),0) AS needsHelp,
+      COALESCE(SUM(l.state IS NULL AND ? >= ?),0) AS unknown, COALESCE(SUM(l.state IS NULL AND ? < ?),0) AS pending,
+      COALESCE(SUM(l.late),0) AS late
+      FROM coluvi_recipients r LEFT JOIN latest l ON l.device_id=r.device_id AND l.ordinal=1 WHERE r.command_id=?`)
+      .get(commandId, now, payload.promptUntil, now, payload.promptUntil, commandId) as CheckinProjection["counts"];
+    const counts = { ...totals };
+    const rows = this.database.prepare("SELECT device_id FROM coluvi_recipients WHERE command_id=? ORDER BY device_id LIMIT ? OFFSET ?").all(commandId, limit, offset) as unknown as { device_id: string }[];
     const recipients: CheckinProjection["recipients"] = rows.map(({ device_id }) => {
       const responses = this.database.prepare("SELECT * FROM coluvi_responses WHERE command_id=? AND device_id=? ORDER BY observed_at, created_at, event_id").all(commandId, device_id) as unknown as ResponseRow[];
       const receipts = this.database.prepare("SELECT kind FROM coluvi_receipts WHERE command_id=? AND device_id=?").all(commandId, device_id) as unknown as { kind: string }[];
@@ -189,18 +233,9 @@ export class ColuviStore {
       const state = latest ? (latest.report.extensions!.coluvi as { status: "SAFE" | "NEEDS_HELP" }).status : now >= payload.promptUntil ? "UNKNOWN" : "PENDING";
       const received = receipts.some((row) => row.kind === "RECEIVED");
       const shown = receipts.some((row) => row.kind === "SHOWN");
-      counts.requested += 1;
-      if (received) counts.received += 1;
-      if (shown) counts.shown += 1;
-      if (latest) counts.responded += 1;
-      if (latest?.late) counts.late += 1;
-      if (state === "SAFE") counts.safe += 1;
-      if (state === "NEEDS_HELP") counts.needsHelp += 1;
-      if (state === "UNKNOWN") counts.unknown += 1;
-      if (state === "PENDING") counts.pending += 1;
       return { deviceId: device_id, state, received, shown, history };
     });
-    return { command, units: "devices", counts, recipients };
+    return { command, units: "devices", counts, recipients, pagination: { offset, limit, total: counts.requested, hasMore: offset + rows.length < counts.requested } };
   }
 
   prune(now = Date.now(), retentionMs = 30 * 24 * 60 * 60_000): number {

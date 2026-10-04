@@ -111,6 +111,16 @@ export class MemoryClientStore {
   async remove(eventId) { this.items.delete(eventId); }
 }
 
+export function validBackendEvidence(evidence, item, outcomeStatus, now = Date.now()) {
+  return Boolean(evidence && evidence.level === "BACKEND"
+    && evidence.eventId === item.eventId && evidence.packetId === item.envelope.packetId
+    && typeof evidence.acknowledgementId === "string" && evidence.acknowledgementId.length > 0 && evidence.acknowledgementId.length <= 256
+    && typeof evidence.issuerId === "string" && evidence.issuerId.length > 0 && evidence.issuerId.length <= 80
+    && Number.isSafeInteger(evidence.acknowledgedAt) && evidence.acknowledgedAt >= item.envelope.report.createdAt
+    && evidence.acknowledgedAt < item.envelope.expiresAt && evidence.acknowledgedAt <= now + 5 * 60_000
+    && evidence.status === (outcomeStatus === "DUPLICATE" ? "DUPLICATE" : "STORED"));
+}
+
 export async function synchronizeOutbox(store, fetcher = globalThis.fetch, endpoint = "/api/packets", now = Date.now()) {
   const results = [];
   for (const current of await store.list()) {
@@ -139,6 +149,7 @@ export async function synchronizeOutbox(store, fetcher = globalThis.fetch, endpo
         throw failure;
       }
       if (outcome.status !== "ACCEPTED" && outcome.status !== "DUPLICATE") throw new Error(outcome.status ?? "backend rejected packet");
+      if (!validBackendEvidence(outcome.evidence, item, outcome.status, now)) throw new Error("Missing or mismatched backend custody evidence");
       item = transitionDelivery(item, "GATEWAY_FOUND", now);
       item = transitionDelivery(item, "SYNCED", now, outcome.evidence);
       item.lastError = undefined;

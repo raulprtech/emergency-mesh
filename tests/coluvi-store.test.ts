@@ -44,6 +44,9 @@ test("issuance freezes recipients, scopes inbox, rejects replay and derives UNKN
     assert.equal(overdue.counts.unknown, 1);
     assert.equal(overdue.recipients[0].received, false);
     assert.equal(overdue.units, "devices");
+    assert.throws(() => store.projection("request-1", now, 0, 101), /pagination/);
+    const beyond = store.projection("request-1", now, 1, 1);
+    assert.equal(beyond.recipients.length, 0); assert.equal(beyond.counts.requested, 1); assert.equal(beyond.pagination.total, 1);
     assert.throws(() => store.issue(createCheckinCommand(issuer, authority, {
       commandId: "request-2", zoneId: "north", incidentRef: "flood-drill", nonce: "nonce-request-1", issuedAt: now, promptUntil: now + 60_000, responseUntil: now + 120_000,
     }), now), /UNIQUE/);
@@ -168,5 +171,22 @@ test("receipt evidence is signed, scoped, deduplicated and distinct from respons
     assert.throws(() => store.acceptReceipt(conflicting, a.anonymousDeviceId, now + 3_000), /conflict/);
     await assert.rejects(createCheckinReceipt(makeCommand(), "SHOWN", a, now + 60_000), /expired/);
     assert.throws(() => store.acceptReceipt(shown, a.anonymousDeviceId, now + 120_000), /unauthorized/);
+  } finally { store.close(); }
+});
+
+test("response history capacity rejects extra writes but retains duplicate acknowledgements and current state", async () => {
+  const store = new ColuviStore(":memory:", [authority]);
+  try {
+    const a = await createBrowserIdentity(); store.enroll(publicKey(a), "north", now); store.issue(makeCommand(), now);
+    let last;
+    for (let index = 0; index < 100; index += 1) {
+      last = await createCheckinResponse(makeCommand(), index % 2 ? "SAFE" : "NEEDS_HELP", a, now + index + 1);
+      assert.equal(store.acceptResponse(last.envelope, now + 1_000).status, "ACCEPTED");
+    }
+    const extra = await createCheckinResponse(makeCommand(), "NEEDS_HELP", a, now + 200);
+    assert.throws(() => store.acceptResponse(extra.envelope, now + 1_000), /capacity/);
+    assert.equal(store.acceptResponse(last!.envelope, now + 1_000).status, "DUPLICATE");
+    const view = store.projection("request-1", now + 1_000);
+    assert.equal(view.counts.responded, 1); assert.equal(view.counts.safe, 1); assert.equal(view.recipients[0].history.length, 100);
   } finally { store.close(); }
 });

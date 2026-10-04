@@ -10,6 +10,8 @@ import { mobileAsset } from "./mobile-client/assets.ts";
 import { deserializeEnvelope } from "./protocol/codec.ts";
 import { runVerticalSlice } from "./simulator/scenario.ts";
 import { mapHtml } from "./web/map.ts";
+import { loadColuviConfiguration } from "./commands/config.ts";
+import { ColuviApi } from "./commands/api.ts";
 
 function persistentBackend(path: string): SqliteBackend {
   if (path !== ":memory:") mkdirSync(dirname(resolve(path)), { recursive: true });
@@ -25,6 +27,9 @@ const tlsCertificatePath = process.env.EMERGENCY_MESH_TLS_CERT_PATH?.trim();
 const tlsKeyPath = process.env.EMERGENCY_MESH_TLS_KEY_PATH?.trim();
 if (Boolean(tlsCertificatePath) !== Boolean(tlsKeyPath)) throw new Error("EMERGENCY_MESH_TLS_CERT_PATH and EMERGENCY_MESH_TLS_KEY_PATH must be configured together");
 const tlsEnabled = Boolean(tlsCertificatePath && tlsKeyPath);
+const coluviConfigPath = process.env.EMERGENCY_MESH_COLUVI_CONFIG_PATH?.trim();
+if (coluviConfigPath && !databasePath) throw new Error("Coluvi requires explicit SQLite storage");
+const coluvi = coluviConfigPath ? new ColuviApi(databasePath!, loadColuviConfiguration(coluviConfigPath, host, tlsEnabled)) : undefined;
 const ingestAdmission = new IngestAdmissionController({
   windowMs: Number(process.env.EMERGENCY_MESH_INGEST_WINDOW_SECONDS ?? 60) * 1_000,
   maximumGlobalRequests: Number(process.env.EMERGENCY_MESH_INGEST_GLOBAL_REQUESTS ?? 600),
@@ -60,6 +65,7 @@ const requestListener: import("node:http").RequestListener = (request, response)
   response.setHeader("referrer-policy", "no-referrer");
   response.setHeader("x-frame-options", "DENY");
   if (tlsEnabled) response.setHeader("strict-transport-security", "max-age=86400");
+  if (coluvi?.handles(request.url)) { void coluvi.handle(request, response); return; }
   if (request.method === "GET" && request.url === "/mobile") { response.writeHead(302, { location: "/mobile/" }); return response.end(); }
   if ((request.method === "GET" || request.method === "HEAD") && request.url?.startsWith("/mobile/")) {
     const asset = mobileAsset(request.url);
@@ -90,11 +96,15 @@ const requestListener: import("node:http").RequestListener = (request, response)
       if (tooLarge) return json(response, 413, { status: "INVALID", error: "packet exceeds 65536 bytes" });
       try {
         const envelope = deserializeEnvelope(Buffer.concat(chunks));
-        // Fail closed until the authenticated Coluvi service is explicitly configured.
-        if (envelope.report.eventType.startsWith("x-coluvi-")) return json(response, 400, { status: "INVALID", error: "Coluvi operational packets require the private command service" });
         const identityAdmission = ingestAdmission.admitIdentity(envelope.report.anonymousDeviceId);
         if (!identityAdmission.allowed) return rateLimited(response, identityAdmission);
         const acknowledgedAt = Date.now();
+        if (envelope.report.eventType.startsWith("x-coluvi-")) {
+          if (!coluvi) return json(response, 400, { status: "INVALID", error: "Coluvi operational packets require the private command service" });
+          // Signed responses remain transport-independent; inbox and receipts require scoped credentials.
+          try { return json(response, 202, coluvi.acceptPacket(envelope, acknowledgedAt)); }
+          catch { return json(response, 400, { status: "INVALID", error: "Invalid or unauthorized Coluvi response" }); }
+        }
         const result = backend.ingest(envelope, acknowledgedAt);
         const accepted = result.status === "ACCEPTED" || result.status === "DUPLICATE";
         const evidence = accepted ? createBackendAcknowledgement("reference-backend", envelope, acknowledgedAt, result.status === "DUPLICATE") : undefined;
@@ -121,6 +131,7 @@ function shutdown(): void {
   if (shuttingDown) return;
   shuttingDown = true;
   server.close(() => {
+    coluvi?.close();
     if (backend instanceof SqliteBackend) backend.close();
     process.exit(0);
   });
