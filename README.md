@@ -35,9 +35,9 @@ If `node` is already on `PATH`, the equivalent commands are `npm test`, `npm run
 - `src/transports`: common adapter contract, direct mock/Internet links, a custody-safe fragmented small-MTU adapter, a physical raw-frame boundary, Meshtastic policy/SDK compatibility with an isolated serial bench, and a peer-custody bridge with optional durable receiver admission and downgrade-resistant HMAC-authenticated ACKs.
 - `src/simulator`: virtual nodes and the end-to-end connectivity-loss scenario.
 - `src/gateway` and `src/backend`: semantics-preserving gateway, bounded ingest admission, deduplication, status projection, and policy-governed geographic/temporal aggregation.
-- `src/mobile-client`: installable offline PWA, browser Ed25519 identity, IndexedDB outbox, honest delivery states, and backend synchronization.
-- `src/web`: deliberately minimal public aggregate view.
-- `src/commands`: explicitly configured Coluvi private API, domain-separated authority, operator sessions/CSRF, proof-of-possession enrollment, persistent scoped credentials, frozen recipients, additive SQLite state, late-response history and signed received/shown evidence. PWA inbox and operator UI are still pending.
+- `src/mobile-client`: installable bilingual PWA, browser Ed25519 identity, additive IndexedDB migration, verified Coluvi enrollment/inbox, atomic offline check-in response custody and correlated backend synchronization.
+- `src/web`: public aggregate view plus a separately configured operator panel, with no private content before login and no private browser cache.
+- `src/commands`: explicitly configured Coluvi private API, domain-separated authority, operator sessions/CSRF, proof-of-possession enrollment, persistent scoped credentials, frozen recipients, additive SQLite state, late-response history and signed received/shown evidence.
 
 ## Safety boundary
 
@@ -67,8 +67,11 @@ Signatures demonstrate integrity and pseudonymous continuity, **not truth, autho
 - [Roadmap](docs/ROADMAP.md)
 - [Coluvi development plan for InnovaFest Mérida](docs/COLUVI_INNOVAFEST_DEVELOPMENT_PLAN.md)
 - [Coluvi check-in contract and persistence decision](docs/adr/0002-coluvi-checkin-contract.md)
+- [Coluvi bidirectional demonstration and verification](docs/COLUVI_DEMO.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Status
 
 The simulated vertical slice and bilingual offline mobile PWA are implemented and tested with progressive Background Sync, focus restoration, and real Chromium offline and constrained-mobile accessibility smoke tests. Meshtastic now has a researched raw-frame policy, a structural active-SDK-compatible port and pinned serial bench, and a custody bridge with atomic SQLite custody/ACK recovery across restart, but has not been tested on physical hardware; no physical BLE, Bitchat, LoRa, Wi-Fi, or SMS integration exists yet.
+
+The configured Coluvi panel and mobile inbox now complete an authorized check-in round trip in real Chromium, including offline response, window reopening and backend restart. Thirty seeded fictional flood cycles reuse the actual contracts, routing and SQLite queues; their metrics are virtual, not physical measurements. See the [demo guide](docs/COLUVI_DEMO.md). The latest Ubuntu suite passed 166 tests; physical Samsung/LAN validation, a new geographic map and operational notices remain pending.

@@ -50,6 +50,15 @@ small, .muted { display: block; color: #59554f; font-weight: 400; margin-top: 5p
 .state { margin: 5px 0; color: #3f474d; }
 .meta { font-size: .8rem; color: #5d5d5d; }
 .empty { padding: 20px 0; color: #555; }
+.checkin-item { border-top: 1px solid var(--line); padding: 16px 0; overflow-wrap: anywhere; }
+.checkin-item h3 { margin: 0 0 8px; }
+.checkin-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.checkin-actions button { border: 0; border-radius: 10px; padding: 14px; color: #fff; font-weight: 700; }
+.pilot-consent { display: flex; gap: 10px; align-items: start; font-weight: 400; }
+.pilot-consent input { width: 24px; height: 24px; margin: 0; flex-shrink: 0; }
+summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-weight: 700; }
+#pilot-setup p { overflow-wrap: anywhere; }
+#pilot-trust-file { min-width: 0; }
 .quiet { border: 0; text-decoration: underline; padding: 8px; background: transparent; }
 .skip-link { position: fixed; z-index: 10; left: 12px; top: 12px; transform: translateY(-180%); background: #fff; color: var(--ink); border: 3px solid var(--focus); border-radius: 8px; padding: 10px; }
 .skip-link:focus { transform: none; }

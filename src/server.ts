@@ -12,6 +12,7 @@ import { runVerticalSlice } from "./simulator/scenario.ts";
 import { mapHtml } from "./web/map.ts";
 import { loadColuviConfiguration } from "./commands/config.ts";
 import { ColuviApi } from "./commands/api.ts";
+import { operatorAsset } from "./web/operator/assets.ts";
 
 function persistentBackend(path: string): SqliteBackend {
   if (path !== ":memory:") mkdirSync(dirname(resolve(path)), { recursive: true });
@@ -66,6 +67,17 @@ const requestListener: import("node:http").RequestListener = (request, response)
   response.setHeader("x-frame-options", "DENY");
   if (tlsEnabled) response.setHeader("strict-transport-security", "max-age=86400");
   if (coluvi?.handles(request.url)) { void coluvi.handle(request, response); return; }
+  if (coluvi && request.method === "GET" && request.url === "/command-center") { response.writeHead(302, { location: "/command-center/", "cache-control": "no-store" }); return response.end(); }
+  if (coluvi && (request.method === "GET" || request.method === "HEAD") && request.url?.startsWith("/command-center/")) {
+    const asset = operatorAsset(request.url);
+    if (!asset) return json(response, 404, { error: "not found" });
+    response.writeHead(200, {
+      "content-type": asset.contentType, "cache-control": "no-store",
+      "content-security-policy": "default-src 'none'; connect-src 'self'; style-src 'self'; script-src 'self'; img-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+      "permissions-policy": "geolocation=(), camera=(), microphone=()",
+    });
+    return response.end(request.method === "HEAD" ? undefined : asset.body);
+  }
   if (request.method === "GET" && request.url === "/mobile") { response.writeHead(302, { location: "/mobile/" }); return response.end(); }
   if ((request.method === "GET" || request.method === "HEAD") && request.url?.startsWith("/mobile/")) {
     const asset = mobileAsset(request.url);

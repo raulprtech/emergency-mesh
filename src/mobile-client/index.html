@@ -78,6 +78,25 @@
       </form>
     </section>
 
+    <section class="panel" aria-labelledby="inbox-title">
+      <div class="panel-heading"><h2 id="inbox-title" data-i18n="pilotInbox">Solicitudes del centro</h2><button id="pilot-refresh" class="outline" data-i18n="pilotRefresh">Consultar solicitudes</button></div>
+      <p data-i18n="pilotLimits" class="muted">SIMULACRO. Recibe solicitudes solo mientras esta aplicación esté abierta y tenga una ruta al centro.</p>
+      <p id="pilot-status" role="status"></p>
+      <div id="inbox-list" aria-live="polite"></div>
+      <details id="pilot-setup">
+        <summary data-i18n="pilotSetup">Inscribirme en el piloto Coluvi</summary>
+        <p data-i18n="pilotTrustHelp">Importa únicamente mobile-trust.json y verifica la huella de la autoridad por otro canal. No importes la configuración privada ni la contraseña del operador.</p>
+        <form id="pilot-enrollment-form">
+          <label><span data-i18n="pilotTrustFile">Archivo público de confianza</span><input id="pilot-trust-file" type="file" accept="application/json,.json" required></label>
+          <label><span data-i18n="pilotFingerprint">Huella SHA-256 de la autoridad verificada</span><input id="pilot-fingerprint" autocomplete="off" autocapitalize="none" spellcheck="false" minlength="64" maxlength="64" required></label>
+          <label><span data-i18n="pilotZone">Zona ficticia de participación</span><input id="pilot-zone" autocomplete="off" maxlength="80" required></label>
+          <label><span data-i18n="pilotCode">Código de inscripción</span><input id="pilot-code" type="password" autocomplete="off" maxlength="512" required></label>
+          <label class="pilot-consent"><input id="pilot-consent" type="checkbox" required><span data-i18n="pilotConsent">Acepto participar en este simulacro con mi identidad pseudónima, sin GPS ni datos personales en el check-in.</span></label>
+          <button id="pilot-enroll" type="submit" class="submit" data-i18n="pilotEnroll">Verificar e inscribirme</button>
+        </form>
+      </details>
+    </section>
+
     <section class="outbox" aria-labelledby="outbox-title">
       <div class="panel-heading"><div><span class="eyebrow" data-i18n="device">Dispositivo</span><h2 id="outbox-title" data-i18n="savedReports">Reportes guardados</h2></div><button id="sync" class="outline" data-i18n="sync">Intentar sincronizar</button></div>
       <p id="identity-status" class="muted"></p>

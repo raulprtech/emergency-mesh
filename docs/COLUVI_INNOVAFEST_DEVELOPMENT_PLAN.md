@@ -4,6 +4,10 @@ Preparado el 2 de octubre de 2026. Este plan organiza el trabajo pendiente para 
 
 La referencia de producto es `Coluvi_documento_maestro_v0.1.md`, proporcionada por Raúl, especialmente sus secciones 6, 9, 11, 16, 19, 24 y 25. Este documento concreta su siguiente etapa, sin declarar terminado el producto completo ni autorizar registros, contactos, compras o despliegues externos.
 
+## Avance verificado del bloque autónomo
+
+El 4 de octubre quedó implementado y verificado el ciclo de software autorizado: inscripción y bandeja en la PWA, respuesta mínima offline, recuperación al reabrir y sincronizar, panel privado y treinta ciclos ficticios con pérdidas, duplicados y reinicios. Pasaron 166 pruebas y el recorrido completo en Chromium, además de las regresiones previas de reporte offline y accesibilidad. La [guía de demostración](COLUVI_DEMO.md) contiene comandos, métricas y límites. Este avance no completa los hitos físicos ni la preparación de la postulación: siguen pendientes Samsung/LAN, mapa geográfico nuevo, avisos y evidencia presencial.
+
 ## Objetivo de la entrega
 
 Demostrar dos recorridos reproducibles:

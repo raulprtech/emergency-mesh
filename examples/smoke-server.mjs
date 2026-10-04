@@ -32,6 +32,7 @@ export function createManagedSmokeServer(targetUrl) {
           PORT: String(port),
           EMERGENCY_MESH_HOST: "127.0.0.1",
           EMERGENCY_MESH_DATABASE_PATH: "",
+          EMERGENCY_MESH_COLUVI_CONFIG_PATH: "",
           EMERGENCY_MESH_TLS_CERT_PATH: "",
           EMERGENCY_MESH_TLS_KEY_PATH: "",
           EMERGENCY_MESH_ENABLE_DEBUG_EVENTS: "0",

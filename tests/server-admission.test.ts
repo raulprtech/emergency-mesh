@@ -30,6 +30,11 @@ test("HTTP ingest rate limits never produce false custody evidence", { timeout: 
     env: {
       ...process.env,
       PORT: String(port),
+      EMERGENCY_MESH_HOST: "127.0.0.1",
+      EMERGENCY_MESH_DATABASE_PATH: "",
+      EMERGENCY_MESH_COLUVI_CONFIG_PATH: "",
+      EMERGENCY_MESH_TLS_CERT_PATH: "",
+      EMERGENCY_MESH_TLS_KEY_PATH: "",
       EMERGENCY_MESH_INGEST_WINDOW_SECONDS: "60",
       EMERGENCY_MESH_INGEST_GLOBAL_REQUESTS: "3",
       EMERGENCY_MESH_INGEST_IDENTITY_REQUESTS: "1",
@@ -84,7 +89,7 @@ test("unconfigured HTTP operational ingest fails closed without false backend ac
   const port = await availablePort();
   const child = spawn(process.execPath, ["src/server.ts"], {
     cwd: fileURLToPath(new URL("../", import.meta.url)),
-    env: { ...process.env, PORT: String(port), EMERGENCY_MESH_HOST: "127.0.0.1", EMERGENCY_MESH_DATABASE_PATH: ":memory:", EMERGENCY_MESH_TLS_CERT_PATH: "", EMERGENCY_MESH_TLS_KEY_PATH: "", EMERGENCY_MESH_ENABLE_DEBUG_EVENTS: "0" },
+    env: { ...process.env, PORT: String(port), EMERGENCY_MESH_HOST: "127.0.0.1", EMERGENCY_MESH_DATABASE_PATH: ":memory:", EMERGENCY_MESH_COLUVI_CONFIG_PATH: "", EMERGENCY_MESH_TLS_CERT_PATH: "", EMERGENCY_MESH_TLS_KEY_PATH: "", EMERGENCY_MESH_ENABLE_DEBUG_EVENTS: "0" },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let diagnostics = "";

@@ -42,7 +42,7 @@ try {
     await send("Network.overrideNetworkState", conditions);
   };
   const stored = () => evaluate(`new Promise((resolve, reject) => {
-    const request = indexedDB.open('emergency-mesh-client', 1);
+    const request = indexedDB.open('emergency-mesh-client');
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
       const tx = request.result.transaction('outbox', 'readonly');

@@ -30,6 +30,14 @@ HTTP 429 admission responses leave the report in `QUEUED`, persist a bounded `ne
 
 Uncached API and asset requests fail honestly offline; only navigation within `/mobile/` may fall back to the cached application shell. The last synchronization error remains visible. HTTP acceptance includes explicit BACKEND evidence, which advances the local state to SYNCED.
 
+## Coluvi pilot inbox
+
+With the explicitly configured private service, the PWA imports `mobile-trust.json` and requires an independently verified authority fingerprint, authorized zone, enrollment code and pilot consent. It proves possession of the browser Ed25519 key and stores only the returned scoped credential and public trust. Unsigned devices can still use ordinary reporting, but cannot enroll or sign trusted check-ins.
+
+The v2 IndexedDB migration adds inbox and receipt stores without replacing existing identity or reports. Polling is foreground-only, bounded, serialized and backed off on failure. A valid signed command commits with RECEIVED before its cursor advances. IntersectionObserver records SHOWN only when its card enters the visible page; neither receipt implies a human read it. The two first-response actions persist a minimal signed SAFE or NEEDS_HELP envelope atomically with its command reference. This survives closing the window offline; duplicate clicks cannot create a second first response. Updating a previous response is not yet available in the UI.
+
+Private APIs and the operator panel never enter the shell cache. Before private calls the UI confirms the v8 worker's cache policy; an old worker requires update/reload. Rotating identity clears local enrollment but preserves signed outbox history. The inbox is bounded to 200 commands and explicitly prunes records 30 days after their response window. Full operational steps, browser evidence and physical limitations are in the [Coluvi demo guide](COLUVI_DEMO.md).
+
 ## Local identity
 
 The client creates an extractable Ed25519 key using Web Crypto and stores its JWK in IndexedDB. The pseudonymous device id is derived from the SHA-256 digest of the SPKI public key and produces signatures compatible with the shared protocol verifier.

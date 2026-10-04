@@ -59,6 +59,14 @@ test("configured HTTP cycle authenticates operator and participant, preserves pr
   });
   try {
     child = await start(port, configPath, databasePath);
+    const panel = await fetch(endpoint + "/command-center/");
+    assert.equal(panel.status, 200); assert.equal(panel.headers.get("cache-control"), "no-store");
+    assert.match(panel.headers.get("content-security-policy")!, /frame-ancestors 'none'/);
+    assert.match(await panel.text(), /id="workspace" hidden/);
+    for (const path of ["/command-center/app.js", "/command-center/view.js", "/command-center/styles.css"]) {
+      const asset = await fetch(endpoint + path); assert.equal(asset.status, 200); assert.equal(asset.headers.get("cache-control"), "no-store");
+    }
+    assert.equal((await fetch(endpoint + "/command-center/config.json")).status, 404);
     assert.equal((await fetch(endpoint + "/api/operator/checkins")).status, 401);
     assert.equal((await post("/api/operator/login", { password: material.operatorPassword }, { origin: "https://evil.test" })).status, 403);
     assert.equal((await post("/api/operator/login", { password: "wrong-password-long-enough" })).status, 401);

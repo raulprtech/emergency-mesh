@@ -1,10 +1,11 @@
 import { OUTBOX_SYNC_TAG, runBackgroundSync } from "./background-sync.js";
 
-const CACHE = "emergency-mesh-mobile-v7";
+const CACHE = "emergency-mesh-mobile-v8";
 const ASSETS = [
   "/mobile/", "/mobile/styles.css", "/mobile/app.js", "/mobile/core.js",
   "/mobile/crypto.js", "/mobile/idb.js", "/mobile/i18n.js", "/mobile/protected.js",
   "/mobile/background-sync.js", "/mobile/manifest.webmanifest", "/mobile/icon.svg",
+  "/mobile/commands.js", "/mobile/inbox.js",
 ];
 
 self.addEventListener("install", (event) => event.waitUntil(
@@ -42,4 +43,8 @@ self.addEventListener("sync", (event) => {
     const clients = await self.clients.matchAll({ type: "window" });
     for (const client of clients) client.postMessage({ type: "OUTBOX_UPDATED" });
   }));
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "COLUVI_CACHE_VERSION") event.ports[0]?.postMessage({ cache: CACHE, privateApiCache: false });
 });

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Coluvi · Centro de simulacro</title>
+  <link rel="icon" href="/mobile/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/command-center/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <header><p>COLUVI · SIMULACRO</p><h1>Centro de mando</h1><a href="/mobile/">Abrir cliente móvil</a> · <a href="/">Vista pública agregada</a></header>
+  <main id="main">
+    <p class="warning">Prototipo, no servicio de emergencia. Recibido, mostrado y respondido son evidencias distintas: ninguna garantiza atención ni ayuda despachada. UNKNOWN significa falta de respuesta, no peligro.</p>
+    <p id="status" role="status" aria-live="polite">Comprobando acceso…</p>
+    <section id="login-panel" hidden aria-labelledby="login-title">
+      <h2 id="login-title">Acceso del operador</h2>
+      <form id="login-form">
+        <label for="password">Contraseña local del operador</label><input id="password" type="password" minlength="16" maxlength="512" autocomplete="current-password" required>
+        <button id="login" type="submit">Entrar</button>
+      </form>
+      <p>Usa la contraseña del archivo privado en Ubuntu. Nunca la compartas con participantes ni la añadas a una URL.</p>
+    </section>
+    <div id="workspace" hidden>
+      <section aria-labelledby="session-title">
+        <h2 id="session-title">Sesión autorizada</h2>
+        <p id="session-expiry"></p><p>Huella pública de la autoridad: <code id="fingerprint"></code></p>
+        <button id="logout" type="button">Cerrar sesión</button>
+      </section>
+      <section aria-labelledby="create-title">
+        <h2 id="create-title">Solicitar estado</h2>
+        <p>Solo dispositivos ya inscritos al emitir. No envía mensajes a teléfonos no inscritos ni garantiza recepción con la PWA cerrada.</p>
+        <form id="checkin-form">
+          <label for="incident">Referencia ficticia del simulacro</label><input id="incident" value="simulacro-inundacion" pattern="[A-Za-z0-9_-]{1,80}" maxlength="80" required>
+          <label for="zone">Zona autorizada</label><select id="zone" required></select>
+          <label for="prompt-minutes">Plazo para responder (minutos)</label><input id="prompt-minutes" type="number" min="1" max="1440" step="1" value="10" required>
+          <label for="late-minutes">Ventana adicional para entregar respuestas ya guardadas (minutos)</label><input id="late-minutes" type="number" min="0" max="1440" step="1" value="60" required>
+          <label class="consent"><input id="drill-consent" type="checkbox" required><span>Confirmo que es un simulacro con datos ficticios.</span></label>
+          <button id="create" type="submit">Emitir «¿Estás bien?»</button>
+        </form>
+      </section>
+      <section aria-labelledby="requests-title">
+        <div class="heading"><h2 id="requests-title">Solicitudes recientes</h2><button id="refresh" type="button">Actualizar</button></div>
+        <p id="updated"></p><p>Unidades: dispositivos inscritos, no personas. Hasta 50 solicitudes recientes. Las cantidades de recepción, presentación y respuesta pueden solaparse.</p>
+        <div id="requests"></div>
+      </section>
+      <section id="detail-panel" hidden aria-labelledby="detail-title">
+        <h2 id="detail-title" tabindex="-1">Detalle privado</h2><p id="detail-meta"></p>
+        <div id="detail-counts"></div><div id="recipients"></div>
+        <nav aria-label="Páginas de destinatarios"><button id="previous" type="button">Anterior</button><span id="page"></span><button id="next" type="button">Siguiente</button></nav>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="/command-center/app.js"></script>
+</body>
+</html>
