@@ -60,9 +60,14 @@ SQLite añade `coluvi_needs` sin reemplazar tablas anteriores. Hay un máximo de
 node --test tests/*.test.ts
 COLUVI_CHROMIUM_PATH=/ruta/al/chromium node examples/coluvi-browser-smoke.mjs
 node examples/coluvi-drill.ts 30 20261004
+COLUVI_CHROMIUM_PATH=/ruta/al/chromium node scripts/qualify-coluvi.mjs /tmp/coluvi-calificacion-nueva
 ```
 
 La prueba de navegador genera configuración, perfil y SQLite temporales propios. No modifica datos del piloto, no instala navegadores y no desactiva validación TLS. Usa HTTP loopback como contexto seguro de desarrollo; no equivale a un origen HTTPS confiable desde Android. Al terminar detiene sus procesos y elimina únicamente sus archivos temporales.
+
+El recorrido integrado abre también el mapa público en el mismo servidor y origen que la PWA y el panel. Seis reportes generales ficticios forman un agregado público; los check-ins y avisos siguen siendo privados. Durante el mismo corte en que se responde y añaden necesidades offline, el mapa conserva su instantánea fechada. Después de sincronizar la ayuda y actualizar a SAFE, su agregado público permanece idéntico. Esto demuestra convivencia y separación de ambos canales, no publicación de ubicaciones personales. El ensayo consulta el mapa en primer plano y después vuelve al cliente; comprueba que ambas cachés convivan antes de recargar. Tres ejecuciones consecutivas de este recorrido aprobaron. Una variante previa con recarga en segundo plano falló de forma intermitente: no se afirma garantía de ejecución o navegación de pestañas suspendidas.
+
+La [guía de carga y calificación](COLUVI_LOAD.md) explica cómo repetir todo con un comando y cómo interpretar los resultados medidos con cientos de dispositivos ficticios.
 
 Verificación ampliada del 4 de octubre de 2026 en Ubuntu WSL2: 193 pruebas aprobadas con concurrencia de dos archivos, cero fallos, cancelaciones u omisiones. Chromium 151.0.7922.34 verificó migración real desde IndexedDB v1 y v2 a v3 sin perder los datos previos, inscripción y emisión desde las interfaces, backend completamente detenido durante la respuesta offline, cierre y reapertura de la ventana, QUEUED a SYNCED con evidencia BACKEND y recuperación de los cuatro recibos de check-in y aviso tras reiniciar. Consultar de nuevo una solicitud sin cambios conservó su tarjeta. El aviso mantuvo fuente, firma y caducidad; una prueba de reloj local comprobó su etiqueta histórica al vencer.
 

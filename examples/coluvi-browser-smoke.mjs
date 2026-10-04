@@ -4,7 +4,9 @@ import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { createServer } from "node:http";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createDeviceIdentity } from "../src/protocol/identity.ts";
+import { createDeviceIdentity, signReport } from "../src/protocol/identity.ts";
+import { makeReport } from "../src/simulator/fixtures.ts";
+import { canonicalCbor } from "../src/mobile-client/crypto.js";
 import { createColuviConfiguration } from "../src/commands/config.ts";
 import { authorityFor, createCheckinCommand } from "../src/commands/authority.ts";
 
@@ -101,9 +103,31 @@ try {
     server.stderr.resume(); await ready(server, server.stdout, (text) => text.includes("Emergency Map:"));
   };
   await startServer();
+  // Public, coarse fictional reports are independent of the private check-in cycle.
+  for (let index = 0; index < 6; index++) {
+    const identity = createDeviceIdentity(); const now = Date.now();
+    const report = signReport({ ...makeReport({ identity, eventType: index < 3 ? "SOS" : "SAFE", createdAt: now }),
+      location: { zoneId: "refugio-norte", source: "ZONE", timestamp: now },
+      needs: [], shortMessage: "SIMULACRO: este texto no es público",
+    }, identity);
+    const response = await fetch(origin + "/api/packets", { method: "POST", body: canonicalCbor({ packetId: report.eventId, report, expiresAt: report.validUntil, hopCount: 0, hopLimit: 12 }) });
+    assert.equal(response.status, 202); assert.equal((await response.json()).status, "ACCEPTED");
+  }
+  const initialPublicAreas = (await (await fetch(origin + "/api/areas")).json()).areas;
+  assert.equal(initialPublicAreas.length, 1); assert.equal(initialPublicAreas[0].total, 6);
   browser = spawn(executable, ["--headless", "--no-sandbox", "--disable-dev-shm-usage", "--no-first-run", "--no-default-browser-check", "--remote-debugging-address=127.0.0.1", "--remote-debugging-port=0", `--user-data-dir=${join(directory, "profile")}`, "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
   const debuggerUrl = await ready(browser, browser.stderr, (text) => text.match(/DevTools listening on (ws:\/\/[^\s]+)/)?.[1]);
   const debugOrigin = `http://${new URL(debuggerUrl).host}`;
+  const map = await connect(debugOrigin, origin + "/map/");
+  await map.until("document.querySelectorAll('#areas .area').length === 1 && document.querySelector('#saved-status').textContent.includes('Vista pública guardada')", "integrated public map persisted");
+  await map.until("Boolean(navigator.serviceWorker.controller)", "map worker ready before outage");
+  assert.equal(await map.evaluate("document.body.textContent.includes('este texto no es público')"), false);
+  const mapSnapshot = `(async () => { const { openPublicMapStore } = await import('/map/storage.js'); const store = await openPublicMapStore(); try { return (await store.read()).areas; } finally { store.close(); } })()`;
+  assert.deepEqual(await map.evaluate(mapSnapshot), initialPublicAreas);
+  const mapOffline = async offline => {
+    const conditions = { offline, latency: 0, downloadThroughput: -1, uploadThroughput: -1, connectionType: offline ? "none" : "wifi" };
+    await map.send("Network.emulateNetworkConditions", conditions); await map.send("Network.overrideNetworkState", conditions);
+  };
   let mobile = await connect(debugOrigin, origin + "/health");
   await mobile.until("location.pathname === '/health' && document.readyState === 'complete'", "seed origin");
   // Seed the real old schema before loading the upgraded application.
@@ -218,6 +242,17 @@ try {
     await mobile.send("Network.emulateNetworkConditions", conditions); await mobile.send("Network.overrideNetworkState", conditions);
   };
   await stop(server); server = undefined; await setOffline(true);
+  assert.equal(await map.evaluate("caches.open('coluvi-public-map-v1').then(cache => cache.match('/map/')).then(Boolean)"), true, "Map shell must remain cached alongside mobile shell");
+  await map.send("Page.bringToFront");
+  await mapOffline(true); await map.send("Page.reload", { ignoreCache: true });
+  try {
+    await map.until("document.querySelector('#status')?.textContent.includes('Sin actualización del servidor. Vista anterior') && document.querySelectorAll('#areas .area').length === 1", "same outage preserves dated map snapshot");
+  } catch (error) {
+    const state = await map.evaluate("({ url: location.href, ready: document.readyState, hidden: document.hidden, status: document.querySelector('#status')?.textContent, areas: document.querySelectorAll('#areas .area').length })");
+    throw new Error(`${error.message}: ${JSON.stringify(state)}`);
+  }
+  assert.deepEqual(await map.evaluate(mapSnapshot), initialPublicAreas);
+  await mobile.send("Page.bringToFront");
   await mobile.send("Page.reload", { ignoreCache: true });
   await mobile.until("Boolean(document.querySelector('[data-checkin-status=NEEDS_HELP]'))", "offline saved prompt");
   await mobile.until("document.querySelector('.notice-item')?.dataset.expired === 'false'", "saved notice survives offline reload");
@@ -284,12 +319,17 @@ try {
   const updateEvidence = await operator.evaluate(`fetch('/api/operator/checkins/${commandId}?limit=10', { cache: 'no-store' }).then(response => response.json()).then(detail => ({ counts: detail.counts, needs: detail.recipients[0].needs, needsCounts: detail.needsCounts, history: detail.recipients[0].history.length, needsHistory: detail.recipients[0].needsHistory.length, link: detail.recipients[0].history.at(-1).link }))`);
   assert.equal(updateEvidence.counts.requested, 1); assert.equal(updateEvidence.counts.responded, 1); assert.equal(updateEvidence.counts.safe, 1); assert.equal(updateEvidence.counts.needsHelp, 0);
   assert.equal(updateEvidence.needs, null); assert.equal(updateEvidence.needsCounts.WATER, 0); assert.equal(updateEvidence.history, 2); assert.equal(updateEvidence.needsHistory, 1); assert.equal(updateEvidence.link, "LINKED");
+  await mapOffline(false); await map.send("Page.reload", { ignoreCache: true });
+  await map.until("document.querySelector('#saved-status')?.textContent.includes('Vista pública guardada') && document.querySelectorAll('#areas .area').length === 1", "map reconnects after private resolution");
+  assert.deepEqual(await map.evaluate(mapSnapshot), initialPublicAreas);
+  const integratedMapEvidence = { sameBackendAndOrigin: true, ordinaryPublicReports: 6, publicGroups: 1,
+    offlineSnapshotDuringPrivateResponse: true, privateUpdatesDoNotChangePublicCounts: true };
   // Resend the exact signed packet: duplicate does not grow history.
   await mobile.evaluate(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const { canonicalCbor } = await import('/mobile/crypto.js'); const db = await openClientDatabase(); try { const item = (await db.list()).find(row => row.envelope.report.eventType === 'x-coluvi-checkin-response'); const response = await fetch('/api/packets', { method: 'POST', body: canonicalCbor(item.envelope) }); const result = await response.json(); if (result.status !== 'DUPLICATE') throw new Error('Duplicate not preserved'); } finally { db.close(); } })()`);
   const cacheSafe = await mobile.evaluate(`(async () => { for (const name of await caches.keys()) { for (const request of await (await caches.open(name)).keys()) { const url = new URL(request.url); if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/command-center/')) return false; } } return true; })()`);
   assert.equal(cacheSafe, true);
-  const publicPrivacy = await operator.evaluate("fetch('/api/areas', { cache: 'no-store' }).then(response => response.json()).then(data => data.areas.length === 0)");
-  assert.equal(publicPrivacy, true); // One ordinary old report is suppressed; private reply is excluded.
+  const finalPublicAreas = await operator.evaluate("fetch('/api/areas', { cache: 'no-store' }).then(response => response.json()).then(data => data.areas)");
+  assert.deepEqual(finalPublicAreas, initialPublicAreas); const publicPrivacy = true;
   await operator.send("Page.bringToFront");
   await operator.until("!document.querySelector('#refresh').disabled && Boolean(document.querySelector('[data-revoke]'))", "participant administration ready");
   await operator.evaluate("document.querySelector('[data-revoke]').click()");
@@ -321,7 +361,7 @@ try {
   assert.equal(legacy.queuedMarker.state, "QUEUED"); assert.equal(legacy.syncedMarker.state, "SYNCED");
   const accessibility = await regression("examples/accessibility-smoke.mjs", [String(new URL(debugOrigin).port), origin + "/mobile/", "127.0.0.1"]);
   assert.equal(accessibility.success, true);
-  console.log(JSON.stringify({ scenario: "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico", migration, migrationV2, indexedDbConcurrency, enrolledThroughUi: true, issuedThroughUi: true, noticeIssuedThroughUi: true, noticeEvidence, needsEvidence, updateEvidence, revocationEvidence, revocationPreservedHistory: retained, noticeSurvivedOfflineReopen: true, noticeTextNotHtml: true, expiredNoticeLabeled: true, backendStoppedWhileOffline: true, repeatedPollPreservesPromptDom: true, offlineQueued: queued.state, survivedWindowCloseAndReopen: true, reconnectedState: (await mobile.evaluate(responseState)).state, backendEvidence: "BACKEND", privateEvidence, duplicatePreserved: true, cacheSafe, publicPrivacy, logoutCleared: true, constrained360px: true, unnamedOperatorControls: 0, legacyOfflineRegression: true, mobileAccessibilityRegression: accessibility.success, diagnostics }, null, 2));
+  console.log(JSON.stringify({ scenario: "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico", integratedMapEvidence, migration, migrationV2, indexedDbConcurrency, enrolledThroughUi: true, issuedThroughUi: true, noticeIssuedThroughUi: true, noticeEvidence, needsEvidence, updateEvidence, revocationEvidence, revocationPreservedHistory: retained, noticeSurvivedOfflineReopen: true, noticeTextNotHtml: true, expiredNoticeLabeled: true, backendStoppedWhileOffline: true, repeatedPollPreservesPromptDom: true, offlineQueued: queued.state, survivedWindowCloseAndReopen: true, reconnectedState: (await mobile.evaluate(responseState)).state, backendEvidence: "BACKEND", privateEvidence, duplicatePreserved: true, cacheSafe, publicPrivacy, logoutCleared: true, constrained360px: true, unnamedOperatorControls: 0, legacyOfflineRegression: true, mobileAccessibilityRegression: accessibility.success, diagnostics }, null, 2));
 } finally {
   for (const connection of connections) connection.socket.close();
   await stop(browser); await stop(server);

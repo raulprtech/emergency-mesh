@@ -71,6 +71,7 @@ Signatures demonstrate integrity and pseudonymous continuity, **not truth, autho
 - [Coluvi bidirectional demonstration and verification](docs/COLUVI_DEMO.md)
 - [Signed simulation notices and private receipt evidence](docs/COLUVI_NOTICES.md)
 - [Pilot operation, participant revocation and SQLite recovery](docs/COLUVI_OPERATIONS.md)
+- [Concurrent HTTP load, abrupt recovery and integrated qualification](docs/COLUVI_LOAD.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Status
@@ -79,4 +80,4 @@ The simulated vertical slice and bilingual offline mobile PWA are implemented an
 
 The configured Coluvi panel and mobile inbox complete an authorized check-in round trip, signed simulation notices, linked status updates and separately queued needs details in real Chromium, including offline response, window reopening, concurrent IndexedDB writers and backend restart. Current needs stop contributing after a SAFE update, while immutable history remains and recipient counts do not multiply. The operator can list and revoke participants without deleting history. Foreground startup, local diagnostics, online SQLite backup and new-directory restore are tested, including explicit review of permission rollback after restoring an older snapshot. See [pilot operations](docs/COLUVI_OPERATIONS.md).
 
-Thirty seeded fictional flood cycles reuse the actual contracts, routing and SQLite queues; their metrics are virtual, not physical measurements. See the [demo guide](docs/COLUVI_DEMO.md). The geographic public map includes local cartography, filters, guarded breakdowns and an explicitly dated offline snapshot verified after an abrupt fixture-server stop. The expanded suite passed 199 tests; physical Samsung/LAN validation remains pending. The [expanded work block](docs/COLUVI_EXPANDED_BLOCK.md) tracks scale tests and the remaining integrated delivery.
+Thirty seeded fictional flood cycles reuse the actual contracts, routing and SQLite queues; their metrics are virtual, not physical measurements. See the [demo guide](docs/COLUVI_DEMO.md). The geographic public map includes local cartography, filters, guarded breakdowns and an explicitly dated offline snapshot verified after an abrupt fixture-server stop. Actual loopback HTTP load with 300 and 600 fictional devices verified concurrent delivery, missing predecessors, two backend SIGKILLs per run, acknowledged-report durability and complete duplicate replay under normal admission limits. These are not physical-device capacity measurements. The expanded suite passed 203 tests; physical Samsung/LAN validation remains pending. The [expanded work block](docs/COLUVI_EXPANDED_BLOCK.md) tracks final qualification and publication.
