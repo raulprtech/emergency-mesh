@@ -2,21 +2,28 @@ import { createHash, randomBytes } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { canonicalReportBytes } from "../protocol/identity.ts";
 import { validateEnvelope, type EmergencyEnvelope, type EmergencyReport } from "../protocol/types.ts";
-import { receiptErrors, responseErrors, RESPONSE_EVENT } from "../mobile-client/commands.js";
+import { receiptErrors, responseErrors, needsErrors, RESPONSE_EVENT, NEEDS_EVENT, CHECKIN_NEEDS } from "../mobile-client/commands.js";
 import { verifyAuthorizedCommand, verifyColuviReport, type ColuviAuthority } from "./authority.ts";
 
 interface ParticipantRow { device_id: string; public_key: string; zone_id: string; active: number; }
 interface CommandRow { sequence: number; command_id: string; report_json: string; prompt_until: number; response_until: number; }
 interface ResponseRow { event_id: string; report_json: string; received_at: number; observed_at: number; created_at: number; late: number; }
+const RESPONSE_ORDER = "observed_at DESC, COALESCE(json_extract(report_json, '$.extensions.coluvi.revision'),0) DESC, created_at DESC, event_id DESC";
+type HistoryLink = "ROOT" | "LINKED" | "MISSING" | "CONFLICT";
+interface NeedsPayload { responseEventId: string; categories: string[]; peopleAffected: number | null; revision: number; previousEventId: string | null; }
 export interface CheckinPayload {
   commandId: string; incidentRef: string; issuerId: string; zoneId: string; issuedAt: number; promptUntil: number; responseUntil: number; nonce: string;
 }
 export interface CheckinProjection {
   command: EmergencyReport;
   units: "devices";
+  needsCounts: Record<string, number>;
   counts: { requested: number; received: number; shown: number; responded: number; safe: number; needsHelp: number; unknown: number; pending: number; late: number };
   pagination: { offset: number; limit: number; total: number; hasMore: boolean };
-  recipients: { deviceId: string; state: "SAFE" | "NEEDS_HELP" | "UNKNOWN" | "PENDING"; received: boolean; shown: boolean; history: { report: EmergencyReport; receivedAt: number; late: boolean }[] }[];
+  recipients: { deviceId: string; state: "SAFE" | "NEEDS_HELP" | "UNKNOWN" | "PENDING"; received: boolean; shown: boolean;
+    needs: { categories: string[]; peopleAffected: number | null; eventId: string } | null;
+    needsHistory: { report: EmergencyReport; receivedAt: number; applies: boolean; link: HistoryLink }[];
+    history: { report: EmergencyReport; receivedAt: number; late: boolean; link: HistoryLink }[] }[];
 }
 
 /** Private, additive tables. Never use these reports for public aggregation. */
@@ -48,6 +55,13 @@ export class ColuviStore {
         FOREIGN KEY(command_id, device_id) REFERENCES coluvi_recipients(command_id, device_id), UNIQUE(device_id, nonce)
       );
       CREATE INDEX IF NOT EXISTS coluvi_responses_command ON coluvi_responses(command_id, device_id, observed_at, created_at, event_id);
+      CREATE TABLE IF NOT EXISTS coluvi_needs (
+        event_id TEXT PRIMARY KEY, command_id TEXT NOT NULL, device_id TEXT NOT NULL, nonce TEXT NOT NULL,
+        response_event_id TEXT NOT NULL, report_json TEXT NOT NULL, received_at INTEGER NOT NULL,
+        observed_at INTEGER NOT NULL, created_at INTEGER NOT NULL,
+        FOREIGN KEY(command_id, device_id) REFERENCES coluvi_recipients(command_id, device_id), UNIQUE(device_id, nonce)
+      );
+      CREATE INDEX IF NOT EXISTS coluvi_needs_response ON coluvi_needs(command_id, device_id, response_event_id);
       CREATE TABLE IF NOT EXISTS coluvi_receipts (
         event_id TEXT PRIMARY KEY, command_id TEXT NOT NULL, device_id TEXT NOT NULL, nonce TEXT NOT NULL, kind TEXT NOT NULL, report_json TEXT NOT NULL, received_at INTEGER NOT NULL,
         FOREIGN KEY(command_id, device_id) REFERENCES coluvi_recipients(command_id, device_id), UNIQUE(command_id, device_id, kind), UNIQUE(device_id, nonce)
@@ -156,6 +170,7 @@ export class ColuviStore {
   }
 
   acceptResponse(envelope: EmergencyEnvelope, now = Date.now()): { status: "ACCEPTED" | "DUPLICATE"; eventId: string; signatureValid: true } {
+    if (envelope.report.eventType === NEEDS_EVENT) return this.acceptNeeds(envelope, now);
     const report = envelope.report;
     const payload = report.extensions?.coluvi as { commandId?: string } | undefined;
     const command = payload?.commandId ? this.command(payload.commandId) : undefined;
@@ -177,6 +192,32 @@ export class ColuviStore {
       this.database.prepare("INSERT INTO coluvi_responses(event_id, command_id, device_id, nonce, report_json, received_at, observed_at, created_at, late) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .run(report.eventId, command.eventId, report.anonymousDeviceId, report.nonce, JSON.stringify(report), now, report.observedAt, report.createdAt, now >= commandPayload.promptUntil ? 1 : 0);
       this.audit("CHECKIN_RESPONSE", report.eventId, now);
+      return { status: "ACCEPTED", eventId: report.eventId, signatureValid: true };
+    });
+  }
+
+  /** Custody may precede the referenced response; projection attaches only to a matching signed help response. */
+  acceptNeeds(envelope: EmergencyEnvelope, now = Date.now()): { status: "ACCEPTED" | "DUPLICATE"; eventId: string; signatureValid: true } {
+    const report = envelope.report;
+    const payload = report.extensions?.coluvi as NeedsPayload & { commandId?: string } | undefined;
+    const command = payload?.commandId ? this.command(payload.commandId) : undefined;
+    if (!command || validateEnvelope(envelope).length || needsErrors(report, command).length
+      || envelope.expiresAt <= now || report.createdAt > now || !verifyAuthorizedCommand(command, this.authorities, now, true)
+      || !verifyColuviReport(report)) throw new Error("Invalid, expired or unauthorized needs detail");
+    const recipient = this.database.prepare("SELECT public_key FROM coluvi_recipients WHERE command_id=? AND device_id=?").get(command.eventId, report.anonymousDeviceId) as { public_key: string } | undefined;
+    if (!this.participant(report.anonymousDeviceId)?.active || recipient?.public_key !== report.signature!.publicKey) throw new Error("Needs sender is not an authorized recipient");
+    return this.transaction(() => {
+      const existing = this.database.prepare("SELECT report_json FROM coluvi_needs WHERE event_id=?").get(report.eventId) as { report_json: string } | undefined;
+      if (existing) {
+        const original = JSON.parse(existing.report_json) as EmergencyReport;
+        if (!Buffer.from(canonicalReportBytes(original)).equals(Buffer.from(canonicalReportBytes(report))) || original.signature!.value !== report.signature!.value) throw new Error("Needs id conflict");
+        return { status: "DUPLICATE", eventId: report.eventId, signatureValid: true };
+      }
+      const count = this.database.prepare("SELECT COUNT(*) AS n FROM coluvi_needs WHERE command_id=? AND device_id=?").get(command.eventId, report.anonymousDeviceId) as { n: number };
+      if (count.n >= 100) throw new Error("Needs history capacity exceeded");
+      this.database.prepare("INSERT INTO coluvi_needs(event_id, command_id, device_id, nonce, response_event_id, report_json, received_at, observed_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .run(report.eventId, command.eventId, report.anonymousDeviceId, report.nonce, payload!.responseEventId, JSON.stringify(report), now, report.observedAt, report.createdAt);
+      this.audit("CHECKIN_NEEDS", report.eventId, now);
       return { status: "ACCEPTED", eventId: report.eventId, signatureValid: true };
     });
   }
@@ -212,7 +253,7 @@ export class ColuviStore {
     // Count all intended recipients in SQL, but return only a bounded page of private histories.
     const totals = this.database.prepare(`WITH latest AS (
       SELECT device_id, late, json_extract(report_json, '$.extensions.coluvi.status') AS state,
-        ROW_NUMBER() OVER (PARTITION BY device_id ORDER BY observed_at DESC, created_at DESC, event_id DESC) AS ordinal
+        ROW_NUMBER() OVER (PARTITION BY device_id ORDER BY ${RESPONSE_ORDER}) AS ordinal
       FROM coluvi_responses WHERE command_id=?
     ) SELECT COUNT(*) AS requested,
       COALESCE(SUM(EXISTS(SELECT 1 FROM coluvi_receipts e WHERE e.command_id=r.command_id AND e.device_id=r.device_id AND e.kind='RECEIVED')),0) AS received,
@@ -224,18 +265,55 @@ export class ColuviStore {
       FROM coluvi_recipients r LEFT JOIN latest l ON l.device_id=r.device_id AND l.ordinal=1 WHERE r.command_id=?`)
       .get(commandId, now, payload.promptUntil, now, payload.promptUntil, commandId) as CheckinProjection["counts"];
     const counts = { ...totals };
+    // Categories count distinct current device snapshots, never reports or claimed people.
+    const needRows = this.database.prepare(`WITH responses AS (
+      SELECT *, ROW_NUMBER() OVER (PARTITION BY device_id ORDER BY ${RESPONSE_ORDER}) AS ordinal FROM coluvi_responses WHERE command_id=?
+    ), details AS (
+      SELECT *, ROW_NUMBER() OVER (PARTITION BY device_id, response_event_id ORDER BY ${RESPONSE_ORDER}) AS ordinal FROM coluvi_needs WHERE command_id=?
+    ) SELECT category.value AS category, COUNT(*) AS n FROM responses r JOIN details d
+      ON d.device_id=r.device_id AND d.response_event_id=r.event_id AND d.ordinal=1 AND d.observed_at>=r.created_at,
+      json_each(d.report_json, '$.extensions.coluvi.categories') category
+      WHERE r.ordinal=1 AND json_extract(r.report_json, '$.extensions.coluvi.status')='NEEDS_HELP' GROUP BY category.value`)
+      .all(commandId, commandId) as unknown as { category: string; n: number }[];
+    const needsCounts: Record<string, number> = Object.fromEntries(CHECKIN_NEEDS.map(category => [category, 0]));
+    for (const row of needRows) needsCounts[row.category] = row.n;
     const rows = this.database.prepare("SELECT device_id FROM coluvi_recipients WHERE command_id=? ORDER BY device_id LIMIT ? OFFSET ?").all(commandId, limit, offset) as unknown as { device_id: string }[];
     const recipients: CheckinProjection["recipients"] = rows.map(({ device_id }) => {
-      const responses = this.database.prepare("SELECT * FROM coluvi_responses WHERE command_id=? AND device_id=? ORDER BY observed_at, created_at, event_id").all(commandId, device_id) as unknown as ResponseRow[];
+      const responses = (this.database.prepare(`SELECT * FROM coluvi_responses WHERE command_id=? AND device_id=? ORDER BY ${RESPONSE_ORDER}`).all(commandId, device_id) as unknown as ResponseRow[]).reverse();
       const receipts = this.database.prepare("SELECT kind FROM coluvi_receipts WHERE command_id=? AND device_id=?").all(commandId, device_id) as unknown as { kind: string }[];
-      const history = responses.map((row) => ({ report: JSON.parse(row.report_json) as EmergencyReport, receivedAt: row.received_at, late: Boolean(row.late) }));
+      const reports = responses.map(row => JSON.parse(row.report_json) as EmergencyReport);
+      const history = responses.map((row, index) => ({ report: reports[index], receivedAt: row.received_at, late: Boolean(row.late), link: this.historyLink(reports[index], reports) }));
       const latest = history.at(-1);
       const state = latest ? (latest.report.extensions!.coluvi as { status: "SAFE" | "NEEDS_HELP" }).status : now >= payload.promptUntil ? "UNKNOWN" : "PENDING";
       const received = receipts.some((row) => row.kind === "RECEIVED");
       const shown = receipts.some((row) => row.kind === "SHOWN");
-      return { deviceId: device_id, state, received, shown, history };
+      const details = (this.database.prepare(`SELECT * FROM coluvi_needs WHERE command_id=? AND device_id=? ORDER BY ${RESPONSE_ORDER}`).all(commandId, device_id) as unknown as ResponseRow[]).reverse();
+      const detailReports = details.map(row => JSON.parse(row.report_json) as EmergencyReport);
+      const needsHistory = details.map((row, index) => {
+        const report = detailReports[index]; const detail = report.extensions!.coluvi as NeedsPayload;
+        return { report, receivedAt: row.received_at, link: this.historyLink(report, detailReports),
+          applies: state === "NEEDS_HELP" && detail.responseEventId === latest?.report.eventId && report.observedAt! >= latest.report.createdAt };
+      });
+      const activeDetail = needsHistory.filter(item => item.applies).at(-1);
+      // A newer malformed reference must not make an older detail current in one view but not another.
+      const lastForResponse = needsHistory.filter(item => (item.report.extensions!.coluvi as NeedsPayload).responseEventId === latest?.report.eventId).at(-1);
+      const current = activeDetail && activeDetail === lastForResponse ? activeDetail : undefined;
+      for (const entry of needsHistory) entry.applies = entry === current;
+      const detail = current?.report.extensions!.coluvi as NeedsPayload | undefined;
+      const needs = detail ? { categories: detail.categories, peopleAffected: detail.peopleAffected, eventId: current!.report.eventId } : null;
+      return { deviceId: device_id, state, received, shown, history, needs, needsHistory };
     });
-    return { command, units: "devices", counts, recipients, pagination: { offset, limit, total: counts.requested, hasMore: offset + rows.length < counts.requested } };
+    return { command, units: "devices", counts, needsCounts, recipients, pagination: { offset, limit, total: counts.requested, hasMore: offset + rows.length < counts.requested } };
+  }
+
+  private historyLink(report: EmergencyReport, reports: EmergencyReport[]): HistoryLink {
+    const payload = report.extensions!.coluvi as { previousEventId?: string | null; revision?: number; responseEventId?: string };
+    if (!payload.previousEventId) return "ROOT";
+    const previous = reports.find(item => item.eventId === payload.previousEventId);
+    if (!previous) return "MISSING";
+    const parent = previous.extensions!.coluvi as typeof payload;
+    return (parent.revision ?? 0) + 1 === payload.revision && previous.createdAt <= report.observedAt!
+      && parent.responseEventId === payload.responseEventId ? "LINKED" : "CONFLICT";
   }
 
   prune(now = Date.now(), retentionMs = 30 * 24 * 60 * 60_000): number {
@@ -243,7 +321,7 @@ export class ColuviStore {
     const expired = this.database.prepare("SELECT command_id FROM coluvi_commands WHERE response_until<=?").all(now - retentionMs) as unknown as { command_id: string }[];
     return this.transaction(() => {
       for (const { command_id } of expired) {
-        for (const table of ["coluvi_responses", "coluvi_receipts", "coluvi_recipients", "coluvi_commands"]) this.database.prepare(`DELETE FROM ${table} WHERE command_id=?`).run(command_id);
+        for (const table of ["coluvi_needs", "coluvi_responses", "coluvi_receipts", "coluvi_recipients", "coluvi_commands"]) this.database.prepare(`DELETE FROM ${table} WHERE command_id=?`).run(command_id);
       }
       this.database.prepare("DELETE FROM coluvi_audit WHERE at<?").run(now - retentionMs);
       return expired.length;

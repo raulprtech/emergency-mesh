@@ -1,4 +1,4 @@
-import { checkinInput, noticeInput, metricsElement, requestPhase, STATES } from "./view.js";
+import { checkinInput, noticeInput, metricsElement, requestPhase, STATES, NEED_NAMES, HISTORY_LINKS } from "./view.js";
 
 const byId = (id) => document.getElementById(id);
 let session;
@@ -34,10 +34,10 @@ async function api(path, data) {
     const error = new Error(response.status === 429 ? "Límite de consultas. Espera un minuto." : response.status === 401 ? "Acceso denegado." : "El centro rechazó la operación.");
     error.status = response.status; throw error;
   }
-  // Histories are bounded to ten recipients; still limit received bytes, not just a header.
+  // Ten recipients, each with at most 100 states and 100 details; limit actual bytes too.
   const reader = response.body.getReader(); const chunks = []; let size = 0;
   try {
-    for (;;) { const { done, value } = await reader.read(); if (done) break; size += value.length; if (size > 2_097_152) throw new Error("Detalle demasiado grande."); chunks.push(value); }
+    for (;;) { const { done, value } = await reader.read(); if (done) break; size += value.length; if (size > 4_194_304) throw new Error("Detalle demasiado grande."); chunks.push(value); }
   } finally { await reader.cancel(); }
   const bytes = new Uint8Array(size); let at = 0; for (const chunk of chunks) { bytes.set(chunk, at); at += chunk.length; }
   return JSON.parse(new TextDecoder().decode(bytes));
@@ -93,6 +93,10 @@ function renderDetail(detail, focus) {
   byId("detail-panel").hidden = false;
   byId("detail-meta").textContent = isNotice ? `${payload.incidentRef} · ${payload.zoneId} · Aviso de simulacro · Caduca ${formatTime(payload.expiresAt)}` : `${payload.incidentRef} · ${payload.zoneId} · ${requestPhase(payload)} · Entrega hasta ${formatTime(payload.responseUntil)}`;
   byId("detail-counts").replaceChildren(isNotice ? metricsElement(detail.counts, document, NOTICE_METRICS) : metricsElement(detail.counts));
+  if (!isNotice && detail.needsCounts) {
+    const description = document.createElement("p"); description.textContent = "Necesidades actuales: dispositivos, no personas únicas. Solo se incluyen detalles vinculados al estado de ayuda vigente.";
+    byId("detail-counts").append(description, metricsElement(detail.needsCounts, document, Object.entries(NEED_NAMES)));
+  }
   byId("recipients").replaceChildren();
   for (const recipient of detail.recipients) {
     const article = document.createElement("article");
@@ -100,9 +104,23 @@ function renderDetail(detail, focus) {
     const evidence = document.createElement("p"); evidence.textContent = `${isNotice ? "Aviso de simulacro" : STATES[recipient.state]} · Evidencia de recepción: ${recipient.received ? "sí" : "no"} · Presentación: ${recipient.shown ? "sí" : "no"}`;
     const history = document.createElement("ol");
     for (const entry of recipient.history ?? []) {
-      const item = document.createElement("li"); item.textContent = `${STATES[entry.report.extensions.coluvi.status]} · Declarado ${formatTime(entry.report.observedAt)} · Recibido ${formatTime(entry.receivedAt)}${entry.late ? " · Entrega tardía" : ""}`; history.append(item);
+      const item = document.createElement("li"); item.textContent = `${STATES[entry.report.extensions.coluvi.status]} · Declarado ${formatTime(entry.report.observedAt)} · Recibido ${formatTime(entry.receivedAt)}${entry.late ? " · Entrega tardía" : ""} · ${HISTORY_LINKS[entry.link] ?? "Historial anterior"}`; history.append(item);
     }
-    article.append(heading, evidence, history); byId("recipients").append(article);
+    article.append(heading, evidence, history);
+    if (!isNotice) {
+      const needs = document.createElement("p"); needs.dataset.currentNeeds = recipient.deviceId;
+      needs.textContent = recipient.needs ? `Detalles vigentes: ${recipient.needs.categories.map(category => NEED_NAMES[category]).join(", ") || "sin categorías"} · Personas declaradas: ${recipient.needs.peopleAffected ?? "no indicado"} (no verificadas, no se suman entre dispositivos).` : "Sin detalles de necesidades vinculados al estado vigente.";
+      article.append(needs);
+      if (recipient.needsHistory?.length) {
+        const details = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = `Historial de necesidades (${recipient.needsHistory.length})`; details.append(summary);
+        for (const entry of recipient.needsHistory) {
+          const payload = entry.report.extensions.coluvi; const line = document.createElement("p");
+          line.textContent = `${formatTime(entry.report.observedAt)} · ${payload.categories.map(category => NEED_NAMES[category]).join(", ") || "sin categorías"} · Personas declaradas: ${payload.peopleAffected ?? "no indicado"} · ${HISTORY_LINKS[entry.link]} · ${recipient.needs?.eventId === entry.report.eventId ? "Detalle vigente" : "Histórico o pendiente de vínculo"}`; details.append(line);
+        }
+        article.append(details);
+      }
+    }
+    byId("recipients").append(article);
   }
   byId("previous").disabled = pageData.offset === 0; byId("next").disabled = !pageData.hasMore;
   byId("page").textContent = pageData.total ? `${pageData.offset + 1}–${pageData.offset + detail.recipients.length} de ${pageData.total} dispositivos` : "Sin destinatarios al emitir";

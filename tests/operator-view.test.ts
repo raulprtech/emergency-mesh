@@ -12,7 +12,7 @@ test("operator input is scoped and keeps minutes bounded without implicit coerci
 });
 test("operator labels separate deadlines, custody and missing answers from danger", () => {
   const payload = { promptUntil: 100, responseUntil: 200 };
-  assert.match(requestPhase(payload, 99), /abierto/); assert.match(requestPhase(payload, 100), /guardadas/); assert.match(requestPhase(payload, 200), /cerrada/);
+  assert.match(requestPhase(payload, 99), /abierto/); assert.match(requestPhase(payload, 100), /tardías/); assert.match(requestPhase(payload, 200), /cerrada/);
   assert.match(STATES.UNKNOWN, /no implica peligro/);
   assert.deepEqual(METRICS.map(([key]) => key), ["requested", "received", "shown", "responded", "safe", "needsHelp", "unknown", "pending", "late"]);
 });

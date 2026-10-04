@@ -56,6 +56,9 @@ small, .muted { display: block; color: #59554f; font-weight: 400; margin-top: 5p
 .notice-item[data-expired="true"] { border-left: 4px solid #6c7074; padding-left: 12px; }
 .checkin-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .checkin-actions button { border: 0; border-radius: 10px; padding: 14px; color: #fff; font-weight: 700; }
+.checkin-needs fieldset { min-width: 0; }
+.checkin-needs label:has(input[type="checkbox"]) { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.checkin-needs input[type="checkbox"] { width: 24px; height: 24px; margin: 0; flex-shrink: 0; }
 .pilot-consent { display: flex; gap: 10px; align-items: start; font-weight: 400; }
 .pilot-consent input { width: 24px; height: 24px; margin: 0; flex-shrink: 0; }
 summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-weight: 700; }

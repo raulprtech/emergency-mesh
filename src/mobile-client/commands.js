@@ -3,6 +3,8 @@ import { canonicalCbor, verifyBrowserReport, signBrowserReport } from "./crypto.
 export const COLUVI_VERSION = 1;
 export const COMMAND_EVENT = "x-coluvi-checkin-request";
 export const RESPONSE_EVENT = "x-coluvi-checkin-response";
+export const NEEDS_EVENT = "x-coluvi-checkin-needs";
+export const CHECKIN_NEEDS = ["WATER", "FOOD", "MEDICATION", "MEDICAL_CARE", "EXTRACTION", "SHELTER", "ENERGY", "TRANSPORT", "COMMUNICATION"];
 export const RECEIPT_EVENT = "x-coluvi-checkin-receipt";
 export const MAX_PROMPT_MS = 24 * 60 * 60_000;
 export const MAX_LATE_MS = 24 * 60 * 60_000;
@@ -16,7 +18,7 @@ const fromBase64 = (value) => Uint8Array.from(atob(value.replaceAll("-", "+").re
 /** Domain separation prevents reusing an unrelated Ed25519 signature as an instruction. */
 export function coluviSigningBytes(payload) {
   const { domainSignature: _signature, ...unsigned } = payload;
-  return canonicalCbor({ domain: `COLUVI/${unsigned.kind}/v1`, payload: unsigned });
+  return canonicalCbor({ domain: `COLUVI/${unsigned.kind}/v${unsigned.version}`, payload: unsigned });
 }
 
 export function commandErrors(report) {
@@ -45,18 +47,23 @@ export function responseErrors(report, commandReport) {
   const response = report?.extensions?.coluvi;
   const command = commandReport?.extensions?.coluvi;
   if (commandErrors(commandReport).length) return ["invalid referenced command"];
-  if (!exact(response, ["version", "kind", "commandId", "zoneId", "status", "domainSignature"])) return ["invalid response fields"];
+  const fields = ["version", "kind", "commandId", "zoneId", "status", "domainSignature"];
+  if (response?.version === 2) fields.push("revision", "previousEventId");
+  if (!exact(response, fields)) return ["invalid response fields"];
   const errors = [];
   if (!exact(report, ["protocolVersion", "eventId", "incidentRef", "eventType", "reportMode", "priority", "createdAt", "observedAt", "validUntil", "anonymousDeviceId", "nonce", "relatedEventId", "extensions", "signature"])
     || !exact(report.extensions, ["coluvi"])) errors.push("invalid response report fields");
-  if (response.version !== 1 || response.kind !== "CHECKIN_RESPONSE" || !["SAFE", "NEEDS_HELP"].includes(response.status)) errors.push("invalid response state");
+  if (![1, 2].includes(response.version) || response.kind !== "CHECKIN_RESPONSE" || !["SAFE", "NEEDS_HELP"].includes(response.status)) errors.push("invalid response state");
+  if (response.version === 2 && (!Number.isInteger(response.revision) || response.revision < 0 || response.revision > 99
+    || (response.revision === 0 ? response.previousEventId !== null : !token(response.previousEventId))
+    || response.previousEventId === report.eventId)) errors.push("invalid response history link");
   if (response.commandId !== command.commandId || response.zoneId !== command.zoneId || report.relatedEventId !== command.commandId
     || report.incidentRef !== command.incidentRef) errors.push("response command binding mismatch");
   if (report.protocolVersion !== "0.1" || report.eventType !== RESPONSE_EVENT || report.reportMode !== "SELF"
     || report.priority !== (response.status === "SAFE" ? "NORMAL" : "HIGH")
     || !token(report.eventId) || !token(report.nonce) || !token(report.anonymousDeviceId)) errors.push("invalid response report");
   if (![report.createdAt, report.observedAt, report.validUntil].every(time)
-    || report.createdAt < command.issuedAt || report.observedAt < command.issuedAt || report.observedAt >= command.promptUntil
+    || report.createdAt < command.issuedAt || report.observedAt < command.issuedAt || report.observedAt >= (response.version === 2 ? command.responseUntil : command.promptUntil)
     || report.observedAt > report.createdAt || report.createdAt >= command.responseUntil || report.validUntil !== command.responseUntil) errors.push("invalid response validity");
   if (report.location !== undefined || report.peopleAffected !== undefined || report.subject !== undefined || report.needs !== undefined
     || report.shortMessage !== undefined || report.protectedPayload !== undefined) errors.push("minimal response must not contain personal data");
@@ -108,6 +115,80 @@ export async function createCheckinResponse(commandReport, status, identity, now
     state: "QUEUED", createdAt: now, updatedAt: now, attempts: 0,
     history: [{ state: "CREATED", at: now }, { state: "QUEUED", at: now }], evidence: [],
   };
+}
+
+/** A complete state snapshot; the link is evidence, not a delivery-order prerequisite. */
+export async function createCheckinUpdate(commandReport, status, identity, previous = null, now = Date.now()) {
+  const command = commandReport?.extensions?.coluvi;
+  if (commandErrors(commandReport).length || !["SAFE", "NEEDS_HELP"].includes(status)
+    || !time(now) || now < command.issuedAt || now >= command.responseUntil) throw new Error("Check-in is invalid or closed");
+  if (previous && (responseErrors(previous, commandReport).length || previous.anonymousDeviceId !== identity.anonymousDeviceId
+    || previous.signature?.publicKey !== identity.publicKey || !await verifyColuviDomain(previous)
+    || now < previous.createdAt)) throw new Error("Invalid previous response or clock regression");
+  const revision = previous ? (previous.extensions.coluvi.revision ?? 0) + 1 : 0;
+  if (revision > 99) throw new Error("Response history capacity exceeded");
+  const report = await signColuviBrowserReport({
+    protocolVersion: "0.1", eventId: globalThis.crypto.randomUUID(), incidentRef: command.incidentRef,
+    eventType: RESPONSE_EVENT, reportMode: "SELF", priority: status === "SAFE" ? "NORMAL" : "HIGH",
+    createdAt: now, observedAt: now, validUntil: command.responseUntil, anonymousDeviceId: identity.anonymousDeviceId,
+    relatedEventId: command.commandId, nonce: globalThis.crypto.randomUUID(),
+    extensions: { coluvi: { version: 2, kind: "CHECKIN_RESPONSE", commandId: command.commandId, zoneId: command.zoneId,
+      status, revision, previousEventId: previous?.eventId ?? null } },
+  }, identity);
+  return queuedOperationalReport(report, now);
+}
+
+function queuedOperationalReport(report, now) {
+  return { eventId: report.eventId,
+    envelope: { packetId: globalThis.crypto.randomUUID(), report, expiresAt: report.validUntil, hopCount: 0, hopLimit: 12, transportHistory: [] },
+    state: "QUEUED", createdAt: now, updatedAt: now, attempts: 0,
+    history: [{ state: "CREATED", at: now }, { state: "QUEUED", at: now }], evidence: [] };
+}
+
+export function needsErrors(report, commandReport) {
+  if (commandErrors(commandReport).length) return ["invalid referenced command"];
+  const command = commandReport.extensions.coluvi;
+  const payload = report?.extensions?.coluvi;
+  if (!exact(payload, ["version", "kind", "commandId", "zoneId", "responseEventId", "revision", "previousEventId", "categories", "peopleAffected", "domainSignature"])) return ["invalid needs fields"];
+  const errors = [];
+  if (!exact(report, ["protocolVersion", "eventId", "incidentRef", "eventType", "reportMode", "priority", "createdAt", "observedAt", "validUntil", "anonymousDeviceId", "nonce", "relatedEventId", "extensions", "signature"])
+    || !exact(report.extensions, ["coluvi"])) errors.push("invalid needs report fields");
+  if (payload.version !== 1 || payload.kind !== "CHECKIN_NEEDS" || !token(payload.responseEventId)
+    || payload.responseEventId === report.eventId || !Number.isInteger(payload.revision) || payload.revision < 0 || payload.revision > 99
+    || (payload.revision === 0 ? payload.previousEventId !== null : !token(payload.previousEventId))
+    || payload.previousEventId === report.eventId) errors.push("invalid needs history link");
+  if (!Array.isArray(payload.categories) || payload.categories.length > CHECKIN_NEEDS.length
+    || payload.categories.some(value => !CHECKIN_NEEDS.includes(value)) || new Set(payload.categories).size !== payload.categories.length
+    || (payload.peopleAffected !== null && (!Number.isInteger(payload.peopleAffected) || payload.peopleAffected < 1 || payload.peopleAffected > 999))) errors.push("invalid needs detail");
+  if (payload.commandId !== command.commandId || payload.zoneId !== command.zoneId || report.relatedEventId !== payload.responseEventId
+    || report.incidentRef !== command.incidentRef) errors.push("needs command binding mismatch");
+  if (report.protocolVersion !== "0.1" || report.eventType !== NEEDS_EVENT || report.reportMode !== "SELF" || report.priority !== "HIGH"
+    || !token(report.eventId) || !token(report.nonce) || !token(report.anonymousDeviceId)) errors.push("invalid needs report");
+  if (![report.createdAt, report.observedAt, report.validUntil].every(time) || report.observedAt < command.issuedAt
+    || report.observedAt > report.createdAt || report.createdAt >= command.responseUntil || report.validUntil !== command.responseUntil) errors.push("invalid needs validity");
+  if (typeof payload.domainSignature !== "string" || !/^[A-Za-z0-9_-]{86}$/.test(payload.domainSignature)) errors.push("invalid domain signature");
+  return errors;
+}
+
+export async function createCheckinNeeds(commandReport, response, detail, identity, previous = null, now = Date.now()) {
+  if (responseErrors(response, commandReport).length || response.extensions.coluvi.status !== "NEEDS_HELP"
+    || response.anonymousDeviceId !== identity.anonymousDeviceId || response.signature?.publicKey !== identity.publicKey
+    || !await verifyColuviDomain(response) || !time(now) || now < response.createdAt) throw new Error("Save a valid help response before adding needs");
+  if (previous && (needsErrors(previous, commandReport).length || previous.extensions.coluvi.responseEventId !== response.eventId
+    || previous.anonymousDeviceId !== identity.anonymousDeviceId || !await verifyColuviDomain(previous)
+    || now < previous.createdAt)) throw new Error("Invalid previous needs or clock regression");
+  const command = commandReport.extensions.coluvi;
+  const report = await signColuviBrowserReport({
+    protocolVersion: "0.1", eventId: globalThis.crypto.randomUUID(), incidentRef: command.incidentRef,
+    eventType: NEEDS_EVENT, reportMode: "SELF", priority: "HIGH", createdAt: now, observedAt: now,
+    validUntil: command.responseUntil, anonymousDeviceId: identity.anonymousDeviceId,
+    relatedEventId: response.eventId, nonce: globalThis.crypto.randomUUID(),
+    extensions: { coluvi: { version: 1, kind: "CHECKIN_NEEDS", commandId: command.commandId, zoneId: command.zoneId,
+      responseEventId: response.eventId, revision: previous ? previous.extensions.coluvi.revision + 1 : 0,
+      previousEventId: previous?.eventId ?? null, categories: [...detail.categories], peopleAffected: detail.peopleAffected ?? null } },
+  }, identity);
+  if (needsErrors(report, commandReport).length) throw new Error("Invalid or expired needs detail");
+  return queuedOperationalReport(report, now);
 }
 
 export function receiptErrors(report, commandReport) {

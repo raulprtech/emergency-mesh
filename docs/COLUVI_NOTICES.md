@@ -1,6 +1,6 @@
 # Avisos operativos de simulacro
 
-Estado del hito: contrato firmado, almacenamiento privado, API, panel y bandeja de la PWA integrados y verificados en Chromium. El bloque ampliado sigue abierto: actualización de estado, enriquecimiento, operación del piloto y pruebas de escala siguen siendo entregables independientes.
+Estado del hito: contrato firmado, almacenamiento privado, API, panel y bandeja de la PWA integrados y verificados en Chromium. Las actualizaciones de estado y el enriquecimiento ya se integraron por separado; el bloque ampliado sigue abierto para operación del piloto, escala y entrega final.
 
 ## Contrato
 
@@ -26,7 +26,7 @@ El generador de material nuevo provisiona `CHECKIN_REQUEST` y `OPERATIONAL_NOTIC
 
 Después de inscribir participantes, el operador completa «Emitir aviso de simulacro»: incidente, zona, fuente declarada, título, mensaje, tipo y vigencia. La confirmación de simulacro es obligatoria. Ante una respuesta POST perdida, el panel no reemite automáticamente: hay que consultar la lista antes de reintentar. Los avisos recientes incluyen conteos y detalle privado de destinatarios; al cerrar sesión se eliminan de la vista junto con el borrador.
 
-La PWA conserva el aviso y su recibo RECEIVED en una transacción, antes de avanzar su cursor independiente. La migración IndexedDB v3 añade `notices` sin borrar identidad, outbox, solicitudes ni recibos anteriores. Admite hasta 200 avisos locales y elimina explícitamente los que superan 30 días después de su caducidad. El worker v9 precarga el código nuevo; ninguna API privada entra en Cache Storage. Si falla la escritura o cambia la credencial durante la consulta, el cursor no avanza.
+La PWA conserva el aviso y su recibo RECEIVED en una transacción, antes de avanzar su cursor independiente. La migración IndexedDB v3 añade `notices` sin borrar identidad, outbox, solicitudes ni recibos anteriores. Admite hasta 200 avisos locales y elimina explícitamente los que superan 30 días después de su caducidad. Introducido con el worker v9, este código sigue precargado en el worker actual v10; ninguna API privada entra en Cache Storage. Si falla la escritura o cambia la credencial durante la consulta, el cursor no avanza.
 
 Cada tarjeta muestra SIMULACRO, texto literal —nunca HTML ejecutable—, fuente declarada, identidad firmante, zona, emisión y caducidad. Una copia vencida se conserva como historial claramente marcado CADUCADO, no como una instrucción vigente. La presentación depende del reloj local; una revocación de autoridad aún desconocida por un cliente aislado no puede propagarse por magia: su confianza debe actualizarse por el canal de provisión. La PWA no garantiza recepción con la aplicación cerrada. Los recibos se sincronizan mientras está abierta y dispone de ruta al centro; la firma no implica entrega.
 

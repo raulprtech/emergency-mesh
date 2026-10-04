@@ -3,8 +3,8 @@ import { OUTBOX_SYNC_TAG, synchronizeOutboxExclusively } from "./background-sync
 import { createBrowserIdentity, createUnsignedIdentity } from "./crypto.js";
 import { openClientDatabase } from "./idb.js";
 import { formatMessage, getCatalog, normalizeLocale } from "./i18n.js";
-import { currentEnrollment, enrollPilot, markCheckinShown, pollInbox, respondToCheckin, synchronizeReceipts, pollNotices, markNoticeShown } from "./inbox.js";
-import { verifyCommandForDevice } from "./commands.js";
+import { currentEnrollment, enrollPilot, markCheckinShown, pollInbox, respondToCheckin, updateCheckinStatus, enrichCheckinNeeds, synchronizeReceipts, pollNotices, markNoticeShown } from "./inbox.js";
+import { verifyCommandForDevice, CHECKIN_NEEDS } from "./commands.js";
 import { verifyNoticeForDevice } from "./notices.js";
 
 window.addEventListener("CLIENT_DATABASE_BLOCKED", () => {
@@ -154,7 +154,8 @@ async function render() {
   for (const item of items) {
     const article = document.createElement("article"); article.className = "outbox-item";
     const action = Object.keys(ACTIONS).find((key) => ACTIONS[key].eventType === item.envelope.report.eventType && ACTIONS[key].reportMode === item.envelope.report.reportMode);
-    const title = document.createElement("strong"); title.textContent = catalog.actions[action] ?? item.envelope.report.eventType;
+    const title = document.createElement("strong"); title.textContent = item.envelope.report.eventType === "x-coluvi-checkin-response" ? catalog.pilotQuestion
+      : item.envelope.report.eventType === "x-coluvi-checkin-needs" ? catalog.pilotAddNeeds : catalog.actions[action] ?? item.envelope.report.eventType;
     const state = document.createElement("p"); state.className = "state"; state.textContent = catalog.states[item.state];
     if (item.lastError) state.textContent += ` · ${formatMessage(catalog.lastAttempt, { error: item.lastError })}`;
     const meta = document.createElement("div"); meta.className = "meta"; meta.textContent = `${new Date(item.createdAt).toLocaleString(locale === "es" ? "es-MX" : "en")} · ${item.eventId}`;
@@ -197,7 +198,7 @@ async function requirePrivateSafeWorker() {
     const timer = setTimeout(() => { channel.port1.close(); reject(new Error(catalog.pilotWorkerUpdate)); }, 3_000);
     channel.port1.onmessage = (event) => {
       clearTimeout(timer); channel.port1.close();
-      event.data?.cache === "emergency-mesh-mobile-v9" && event.data?.privateApiCache === false ? resolve() : reject(new Error(catalog.pilotWorkerUpdate));
+      event.data?.cache === "emergency-mesh-mobile-v10" && event.data?.privateApiCache === false ? resolve() : reject(new Error(catalog.pilotWorkerUpdate));
     };
     worker.postMessage({ type: "COLUVI_CACHE_VERSION" }, [channel.port2]);
   });
@@ -219,12 +220,19 @@ async function renderInbox() {
   for (const record of await db.listCommands()) {
     if (record.deviceId !== identity.anonymousDeviceId || record.report.createdAt > now
       || !await verifyCommandForDevice(record.report, enrollment.trust.authorities, enrollment.zoneId, record.report.createdAt, true)) continue;
-    records.push({ record, saved: record.responseEventId ? await db.get(record.responseEventId) : undefined });
+    records.push({ record, saved: record.responseEventId ? await db.get(record.responseEventId) : undefined,
+      needsSaved: record.needsEventId ? await db.get(record.needsEventId) : undefined });
   }
-  const key = JSON.stringify([locale, identity.anonymousDeviceId, enrollment.trust, records.map(({ record, saved }) => [record.commandId, record.report.signature.value, record.responseEventId, record.responseStatus, saved?.state, record.report.extensions.coluvi.promptUntil <= now])]);
+  const latestEnrollment = await currentEnrollment(db, identity);
+  if (latestEnrollment?.token !== enrollment.token) return;
+  const key = JSON.stringify([locale, identity.anonymousDeviceId, enrollment.trust, records.map(({ record, saved, needsSaved }) => [record.commandId, record.report.signature.value, record.responseEventId, record.responseStatus, saved?.state, record.needsEventId, needsSaved?.state, record.report.extensions.coluvi.promptUntil <= now, record.report.validUntil <= now])]);
   // Keep stable DOM/focus and avoid repeated aria-live prompt announcements on polling.
   if (inboxRenderedKey === key) return;
   inboxRenderedKey = key;
+  const drafts = new Map([...list.querySelectorAll("form[data-needs-form]")].map(form => [form.dataset.needsForm, {
+    responseId: form.dataset.responseId, categories: [...form.querySelectorAll("input[name=category]:checked")].map(input => input.value),
+    people: form.elements.people.value, open: form.parentElement.open,
+  }]));
   shownObserver?.disconnect(); list.replaceChildren();
   shownObserver = typeof IntersectionObserver === "function" ? new IntersectionObserver((entries) => {
     for (const entry of entries) {
@@ -233,7 +241,7 @@ async function renderInbox() {
       void markCheckinShown(db, identity, entry.target.dataset.commandId).catch(() => { inboxRenderedKey = undefined; });
     }
   }, { threshold: 0.25 }) : undefined;
-  for (const { record, saved } of records) {
+  for (const { record, saved, needsSaved } of records) {
     const command = record.report.extensions.coluvi;
     const article = document.createElement("article"); article.className = "checkin-item"; article.dataset.commandId = record.commandId; article.tabIndex = -1;
     const title = document.createElement("h3"); title.textContent = catalog.pilotQuestion;
@@ -241,22 +249,29 @@ async function renderInbox() {
     const deadline = document.createElement("p"); deadline.className = "meta";
     deadline.textContent = formatMessage(catalog.pilotDeadline, { time: new Date(command.promptUntil).toLocaleString(locale === "es" ? "es-MX" : "en") });
     article.append(title, detail, deadline);
+    const close = document.createElement("p"); close.className = "meta";
+    close.textContent = formatMessage(catalog.pilotUpdateUntil, { time: new Date(command.responseUntil).toLocaleString(locale === "es" ? "es-MX" : "en") }); article.append(close);
     if (record.responseEventId) {
       const state = document.createElement("p");
       state.textContent = formatMessage(catalog.pilotSaved, { status: record.responseStatus === "SAFE" ? catalog.pilotSafe : catalog.pilotNeedsHelp, delivery: catalog.states[saved?.state] ?? catalog.states.QUEUED });
       article.append(state);
-    } else if (command.promptUntil <= now) {
+    }
+    if (command.responseUntil <= now) {
       const expired = document.createElement("p"); expired.textContent = catalog.pilotExpired; article.append(expired);
     } else {
+      if (command.promptUntil <= now) { const late = document.createElement("p"); late.textContent = catalog.pilotLateResponse; article.append(late); }
       const actions = document.createElement("div"); actions.className = "checkin-actions";
       for (const status of ["SAFE", "NEEDS_HELP"]) {
+        if (record.responseStatus === status) continue;
         const button = document.createElement("button"); button.type = "button"; button.dataset.checkinStatus = status;
         button.className = status === "SAFE" ? "safe" : "assistance"; button.textContent = status === "SAFE" ? catalog.pilotSafe : catalog.pilotNeedsHelp;
+        if (record.responseEventId) button.textContent = `${catalog.pilotUpdate}: ${button.textContent}`;
         button.setAttribute("aria-label", `${button.textContent} · ${command.incidentRef}`);
         button.addEventListener("click", async () => {
           actions.querySelectorAll("button").forEach((item) => { item.disabled = true; });
           try {
-            await respondToCheckin(db, identity, record.commandId, status);
+            if (record.responseEventId) await updateCheckinStatus(db, identity, record.commandId, status, record.responseEventId);
+            else await respondToCheckin(db, identity, record.commandId, status);
             await scheduleBackgroundSync(); await render();
             [...list.children].find((item) => item.dataset.commandId === record.commandId)?.focus();
             if (navigator.onLine) { await sync(); await refreshPilot(); }
@@ -265,12 +280,54 @@ async function renderInbox() {
         actions.append(button);
       }
       article.append(actions);
+      if (record.responseStatus === "NEEDS_HELP") article.append(checkinNeedsForm(record, needsSaved, drafts.get(record.commandId)));
+    }
+    if (record.responseEventId) {
+      const history = document.createElement("details"); const summary = document.createElement("summary");
+      const reports = record.responseHistory ?? (record.responseReport ? [record.responseReport] : saved ? [saved.envelope.report] : []);
+      summary.textContent = formatMessage(catalog.pilotHistory, { count: reports.length }); history.append(summary);
+      for (const report of reports) {
+        const line = document.createElement("p"); line.textContent = `${new Date(report.observedAt).toLocaleString(locale)} · ${report.extensions.coluvi.status === "SAFE" ? catalog.pilotSafe : catalog.pilotNeedsHelp}`; history.append(line);
+      }
+      article.append(history);
     }
     list.append(article);
     if (record.shownAt === undefined && command.promptUntil > now) shownObserver?.observe(article);
     if (focusCommand === record.commandId && focusStatus) article.querySelector(`[data-checkin-status="${focusStatus}"]`)?.focus();
   }
   if (!list.children.length) { const empty = document.createElement("p"); empty.textContent = catalog.pilotEmpty; list.append(empty); }
+}
+
+function checkinNeedsForm(record, saved, draft) {
+  const section = document.createElement("details"); section.className = "checkin-needs";
+  const summary = document.createElement("summary"); summary.textContent = catalog.pilotAddNeeds; section.append(summary);
+  const explanation = document.createElement("p"); explanation.textContent = catalog.pilotMinimumSaved; section.append(explanation);
+  const detail = record.needsHistory?.find(report => report.eventId === record.needsEventId)?.extensions.coluvi;
+  if (record.needsEventId) {
+    const status = document.createElement("p"); status.textContent = `${catalog.pilotNeedsSaved} ${catalog.states[saved?.state] ?? catalog.states.QUEUED}`; section.append(status);
+  }
+  const editing = draft?.responseId === record.responseEventId ? draft : undefined; section.open = editing?.open ?? false;
+  const form = document.createElement("form"); form.dataset.needsForm = record.commandId; form.dataset.responseId = record.responseEventId;
+  const fields = document.createElement("fieldset"); const legend = document.createElement("legend"); legend.textContent = catalog.needs; fields.append(legend);
+  for (const category of CHECKIN_NEEDS) {
+    const label = document.createElement("label"); const input = document.createElement("input"); input.type = "checkbox"; input.name = "category"; input.value = category;
+    input.checked = (editing?.categories ?? detail?.categories ?? []).includes(category); label.append(input, document.createTextNode(catalog.needNames[category])); fields.append(label);
+  }
+  const peopleLabel = document.createElement("label"); peopleLabel.textContent = catalog.pilotPeople;
+  const people = document.createElement("input"); people.type = "number"; people.name = "people"; people.min = "1"; people.max = "999"; people.step = "1"; people.inputMode = "numeric";
+  people.value = editing?.people ?? detail?.peopleAffected ?? ""; peopleLabel.append(people); fields.append(peopleLabel);
+  const save = document.createElement("button"); save.type = "submit"; save.textContent = catalog.pilotSaveNeeds; fields.append(save); form.append(fields);
+  form.addEventListener("submit", async event => {
+    event.preventDefault(); if (!form.reportValidity()) return;
+    const categories = [...form.querySelectorAll("input[name=category]:checked")].map(input => input.value);
+    fields.disabled = true;
+    try {
+      await enrichCheckinNeeds(db, identity, record.commandId, { categories, peopleAffected: people.value === "" ? null : Number(people.value) }, record.responseEventId, record.needsEventId ?? null);
+      await scheduleBackgroundSync(); await render();
+      if (navigator.onLine) { await sync(); await refreshPilot(); }
+    } catch { byId("pilot-status").textContent = catalog.pilotNeedsFailed; fields.disabled = false; }
+  });
+  section.append(form); return section;
 }
 
 async function renderNotices() {

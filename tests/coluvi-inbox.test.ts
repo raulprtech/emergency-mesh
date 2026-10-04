@@ -6,7 +6,7 @@ import { createBrowserIdentity } from "../src/mobile-client/crypto.js";
 import { ColuviAuth, enrollmentCodeHash, enrollmentProofBytes, passwordVerifier } from "../src/commands/auth.ts";
 import { authorityFor, authorityFingerprint, createCheckinCommand } from "../src/commands/authority.ts";
 import { createDeviceIdentityFromSeed } from "../src/protocol/identity.ts";
-import { currentEnrollment, enrollPilot, markCheckinShown, pollInbox, respondToCheckin, synchronizeReceipts, verifyPilotTrust, pollNotices, markNoticeShown } from "../src/mobile-client/inbox.js";
+import { currentEnrollment, enrollPilot, markCheckinShown, pollInbox, respondToCheckin, updateCheckinStatus, enrichCheckinNeeds, synchronizeReceipts, verifyPilotTrust, pollNotices, markNoticeShown } from "../src/mobile-client/inbox.js";
 import { createOperationalNotice } from "../src/commands/notices.ts";
 
 class PilotMemoryStore extends MemoryClientStore {
@@ -41,10 +41,21 @@ class PilotMemoryStore extends MemoryClientStore {
     const row = this.commands.get(id); if (!row || row.deviceId !== deviceId) throw new Error("Unknown command");
     if (row.shownAt !== undefined) return false; row.shownAt = at; this.receipts.set(receipt.eventId, structuredClone(receipt)); return true;
   }
-  async queueCommandResponse(id: string, deviceId: string, item: any) {
+  async queueCommandResponse(id: string, deviceId: string, item: any, expectedResponseId: string | null, token: string, previousReport: any = null) {
+    const enrollment = this.settings.get("coluviEnrollment"); if (enrollment?.deviceId !== deviceId || enrollment.token !== token) throw new Error("Enrollment changed");
     const row = this.commands.get(id); if (!row || row.deviceId !== deviceId) throw new Error("Unknown command");
-    if (row.responseEventId) return false;
-    this.items.set(item.eventId, structuredClone(item)); row.responseEventId = item.eventId; row.responseStatus = item.envelope.report.extensions.coluvi.status; return true;
+    if ((row.responseEventId ?? null) !== expectedResponseId) return false;
+    const previous = row.responseReport ?? previousReport;
+    const history = row.responseHistory ?? (previous ? [previous] : []); if (history.length >= 100) throw new Error("Response history capacity exceeded");
+    this.items.set(item.eventId, structuredClone(item)); row.responseEventId = item.eventId; row.responseStatus = item.envelope.report.extensions.coluvi.status;
+    row.responseReport = structuredClone(item.envelope.report); row.responseHistory = [...history, row.responseReport]; row.needsEventId = null; return true;
+  }
+  async queueCommandNeeds(id: string, deviceId: string, item: any, expectedResponseId: string, expectedNeedsId: string | null, token: string) {
+    const enrollment = this.settings.get("coluviEnrollment"); if (enrollment?.deviceId !== deviceId || enrollment.token !== token) throw new Error("Enrollment changed");
+    const row = this.commands.get(id); if (!row || row.deviceId !== deviceId) throw new Error("Unknown command");
+    if (row.responseEventId !== expectedResponseId || (row.needsEventId ?? null) !== expectedNeedsId || row.responseStatus !== "NEEDS_HELP") return false;
+    const history = row.needsHistory ?? []; if (history.length >= 100) throw new Error("Needs history capacity exceeded");
+    this.items.set(item.eventId, structuredClone(item)); row.needsEventId = item.eventId; row.needsHistory = [...history, structuredClone(item.envelope.report)]; return true;
   }
   async listReceipts() { return [...this.receipts.values()].map((item) => structuredClone(item)); }
   async putReceipt(receipt: any) { this.receipts.set(receipt.eventId, structuredClone(receipt)); }
@@ -116,14 +127,56 @@ test("offline check-in response is queued once, survives repeated clicks and nee
   assert.equal(first.envelope.report.location, undefined); assert.equal(first.envelope.report.eventType, "x-coluvi-checkin-response");
 });
 
-test("inbox clock skew retries without losing cursor and expiration never reactivates prompt", async () => {
+test("inbox clock skew retries without losing cursor and late observations use explicit v2 semantics", async () => {
   const { store, identity } = await enrolledStore(); const now = Date.now();
   await assert.rejects(pollInbox(store, identity, page([commandAt(now + 60_000)]), now), /clock/);
   assert.equal((await currentEnrollment(store, identity)).cursor, 0);
   const command = commandAt(now); await pollInbox(store, identity, page([command]), now);
-  await assert.rejects(respondToCheckin(store, identity, command.eventId, "SAFE", now + 60_000), /expired/);
+  const late = await respondToCheckin(store, identity, command.eventId, "SAFE", now + 60_000);
+  assert.equal(late.envelope.report.extensions.coluvi.version, 2);
   assert.equal(await markCheckinShown(store, identity, command.eventId, now + 60_000), false);
-  assert.equal((await store.list()).length, 0);
+  assert.equal((await store.list()).length, 1);
+  await assert.rejects(updateCheckinStatus(store, identity, command.eventId, "NEEDS_HELP", late.eventId, now + 120_000), /expired/);
+});
+
+test("minimal custody precedes enrichment; concurrent updates cannot overwrite another tab or lose immutable history", async () => {
+  const { store, identity } = await enrolledStore(); const now = Date.now(); const command = commandAt(now);
+  await pollInbox(store, identity, page([command]), now);
+  const first = await respondToCheckin(store, identity, command.eventId, "NEEDS_HELP", now + 1);
+  const original = structuredClone(await store.get(first.eventId));
+  await assert.rejects(enrichCheckinNeeds(store, identity, command.eventId, { categories: ["invalid"] }, first.eventId, null, now + 2));
+  assert.deepEqual(await store.get(first.eventId), original);
+  const details = await Promise.allSettled([
+    enrichCheckinNeeds(store, identity, command.eventId, { categories: ["WATER"] }, first.eventId, null, now + 2),
+    enrichCheckinNeeds(store, identity, command.eventId, { categories: ["FOOD"] }, first.eventId, null, now + 2),
+  ]);
+  assert.equal(details.filter(item => item.status === "fulfilled").length, 1);
+  assert.equal((await store.getCommand(command.eventId)).needsHistory.length, 1);
+  const updates = await Promise.allSettled([
+    updateCheckinStatus(store, identity, command.eventId, "SAFE", first.eventId, now + 3),
+    updateCheckinStatus(store, identity, command.eventId, "NEEDS_HELP", first.eventId, now + 3),
+  ]);
+  assert.equal(updates.filter(item => item.status === "fulfilled").length, 1);
+  let record = await store.getCommand(command.eventId);
+  assert.equal(record.responseHistory.length, 2); assert.equal(record.needsEventId, null);
+  assert.deepEqual(await store.get(first.eventId), original);
+  assert.equal((await store.list()).length, 3);
+  await assert.rejects(enrichCheckinNeeds(store, identity, command.eventId, { categories: ["WATER"] }, first.eventId, null, now + 4), /changed/);
+  await store.remove(record.responseEventId);
+  const next = await updateCheckinStatus(store, identity, command.eventId, "NEEDS_HELP", record.responseEventId, now + 5);
+  record = await store.getCommand(command.eventId);
+  assert.equal(record.responseHistory.length, 3); assert.equal(record.responseEventId, next.eventId);
+});
+
+test("enrollment rotation during signing prevents custody without disturbing the first response", async () => {
+  const { store, identity } = await enrolledStore(); const now = Date.now(); const command = commandAt(now);
+  await pollInbox(store, identity, page([command]), now);
+  const first = await respondToCheckin(store, identity, command.eventId, "NEEDS_HELP", now + 1);
+  const original = store.queueCommandResponse.bind(store);
+  store.queueCommandResponse = async (...args) => { store.settings.get("coluviEnrollment").token = "changed"; return original(...args); };
+  await assert.rejects(updateCheckinStatus(store, identity, command.eventId, "SAFE", first.eventId, now + 2), /Enrollment changed/);
+  assert.equal((await store.getCommand(command.eventId)).responseEventId, first.eventId);
+  assert.equal((await store.list()).length, 1);
 });
 
 test("failed inbox custody never advances cursor or overwrites rotated enrollment", async () => {

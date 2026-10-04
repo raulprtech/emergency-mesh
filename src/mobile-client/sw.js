@@ -1,6 +1,6 @@
 import { OUTBOX_SYNC_TAG, runBackgroundSync } from "./background-sync.js";
 
-const CACHE = "emergency-mesh-mobile-v9";
+const CACHE = "emergency-mesh-mobile-v10";
 const ASSETS = [
   "/mobile/", "/mobile/styles.css", "/mobile/app.js", "/mobile/core.js",
   "/mobile/crypto.js", "/mobile/idb.js", "/mobile/i18n.js", "/mobile/protected.js",

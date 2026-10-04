@@ -3,6 +3,8 @@ export const METRICS = Object.freeze([
   ["safe", "Estoy bien"], ["needsHelp", "Necesito ayuda"], ["unknown", "Sin respuesta · UNKNOWN"], ["pending", "Plazo abierto sin respuesta"], ["late", "Última respuesta llegó tarde"],
 ]);
 export const STATES = Object.freeze({ SAFE: "Estoy bien", NEEDS_HELP: "Necesito ayuda", UNKNOWN: "Sin respuesta al vencer el plazo · no implica peligro", PENDING: "Sin respuesta · plazo abierto" });
+export const NEED_NAMES = Object.freeze({ WATER: "Agua", FOOD: "Alimentos", MEDICATION: "Medicamentos", MEDICAL_CARE: "Atención médica", EXTRACTION: "Extracción", SHELTER: "Refugio", ENERGY: "Energía", TRANSPORT: "Transporte", COMMUNICATION: "Comunicación" });
+export const HISTORY_LINKS = Object.freeze({ ROOT: "Inicio", LINKED: "Antecedente verificado", MISSING: "Antecedente aún no recibido", CONFLICT: "Vínculo inconsistente; estado declarado independiente" });
 export function checkinInput(incidentRef, zoneId, promptMinutes, lateMinutes, zones) {
   const prompt = Number(promptMinutes); const late = Number(lateMinutes);
   if (!/^[A-Za-z0-9_-]{1,80}$/.test(incidentRef) || !zones.includes(zoneId)
@@ -10,7 +12,7 @@ export function checkinInput(incidentRef, zoneId, promptMinutes, lateMinutes, zo
   return { incidentRef, zoneId, promptMs: prompt * 60_000, lateMs: late * 60_000 };
 }
 export function requestPhase(payload, now = Date.now()) {
-  return now < payload.promptUntil ? "Plazo de respuesta abierto" : now < payload.responseUntil ? "Solo entrega de respuestas ya guardadas" : "Ventana de entrega cerrada";
+  return now < payload.promptUntil ? "Plazo de respuesta abierto" : now < payload.responseUntil ? "Respuestas tardías y actualizaciones admitidas" : "Ventana de entrega cerrada";
 }
 export function metricsElement(counts, document = globalThis.document, metrics = METRICS) {
   const list = document.createElement("dl"); list.className = "metrics";

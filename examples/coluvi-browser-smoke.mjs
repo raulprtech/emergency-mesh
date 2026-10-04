@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDeviceIdentity } from "../src/protocol/identity.ts";
 import { createColuviConfiguration } from "../src/commands/config.ts";
+import { authorityFor, createCheckinCommand } from "../src/commands/authority.ts";
 
 // Owns only fresh fixture processes/files. No TLS bypass, real participant or pilot DB.
 const executable = process.env.COLUVI_CHROMIUM_PATH;
@@ -125,7 +126,7 @@ try {
   })()`);
   await mobile.send("Page.navigate", { url: origin + "/mobile/" });
   await mobile.until("Boolean(document.querySelector('#identity-status')?.textContent)", "mobile startup");
-  await mobile.until("Boolean(navigator.serviceWorker.controller)", "worker v9 control");
+  await mobile.until("Boolean(navigator.serviceWorker.controller)", "worker v10 control");
   const migration = await mobile.evaluate(`(async () => {
     const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase();
     try { return { preservedIdentity: (await db.getSetting('identity')).anonymousDeviceId === ${JSON.stringify(originalId)}, preservedReport: (await db.list()).some(item => item.envelope.report.shortMessage === 'SIMULACRO anterior a migración'), missingIsUndefined: (await db.getSetting('missing')) === undefined }; }
@@ -147,6 +148,29 @@ try {
   })`);
   const migrationV2 = await legacyV2.evaluate(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { return { preservedCommand: (await db.getCommand('v2-sentinel-command')).retained, preservedReceipt: (await db.listReceipts())[0].retained, emptyNotices: (await db.listNotices()).length === 0, version: (await indexedDB.databases()).find(row => row.name === 'emergency-mesh-client').version }; } finally { db.close(); } })()`);
   assert.deepEqual(migrationV2, { preservedCommand: true, preservedReceipt: true, emptyNotices: true, version: 3 });
+  const casIssuer = createDeviceIdentity(); const casTime = Date.now();
+  const casCommand = createCheckinCommand(casIssuer, authorityFor(casIssuer, ["cas-zone"]), { commandId: "cas-command", zoneId: "cas-zone", incidentRef: "storage-test", nonce: "cas-nonce", issuedAt: casTime, promptUntil: casTime + 60_000, responseUntil: casTime + 120_000 });
+  const indexedDbConcurrency = await legacyV2.evaluate(`(async () => {
+    const { openClientDatabase } = await import('/mobile/idb.js'); const { createBrowserIdentity } = await import('/mobile/crypto.js');
+    const { createCheckinResponse, createCheckinUpdate, createCheckinNeeds, createCheckinReceipt } = await import('/mobile/commands.js');
+    const a = await openClientDatabase(); const b = await openClientDatabase();
+    try {
+      const identity = await createBrowserIdentity(); const id = identity.anonymousDeviceId; const command = ${JSON.stringify(casCommand)}; const now = ${casTime};
+      await a.setSetting('identity', identity); await a.saveEnrollment({ deviceId: id, token: 'cas-test-token' });
+      const receipt = await createCheckinReceipt(command, 'RECEIVED', identity, now);
+      await a.receiveCommand({ commandId: command.eventId, deviceId: id, report: command, receivedAt: now }, { eventId: receipt.eventId, report: receipt });
+      const first = await createCheckinResponse(command, 'NEEDS_HELP', identity, now);
+      await a.queueCommandResponse(command.eventId, id, first, null, 'cas-test-token');
+      const updates = await Promise.all([createCheckinUpdate(command, 'NEEDS_HELP', identity, first.envelope.report, now + 1), createCheckinUpdate(command, 'NEEDS_HELP', identity, first.envelope.report, now + 1)]);
+      const states = await Promise.all([a.queueCommandResponse(command.eventId, id, updates[0], first.eventId, 'cas-test-token'), b.queueCommandResponse(command.eventId, id, updates[1], first.eventId, 'cas-test-token')]);
+      const current = await a.getCommand(command.eventId);
+      const details = await Promise.all([createCheckinNeeds(command, current.responseReport, { categories: ['WATER'] }, identity, null, now + 2), createCheckinNeeds(command, current.responseReport, { categories: ['FOOD'] }, identity, null, now + 2)]);
+      const needs = await Promise.all([a.queueCommandNeeds(command.eventId, id, details[0], current.responseEventId, null, 'cas-test-token'), b.queueCommandNeeds(command.eventId, id, details[1], current.responseEventId, null, 'cas-test-token')]);
+      const final = await a.getCommand(command.eventId);
+      return { stateWinners: states.filter(Boolean).length, needsWinners: needs.filter(Boolean).length, states: final.responseHistory.length, needs: final.needsHistory.length, outbox: (await a.list()).length, firstPreserved: (await a.get(first.eventId)).envelope.report.signature.value === first.envelope.report.signature.value };
+    } finally { a.close(); b.close(); }
+  })()`);
+  assert.deepEqual(indexedDbConcurrency, { stateWinners: 1, needsWinners: 1, states: 2, needs: 1, outbox: 3, firstPreserved: true });
   await mobile.send("Page.bringToFront");
   await mobile.evaluate(`(() => {
     document.querySelector('#pilot-setup').open = true;
@@ -180,6 +204,7 @@ try {
   const commandId = await operator.evaluate("document.querySelector('#requests [data-command-id]').dataset.commandId");
   assert.equal(await operator.evaluate("document.querySelector('#password').value === '' && !document.cookie.includes('coluvi_operator')"), true);
   await mobile.send("Page.bringToFront");
+  await mobile.until("document.querySelector('#pilot-refresh').disabled === false", "foreground inbox ready for explicit refresh");
   await mobile.evaluate("document.querySelector('#pilot-refresh').click()");
   await mobile.until("document.querySelector('[data-checkin-status=NEEDS_HELP]') !== null", "verified prompt");
   await mobile.evaluate("document.querySelector('.checkin-item').scrollIntoView()");
@@ -202,19 +227,26 @@ try {
   await mobile.evaluate("Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => false }); window.dispatchEvent(new Event('offline')); document.querySelector('[data-checkin-status=NEEDS_HELP]').click()");
   const responseState = `(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { const rows = (await db.list()).filter(item => item.envelope.report.eventType === 'x-coluvi-checkin-response'); return { count: rows.length, state: rows[0]?.state, evidence: rows[0]?.evidence?.at(-1)?.level }; } finally { db.close(); } })()`;
   await mobile.until(`(${responseState}).then(value => value.count === 1 && value.state === 'QUEUED')`, "offline persisted response");
+  await mobile.until("Boolean(document.querySelector('[data-needs-form]'))", "optional enrichment after minimal custody");
+  await mobile.evaluate("document.querySelector('.checkin-needs').open = true; const form = document.querySelector('[data-needs-form]'); form.querySelector('[value=WATER]').checked = true; form.querySelector('[value=TRANSPORT]').checked = true; form.elements.people.value = '3'; form.requestSubmit(); true");
+  const needsState = `(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { const record = (await db.listCommands())[0]; const item = record.needsEventId ? await db.get(record.needsEventId) : undefined; return { count: record.needsHistory?.length, state: item?.state, categories: item?.envelope.report.extensions.coluvi.categories }; } finally { db.close(); } })()`;
+  await mobile.until(`(${needsState}).then(value => value.count === 1 && value.state === 'QUEUED')`, "independent offline needs custody");
+  assert.equal((await mobile.evaluate(responseState)).state, "QUEUED");
   // Close the actual client window, then open a new offline one with the same profile.
   await fetch(`${debugOrigin}/json/close/${mobile.targetId}`);
   mobile.socket.close();
   mobile = await connect(debugOrigin, "about:blank");
   await setOffline(true);
   await mobile.send("Page.navigate", { url: origin + "/mobile/" });
-  await mobile.until("Boolean(document.querySelector('.checkin-item')) && !document.querySelector('[data-checkin-status]')", "reopened answered prompt");
+  await mobile.until("Boolean(document.querySelector('[data-needs-form]')) && Boolean(document.querySelector('[data-checkin-status=SAFE]')) && !document.querySelector('[data-checkin-status=NEEDS_HELP]')", "reopened answered prompt with update option");
   await mobile.until("Boolean(document.querySelector('.notice-item'))", "notice survives closing and reopening the window");
   const queued = await mobile.evaluate(responseState); assert.equal(queued.count, 1); assert.equal(queued.state, "QUEUED");
+  assert.deepEqual((await mobile.evaluate(needsState)).categories, ["WATER", "TRANSPORT"]);
   await startServer(); await setOffline(false);
   await mobile.evaluate("Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => true }); window.dispatchEvent(new Event('online')); document.querySelector('#sync').click()");
   await mobile.until(`(${responseState}).then(value => value.count === 1 && value.state === 'SYNCED')`, "correlated backend custody");
   assert.equal((await mobile.evaluate(responseState)).evidence, "BACKEND");
+  await mobile.until(`(${needsState}).then(value => value.state === 'SYNCED')`, "needs backend custody");
   await mobile.evaluate("document.querySelector('#pilot-refresh').click()");
   await mobile.until(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { return (await db.listReceipts()).length === 4 && (await db.listReceipts()).every(row => row.state === 'SYNCED'); } finally { db.close(); } })()`, "check-in and notice receipt recovery");
   await operator.send("Page.bringToFront");
@@ -227,6 +259,9 @@ try {
   const privateEvidence = await operator.evaluate(`(async () => { const response = await fetch('/api/operator/checkins/${commandId}?limit=10', { cache: 'no-store' }); const detail = await response.json(); return { counts: detail.counts, histories: detail.recipients.map(row => row.history.length) }; })()`);
   assert.equal(privateEvidence.counts.requested, 1); assert.equal(privateEvidence.counts.received, 1); assert.equal(privateEvidence.counts.shown, 1);
   assert.equal(privateEvidence.counts.responded, 1); assert.equal(privateEvidence.counts.needsHelp, 1); assert.deepEqual(privateEvidence.histories, [1]);
+  const needsEvidence = await operator.evaluate(`fetch('/api/operator/checkins/${commandId}?limit=10', { cache: 'no-store' }).then(response => response.json()).then(detail => ({ counts: detail.needsCounts, current: detail.recipients[0].needs, history: detail.recipients[0].needsHistory.length }))`);
+  assert.equal(needsEvidence.counts.WATER, 1); assert.equal(needsEvidence.counts.TRANSPORT, 1); assert.equal(needsEvidence.current.peopleAffected, 3); assert.equal(needsEvidence.history, 1);
+  assert.equal(await operator.evaluate("document.querySelector('[data-current-needs]').textContent.includes('Transporte')"), true);
   const noticeEvidence = await operator.evaluate(`fetch('/api/operator/notices/${noticeId}?limit=10', { cache: 'no-store' }).then(response => response.json()).then(detail => detail.counts)`);
   assert.deepEqual(noticeEvidence, { requested: 1, received: 1, shown: 1 });
   // Check the populated private UI, not merely the login page.
@@ -238,6 +273,17 @@ try {
   assert.equal(tree.nodes.filter(node => !node.ignored && interactive.has(node.role?.value) && !node.name?.value?.trim()).length, 0);
   await mobile.send("Emulation.setDeviceMetricsOverride", { width: 360, height: 800, deviceScaleFactor: 1, mobile: true });
   assert.equal(await mobile.evaluate("document.documentElement.scrollWidth <= innerWidth"), true);
+  await mobile.send("Page.bringToFront"); await setOffline(true);
+  await mobile.evaluate("Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => false }); document.querySelector('[data-checkin-status=SAFE]').click()");
+  await mobile.until(`(${responseState}).then(value => value.count === 2 && value.state === 'QUEUED')`, "offline status update preserves initial response");
+  await mobile.send("Page.reload", { ignoreCache: true });
+  await mobile.until("Boolean(document.querySelector('[data-checkin-status=NEEDS_HELP]')) && !document.querySelector('[data-checkin-status=SAFE]')", "updated safe state survives offline reload");
+  await setOffline(false);
+  await mobile.evaluate("Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => true }); window.dispatchEvent(new Event('online')); document.querySelector('#sync').click()");
+  await mobile.until(`(${responseState}).then(value => value.count === 2 && value.state === 'SYNCED')`, "updated safe state reaches backend");
+  const updateEvidence = await operator.evaluate(`fetch('/api/operator/checkins/${commandId}?limit=10', { cache: 'no-store' }).then(response => response.json()).then(detail => ({ counts: detail.counts, needs: detail.recipients[0].needs, needsCounts: detail.needsCounts, history: detail.recipients[0].history.length, needsHistory: detail.recipients[0].needsHistory.length, link: detail.recipients[0].history.at(-1).link }))`);
+  assert.equal(updateEvidence.counts.requested, 1); assert.equal(updateEvidence.counts.responded, 1); assert.equal(updateEvidence.counts.safe, 1); assert.equal(updateEvidence.counts.needsHelp, 0);
+  assert.equal(updateEvidence.needs, null); assert.equal(updateEvidence.needsCounts.WATER, 0); assert.equal(updateEvidence.history, 2); assert.equal(updateEvidence.needsHistory, 1); assert.equal(updateEvidence.link, "LINKED");
   // Resend the exact signed packet: duplicate does not grow history.
   await mobile.evaluate(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const { canonicalCbor } = await import('/mobile/crypto.js'); const db = await openClientDatabase(); try { const item = (await db.list()).find(row => row.envelope.report.eventType === 'x-coluvi-checkin-response'); const response = await fetch('/api/packets', { method: 'POST', body: canonicalCbor(item.envelope) }); const result = await response.json(); if (result.status !== 'DUPLICATE') throw new Error('Duplicate not preserved'); } finally { db.close(); } })()`);
   const cacheSafe = await mobile.evaluate(`(async () => { for (const name of await caches.keys()) { for (const request of await (await caches.open(name)).keys()) { const url = new URL(request.url); if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/command-center/')) return false; } } return true; })()`);
@@ -260,7 +306,7 @@ try {
   assert.equal(legacy.queuedMarker.state, "QUEUED"); assert.equal(legacy.syncedMarker.state, "SYNCED");
   const accessibility = await regression("examples/accessibility-smoke.mjs", [String(new URL(debugOrigin).port), origin + "/mobile/", "127.0.0.1"]);
   assert.equal(accessibility.success, true);
-  console.log(JSON.stringify({ scenario: "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico", migration, migrationV2, enrolledThroughUi: true, issuedThroughUi: true, noticeIssuedThroughUi: true, noticeEvidence, noticeSurvivedOfflineReopen: true, noticeTextNotHtml: true, expiredNoticeLabeled: true, backendStoppedWhileOffline: true, repeatedPollPreservesPromptDom: true, offlineQueued: queued.state, survivedWindowCloseAndReopen: true, reconnectedState: (await mobile.evaluate(responseState)).state, backendEvidence: "BACKEND", privateEvidence, duplicatePreserved: true, cacheSafe, publicPrivacy, logoutCleared: true, constrained360px: true, unnamedOperatorControls: 0, legacyOfflineRegression: true, mobileAccessibilityRegression: accessibility.success, diagnostics }, null, 2));
+  console.log(JSON.stringify({ scenario: "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico", migration, migrationV2, indexedDbConcurrency, enrolledThroughUi: true, issuedThroughUi: true, noticeIssuedThroughUi: true, noticeEvidence, needsEvidence, updateEvidence, noticeSurvivedOfflineReopen: true, noticeTextNotHtml: true, expiredNoticeLabeled: true, backendStoppedWhileOffline: true, repeatedPollPreservesPromptDom: true, offlineQueued: queued.state, survivedWindowCloseAndReopen: true, reconnectedState: (await mobile.evaluate(responseState)).state, backendEvidence: "BACKEND", privateEvidence, duplicatePreserved: true, cacheSafe, publicPrivacy, logoutCleared: true, constrained360px: true, unnamedOperatorControls: 0, legacyOfflineRegression: true, mobileAccessibilityRegression: accessibility.success, diagnostics }, null, 2));
 } finally {
   for (const connection of connections) connection.socket.close();
   await stop(browser); await stop(server);

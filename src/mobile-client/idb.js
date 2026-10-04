@@ -137,13 +137,38 @@ export async function openClientDatabase(indexedDb = globalThis.indexedDB) {
         inbox.put({ ...record, shownAt: at }); receipts.put(receipt); done(true);
       };
     }),
-    queueCommandResponse: (commandId, deviceId, item) => atomic(["inbox", "outbox"], ({ inbox, outbox }, done, fail) => {
-      const request = inbox.get(commandId);
-      request.onsuccess = () => {
-        const record = request.result;
-        if (!record || record.deviceId !== deviceId) return fail(new Error("Unknown command recipient"));
-        if (record.responseEventId) return done(false);
-        outbox.put(item); inbox.put({ ...record, responseEventId: item.eventId, responseStatus: item.envelope.report.extensions.coluvi.status }); done(true);
+    queueCommandResponse: (commandId, deviceId, item, expectedResponseId, token, previousReport = null) => atomic(["inbox", "outbox", "settings"], ({ inbox, outbox, settings }, done, fail) => {
+      const enrollment = settings.get("coluviEnrollment");
+      enrollment.onsuccess = () => {
+        if (enrollment.result?.value?.deviceId !== deviceId || enrollment.result.value.token !== token) return fail(new Error("Enrollment changed before response custody"));
+        const request = inbox.get(commandId);
+        request.onsuccess = () => {
+          const record = request.result;
+          if (!record || record.deviceId !== deviceId) return fail(new Error("Unknown command recipient"));
+          if ((record.responseEventId ?? null) !== (expectedResponseId ?? null)) return done(false);
+          const previous = record.responseReport ?? previousReport;
+          const history = record.responseHistory ?? (previous && previous.eventId === record.responseEventId ? [previous] : []);
+          if (history.length >= 100) return fail(new Error("Response history capacity exceeded"));
+          const report = item.envelope.report;
+          outbox.put(item); inbox.put({ ...record, responseEventId: item.eventId, responseStatus: report.extensions.coluvi.status,
+            responseReport: report, responseHistory: [...history, report], needsEventId: null }); done(true);
+        };
+      };
+    }),
+    queueCommandNeeds: (commandId, deviceId, item, expectedResponseId, expectedNeedsId, token) => atomic(["inbox", "outbox", "settings"], ({ inbox, outbox, settings }, done, fail) => {
+      const enrollment = settings.get("coluviEnrollment");
+      enrollment.onsuccess = () => {
+        if (enrollment.result?.value?.deviceId !== deviceId || enrollment.result.value.token !== token) return fail(new Error("Enrollment changed before needs custody"));
+        const request = inbox.get(commandId);
+        request.onsuccess = () => {
+          const record = request.result;
+          if (!record || record.deviceId !== deviceId) return fail(new Error("Unknown command recipient"));
+          if (record.responseEventId !== expectedResponseId || (record.needsEventId ?? null) !== (expectedNeedsId ?? null) || record.responseStatus !== "NEEDS_HELP") return done(false);
+          const history = record.needsHistory ?? [];
+          if (history.length >= 100) return fail(new Error("Needs history capacity exceeded"));
+          const report = item.envelope.report;
+          outbox.put(item); inbox.put({ ...record, needsEventId: item.eventId, needsHistory: [...history, report] }); done(true);
+        };
       };
     }),
     putReceipt: (receipt) => transaction("receipts", "readwrite", (store) => store.put(receipt)),

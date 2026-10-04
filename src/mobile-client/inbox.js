@@ -1,5 +1,5 @@
 import { canonicalCbor } from "./crypto.js";
-import { createCheckinReceipt, createCheckinResponse, verifyCommandForDevice } from "./commands.js";
+import { createCheckinReceipt, createCheckinResponse, createCheckinUpdate, createCheckinNeeds, verifyCommandForDevice } from "./commands.js";
 import { createNoticeReceipt, verifyNoticeForDevice, validAuthorityKinds } from "./notices.js";
 
 const fromBase64 = (value) => Uint8Array.from(atob(value.replaceAll("-", "+").replaceAll("_", "/")), (char) => char.charCodeAt(0));
@@ -144,10 +144,37 @@ export async function respondToCheckin(store, identity, commandId, status, now =
   const enrollment = await currentEnrollment(store, identity); const record = await store.getCommand(commandId);
   if (!enrollment || !record || record.deviceId !== identity.anonymousDeviceId) throw new Error("Unknown enrolled check-in");
   if (record.responseEventId) return store.get(record.responseEventId);
-  if (!await verifyCommandForDevice(record.report, enrollment.trust.authorities, enrollment.zoneId, now)) throw new Error("Check-in is expired or untrusted");
-  const item = await createCheckinResponse(record.report, status, identity, now);
-  const saved = await store.queueCommandResponse(commandId, identity.anonymousDeviceId, item);
+  if (!await verifyCommandForDevice(record.report, enrollment.trust.authorities, enrollment.zoneId, now, true)) throw new Error("Check-in is expired or untrusted");
+  const item = now < record.report.extensions.coluvi.promptUntil
+    ? await createCheckinResponse(record.report, status, identity, now)
+    : await createCheckinUpdate(record.report, status, identity, null, now);
+  const saved = await store.queueCommandResponse(commandId, identity.anonymousDeviceId, item, null, enrollment.token);
   return saved ? item : store.get((await store.getCommand(commandId)).responseEventId);
+}
+
+export async function updateCheckinStatus(store, identity, commandId, status, expectedResponseId, now = Date.now()) {
+  const enrollment = await currentEnrollment(store, identity); const record = await store.getCommand(commandId);
+  if (!enrollment || !record || record.deviceId !== identity.anonymousDeviceId || !expectedResponseId
+    || record.responseEventId !== expectedResponseId) throw new Error("Response changed; review the current state");
+  if (!await verifyCommandForDevice(record.report, enrollment.trust.authorities, enrollment.zoneId, now, true)) throw new Error("Check-in is expired or untrusted");
+  const previous = record.responseReport ?? (await store.get(expectedResponseId))?.envelope.report;
+  if (!previous) throw new Error("Previous response is unavailable");
+  const item = await createCheckinUpdate(record.report, status, identity, previous, now);
+  if (!await store.queueCommandResponse(commandId, identity.anonymousDeviceId, item, expectedResponseId, enrollment.token, previous)) throw new Error("Response changed; review the current state");
+  return item;
+}
+
+export async function enrichCheckinNeeds(store, identity, commandId, detail, expectedResponseId, expectedNeedsId = null, now = Date.now()) {
+  const enrollment = await currentEnrollment(store, identity); const record = await store.getCommand(commandId);
+  if (!enrollment || !record || record.deviceId !== identity.anonymousDeviceId || !expectedResponseId
+    || record.responseEventId !== expectedResponseId || (record.needsEventId ?? null) !== expectedNeedsId) throw new Error("Response changed; review the current state");
+  if (!await verifyCommandForDevice(record.report, enrollment.trust.authorities, enrollment.zoneId, now, true)) throw new Error("Check-in is expired or untrusted");
+  const response = record.responseReport ?? (await store.get(expectedResponseId))?.envelope.report;
+  const previous = expectedNeedsId ? record.needsHistory?.find(report => report.eventId === expectedNeedsId) ?? (await store.get(expectedNeedsId))?.envelope.report : null;
+  if (expectedNeedsId && !previous) throw new Error("Previous needs detail is unavailable");
+  const item = await createCheckinNeeds(record.report, response, detail, identity, previous, now);
+  if (!await store.queueCommandNeeds(commandId, identity.anonymousDeviceId, item, expectedResponseId, expectedNeedsId, enrollment.token)) throw new Error("Response changed; review the current state");
+  return item;
 }
 
 export async function synchronizeReceipts(store, identity, fetcher = globalThis.fetch, now = Date.now()) {
