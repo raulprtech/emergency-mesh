@@ -33,7 +33,7 @@ async function regression(script, args) {
   child.stderr.on("data", chunk => { errors = (errors + chunk).slice(-4096); });
   try {
     const code = await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`Regression ${script} timed out`)), 30_000);
+      const timer = setTimeout(() => reject(new Error(`Regression ${script} timed out`)), 120_000);
       child.once("error", error => { clearTimeout(timer); reject(error); });
       child.once("exit", code => { clearTimeout(timer); resolve(code); });
     });

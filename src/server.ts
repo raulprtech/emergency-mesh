@@ -9,7 +9,7 @@ import { createBackendAcknowledgement } from "./transports/ack.ts";
 import { mobileAsset } from "./mobile-client/assets.ts";
 import { deserializeEnvelope } from "./protocol/codec.ts";
 import { runVerticalSlice } from "./simulator/scenario.ts";
-import { mapHtml } from "./web/map.ts";
+import { mapAsset } from "./web/public-map/assets.ts";
 import { loadColuviConfiguration } from "./commands/config.ts";
 import { ColuviApi } from "./commands/api.ts";
 import { operatorAsset } from "./web/operator/assets.ts";
@@ -67,6 +67,19 @@ const requestListener: import("node:http").RequestListener = (request, response)
   response.setHeader("x-frame-options", "DENY");
   if (tlsEnabled) response.setHeader("strict-transport-security", "max-age=86400");
   if (coluvi?.handles(request.url)) { void coluvi.handle(request, response); return; }
+  if ((request.method === "GET" || request.method === "HEAD") && (request.url === "/" || request.url === "/map")) {
+    response.writeHead(302, { location: "/map/", "cache-control": "no-store" }); return response.end();
+  }
+  if ((request.method === "GET" || request.method === "HEAD") && request.url?.startsWith("/map/")) {
+    const asset = mapAsset(request.url);
+    if (!asset) return json(response, 404, { error: "not found" });
+    response.writeHead(200, {
+      "content-type": asset.contentType, "cache-control": "no-cache",
+      "content-security-policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; worker-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+      "permissions-policy": "geolocation=(), camera=(), microphone=()",
+    });
+    return response.end(request.method === "HEAD" ? undefined : asset.body);
+  }
   if (coluvi && request.method === "GET" && request.url === "/command-center") { response.writeHead(302, { location: "/command-center/", "cache-control": "no-store" }); return response.end(); }
   if (coluvi && (request.method === "GET" || request.method === "HEAD") && request.url?.startsWith("/command-center/")) {
     const asset = operatorAsset(request.url);
@@ -126,10 +139,6 @@ const requestListener: import("node:http").RequestListener = (request, response)
       }
     });
     return;
-  }
-  if (request.method === "GET" && request.url === "/") {
-    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    return response.end(mapHtml);
   }
   return json(response, 404, { error: "not found" });
 };

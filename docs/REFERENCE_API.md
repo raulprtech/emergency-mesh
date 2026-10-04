@@ -8,7 +8,8 @@ The MVP server is intentionally small and uses either a seeded in-memory backend
 | `POST` | `/api/packets` | Accept `application/cbor` encoded `EmergencyEnvelope`. |
 | `GET` | `/api/events` | Disabled by default; development-only raw reports when explicitly enabled. |
 | `GET` | `/api/areas` | Policy metadata plus coarse, bucketed, threshold-suppressed areas. |
-| `GET` | `/` | Aggregate Emergency Map. |
+| `GET` | `/` | Redirects to `/map/`. |
+| `GET` / `HEAD` | `/map/` | Geographic public map with local cartography, client-side filters and dated offline snapshot. |
 | `GET` | `/mobile/` | Installable offline mobile PWA. |
 
 Ingest responses contain `ACCEPTED`, `DUPLICATE`, `EXPIRED`, or `INVALID`. Admission rejection uses HTTP 429 with `RATE_LIMITED`, a `GLOBAL`, `IDENTITY`, or `IDENTITY_CAPACITY` scope, millisecond retry guidance, and a `Retry-After` header. A rate-limited response never contains acknowledgement evidence. The reference PWA keeps custody, honors positive `retryAfterMs` or `Retry-After` guidance up to a one-hour local ceiling, and still expires the report at its signed deadline. Successful ingest responses contain the `eventId` and signature validity. `ACCEPTED` and `DUPLICATE` responses also include structured BACKEND acknowledgement evidence suitable for advancing a client from `GATEWAY_FOUND` to `SYNCED`. The client requires matching event/packet IDs, level, status and plausible acknowledgement time before releasing custody. This acknowledgement has no independent cryptographic signature; trusted HTTPS authenticates the phone-facing server response. Acceptance means storage by this reference backend only; the acknowledgement never means that a responder saw the report or that assistance is coming.

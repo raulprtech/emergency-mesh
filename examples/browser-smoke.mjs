@@ -36,29 +36,37 @@ try {
     if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
     return result.result.value;
   };
+  const until = async (condition, label, timeout = 15_000) => {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) { if (await condition()) return; await wait(100); }
+    throw new Error(`Browser condition timed out: ${label}`);
+  };
   const setOffline = async (offline) => {
     const conditions = { offline, latency: 0, downloadThroughput: -1, uploadThroughput: -1, connectionType: offline ? "none" : "wifi" };
     await send("Network.emulateNetworkConditions", conditions);
     await send("Network.overrideNetworkState", conditions);
   };
-  const stored = () => evaluate(`new Promise((resolve, reject) => {
+  // Observe a committed quiescent outbox; Background Sync uses this same lock.
+  const stored = () => evaluate(`navigator.locks.request('emergency-mesh-outbox-sync', () => new Promise((resolve, reject) => {
     const request = indexedDB.open('emergency-mesh-client');
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {
-      const tx = request.result.transaction('outbox', 'readonly');
+      const database = request.result; const tx = database.transaction('outbox', 'readonly');
       const all = tx.objectStore('outbox').getAll();
-      all.onsuccess = () => resolve(all.result.map((item) => ({ state: item.state, attempts: item.attempts, message: item.envelope.report.shortMessage })));
+      tx.oncomplete = () => { database.close(); resolve(all.result.map((item) => ({ state: item.state, attempts: item.attempts, message: item.envelope.report.shortMessage }))); };
+      tx.onerror = () => { database.close(); reject(tx.error); };
     };
-  })`);
+  }))`);
 
   await send("Runtime.enable");
   await send("Page.enable");
   await send("Network.enable");
   await send("Page.navigate", { url: targetUrl });
-  await wait(2_000);
+  await until(() => evaluate("Boolean(document.querySelector('#identity-status')?.textContent)"), "initial identity and event handlers");
   await evaluate(`navigator.serviceWorker.ready.then(() => true)`);
+  await until(() => evaluate("Boolean(navigator.serviceWorker.controller)"), "worker control");
   await evaluate(`(() => { const select = document.querySelector('#language'); select.value = 'en'; select.dispatchEvent(new Event('change')); return true; })()`);
-  await wait(500);
+  await until(() => evaluate("document.documentElement.lang === 'en'"), "persisted English locale");
   const online = await evaluate(`({
     title: document.title,
     language: document.documentElement.lang,
@@ -73,7 +81,7 @@ try {
   await managedServer?.stop();
   await setOffline(true);
   await send("Page.reload", { ignoreCache: true });
-  await wait(2_000);
+  await until(() => evaluate("document.documentElement.lang === 'en' && Boolean(document.querySelector('#identity-status')?.textContent)"), "offline application initialization");
   await evaluate(`(() => { Object.defineProperty(Navigator.prototype, "onLine", { configurable: true, get: () => false }); window.dispatchEvent(new Event("offline")); })()`);
   const offlineShell = await evaluate(`(async () => ({
     language: document.documentElement.lang,
@@ -91,15 +99,15 @@ try {
     document.querySelector('#report-form').requestSubmit();
     return true;
   })()`);
-  await wait(1_000);
+  await until(async () => (await stored()).some(item => item.message === marker && item.state === "QUEUED"), "durable offline report");
   const queuedOffline = await stored();
 
   await managedServer?.start();
   await setOffline(false);
   await evaluate(`(() => { Object.defineProperty(Navigator.prototype, "onLine", { configurable: true, get: () => true }); window.dispatchEvent(new Event("online")); })()`);
-  await wait(500);
+  await until(() => evaluate("document.querySelector('#sync').disabled === false"), "automatic synchronization released its lock");
   await evaluate(`document.querySelector("#sync").click()`);
-  await wait(2_500);
+  await until(async () => (await stored()).some(item => item.message === marker && item.state === "SYNCED"), "correlated backend custody");
   const afterReconnect = await evaluate(`({
     network: document.querySelector('#network')?.textContent,
     states: [...document.querySelectorAll('.outbox-item .state')].map((item) => item.textContent),
