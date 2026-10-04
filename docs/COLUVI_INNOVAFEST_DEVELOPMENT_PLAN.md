@@ -6,7 +6,9 @@ La referencia de producto es `Coluvi_documento_maestro_v0.1.md`, proporcionada p
 
 ## Avance verificado del bloque autónomo
 
-El 4 de octubre quedó implementado y verificado el ciclo de software autorizado: inscripción y bandeja en la PWA, respuesta mínima offline, recuperación al reabrir y sincronizar, panel privado y treinta ciclos ficticios con pérdidas, duplicados y reinicios. Pasaron 166 pruebas y el recorrido completo en Chromium, además de las regresiones previas de reporte offline y accesibilidad. La [guía de demostración](COLUVI_DEMO.md) contiene comandos, métricas y límites. Este avance no completa los hitos físicos ni la preparación de la postulación: siguen pendientes Samsung/LAN, mapa geográfico nuevo, avisos y evidencia presencial.
+El primer bloque del 4 de octubre implementó el ciclo autorizado de inscripción, bandeja, respuesta mínima offline, recuperación al reabrir, panel privado y treinta ciclos ficticios; en ese hito pasaron 166 pruebas. El bloque ampliado añadió mapa geográfico offline, avisos firmados, cambios de estado con historial, necesidades independientes, revocación y herramientas de respaldo y recuperación. La suite posterior pasó 203 pruebas. Los ensayos HTTP medidos con 300 y 600 dispositivos ficticios verificaron concurrencia, mensajes desordenados, cortes abruptos y reenvío completo.
+
+La [guía de demostración](COLUVI_DEMO.md), la [guía de carga](COLUVI_LOAD.md) y el [estado del bloque ampliado](COLUVI_EXPANDED_BLOCK.md) contienen los recorridos, resultados y criterios de cierre. No se declaran completos los hitos físicos ni la postulación: siguen pendientes Samsung/LAN, transporte por radio y evidencia presencial. La línea base y el calendario siguientes conservan el contexto del plan original del 2 de octubre; no deben confundirse con un inventario actualizado de funciones faltantes.
 
 ## Objetivo de la entrega
 

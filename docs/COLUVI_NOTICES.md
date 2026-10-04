@@ -1,12 +1,12 @@
 # Avisos operativos de simulacro
 
-Estado del hito: contrato firmado, almacenamiento privado, API, panel y bandeja de la PWA integrados y verificados en Chromium. Las actualizaciones de estado, el enriquecimiento y la operación del piloto ya se integraron por separado; el bloque ampliado sigue abierto para escala y entrega final.
+Estado del hito: contrato firmado, almacenamiento privado, API, panel y bandeja de la PWA integrados y verificados en Chromium. Las actualizaciones de estado, el enriquecimiento y la operación del piloto se integraron por separado. La [guía de carga](COLUVI_LOAD.md) registra las mediciones posteriores de escala y el [bloque ampliado](COLUVI_EXPANDED_BLOCK.md) mantiene el estado de la entrega final.
 
 ## Contrato
 
 El evento `x-coluvi-operational-notice` conserva el sobre v0.1 y añade una carga Coluvi v1 de tipo `OPERATIONAL_NOTICE`. La firma Ed25519 del reporte y la firma de dominio `COLUVI/OPERATIONAL_NOTICE/v1` cubren sus campos. El aviso incluye identificador, incidente, emisor, zona, emisión, caducidad, etiqueta de fuente, título, mensaje, nivel `INFORMATION` o `WARNING`, nonce y `simulation: true`. Una carga con `simulation: false` no se acepta, incluso con firmas válidas.
 
-La vigencia dura entre un segundo y 24 horas. Fuente, título y mensaje tienen límites de 120, 160 y 1.200 bytes UTF-8 respectivamente. No se admiten campos adicionales, coordenadas personales, datos de afectados ni necesidades. La fuente es una etiqueta firmada del emisor del piloto, no una certificación de pertenencia a una autoridad pública ni una garantía de veracidad. La futura interfaz debe mostrar por separado esa etiqueta, la identidad verificable del emisor, la caducidad y el carácter de simulacro.
+La vigencia dura entre un segundo y 24 horas. Fuente, título y mensaje tienen límites de 120, 160 y 1.200 bytes UTF-8 respectivamente. No se admiten campos adicionales, coordenadas personales, datos de afectados ni necesidades. La fuente es una etiqueta firmada del emisor del piloto, no una certificación de pertenencia a una autoridad pública ni una garantía de veracidad. La interfaz muestra por separado esa etiqueta, la identidad verificable del emisor, la caducidad y el carácter de simulacro.
 
 La capacidad `CHECKIN_REQUEST` no autoriza avisos por sí sola. Se necesita `OPERATIONAL_NOTICE` provisionada explícitamente para la misma clave y zona. `authorityFor` continúa creando una autoridad solo de check-in por defecto; no se amplían permisos anteriores de manera implícita. Los verificadores de Node y navegador rechazan zonas distintas, autoridad desconocida o revocada, falta de capacidad, firmas alteradas, mensajes futuros y avisos caducados.
 

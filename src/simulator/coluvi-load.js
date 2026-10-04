@@ -113,7 +113,13 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
     } finally { store.close(); }
     for (const stage of stages) { shuffle(stage); for (const item of stage) item.bytes = canonicalCbor(item.envelope); }
     const all = stages.flat(); const setupMs = performance.now() - began;
-    const fetchLocal = (path, init = {}) => fetch(endpoint + path, { ...init, signal: AbortSignal.timeout(10_000) });
+    const fetchLocal = async (path, init = {}) => {
+      const started = performance.now();
+      try { return await fetch(endpoint + path, { ...init, signal: AbortSignal.timeout(10_000) }); }
+      catch (error) {
+        throw new Error(`Local ${init.method ?? "GET"} ${path} failed after ${Math.round(performance.now() - started)} ms (${error.name}); observed ACKs=${acknowledged.size}, inFlight=${inFlight}`, { cause: error });
+      }
+    };
     async function login() {
       const response = await fetchLocal("/api/operator/login", { method: "POST", headers: { "content-type": "application/json", origin: endpoint }, body: JSON.stringify({ password: material.operatorPassword }) });
       assert.equal(response.status, 200); await response.json(); return response.headers.get("set-cookie").split(";")[0];
@@ -242,8 +248,9 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
     const staleSession = await fetchLocal("/api/operator/session", { headers: { cookie } }); assert.equal(staleSession.status, 401); await staleSession.text();
     await checkCredentials(); cookie = await login();
     for (const [index, stage] of stages.entries()) {
+      progress(`Delivery stage ${index + 1}/3: ${["updates", "needs", "predecessors"][index]}`);
       await deliver(stage.filter(item => !acknowledged.has(item.eventId)));
-      if (index < 2) await checkMissingPredecessors(cookie, index === 1);
+      if (index < 2) { progress(`Checking every recipient page after stage ${index + 1}`); await checkMissingPredecessors(cookie, index === 1); }
     }
     assert.equal(acknowledged.size, all.length);
     const before = await projection(cookie);

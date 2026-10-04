@@ -77,4 +77,4 @@ Para HTTPS también hacen falta las opciones de certificado y clave anteriores. 
 
 `tests/coluvi-operations.test.ts` usa carpetas temporales propias. Verifica respaldo con WAL confirmado, restauración del historial y credenciales, permisos privados, rechazo de sobrescritura y corrupción, arranque de la copia revisada, puerto ocupado sin terminar a su dueño y parada del hijo. HTTPS se prueba con una CA temporal confiada explícitamente por el cliente de prueba, sin instalarla ni desactivar la validación TLS.
 
-Estas pruebas no cubren corte eléctrico físico, fallo de disco real ni llegada desde los Samsung. El [plan ampliado](COLUVI_EXPANDED_BLOCK.md) mantiene por separado las pruebas de escala y la entrega integrada pendientes.
+Estas pruebas no cubren corte eléctrico físico, fallo de disco real ni llegada desde los Samsung. Las [pruebas de escala](COLUVI_LOAD.md) añaden cortes SIGKILL del backend temporal, sin equipararlos a fallos físicos. El [plan ampliado](COLUVI_EXPANDED_BLOCK.md) registra por separado el estado de la entrega integrada.

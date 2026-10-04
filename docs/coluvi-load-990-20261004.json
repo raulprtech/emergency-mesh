@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "recordedAt": "2026-10-04T22:44:54.653Z",
+  "evidence": "LOCAL_HTTP_SQLITE_ONLY",
+  "scenario": "SIMULACRO fictitious flood load and crash recovery",
+  "harnessSha256": "d595a230d331294a6d76cdd986f673bad9a29c56d40325b39851362240f48ab9",
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "linux",
+    "distro": "Ubuntu"
+  },
+  "configuration": {
+    "devices": 990,
+    "zones": 3,
+    "concurrency": 48,
+    "seed": 20261006,
+    "admissionLimits": {
+      "windowMs": 60000,
+      "globalRequests": 600,
+      "identityRequests": 60,
+      "trackedIdentities": 10000
+    },
+    "enrollment": "trusted fixture provisioning, not HTTP enrollment",
+    "silentDevices": 99
+  },
+  "counts": {
+    "uniqueSignedPackets": 2673,
+    "stateEvents": 1782,
+    "needsEvents": 891,
+    "requested": 990,
+    "responded": 891,
+    "safe": 396,
+    "needsHelp": 495,
+    "pending": 99,
+    "activeWater": 495,
+    "activeTransport": 495
+  },
+  "http": {
+    "accepted": 2673,
+    "duplicates": 2673,
+    "rateLimited": 384,
+    "interruptedRequests": 47,
+    "maximumInFlight": 48,
+    "requestsOutstandingAtKill": 47,
+    "fullReplayDuplicates": 2673
+  },
+  "crashes": [
+    {
+      "label": "during-concurrent-updates",
+      "signal": "SIGKILL",
+      "acknowledgedVerified": 12,
+      "persisted": 12,
+      "committedWithoutObservedAck": 0,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "after-all-confirmations",
+      "signal": "SIGKILL",
+      "acknowledgedVerified": 2673,
+      "persisted": 2673,
+      "committedWithoutObservedAck": 0,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    }
+  ],
+  "checks": {
+    "allAcknowledgedReportsDurable": true,
+    "immutableHistoryAfterReplay": true,
+    "allRecipientPagesVerified": true,
+    "missingPredecessorsExplicitBeforeArrival": true,
+    "independentlyArrivingNeedsVerified": true,
+    "invalidPacketsRejectedWithoutAck": 2,
+    "privateReportsExcludedFromPublicMap": true,
+    "sampledCredentialsSurviveRestarts": 3,
+    "operatorSessionInvalidated": true
+  },
+  "timing": {
+    "wallMs": 509271.224598,
+    "setupMs": 13620.625476,
+    "replayMs": 244946.26115600002,
+    "successfulRequestMs": {
+      "samples": 5346,
+      "p50": 140.69451800000024,
+      "p95": 448.79043100000126,
+      "maximum": 4685.115585999998
+    }
+  },
+  "limitations": [
+    "Synthetic Node clients, not simultaneous PWA instances or physical Android phones",
+    "Loopback HTTP; no LAN, Internet, TLS, radio, range or battery measurement",
+    "SIGKILL of backend process, not host power loss or disk failure",
+    "Client ledger remains in parent memory; not proof of client crash recovery",
+    "Successful request timings exclude queue and Retry-After waiting; wall time includes them",
+    "Seed fixes fixture identities and scheduling shuffle, not OS timing or the crash commit boundary",
+    "No operational notices or HTTP enrollment throughput measured"
+  ]
+}
+
