@@ -7,7 +7,7 @@ Objetivo autorizado el 4 de octubre de 2026: aprovechar una ventana aproximada d
 | Entregable | Criterio de aceptación | Estado |
 |---|---|---|
 | Mapa geográfico | Celdas y zonas públicas sobre cartografía local, filtros, leyenda y antigüedad; recarga sin backend con datos guardados identificados como antiguos; privacidad conservada | Implementado; pruebas específicas y Chromium offline aprobados. Véase `PUBLIC_MAP.md` |
-| Avisos operativos | Avisos de simulacro firmados, autorizados por tipo y zona, con fuente y caducidad; bandeja y presentación móvil verificadas; persistencia tras reinicio | Pendiente |
+| Avisos operativos | Avisos de simulacro firmados, autorizados por tipo y zona, con fuente y caducidad; bandeja y presentación móvil verificadas; persistencia tras reinicio | Contrato y SQLite implementados, seis pruebas aprobadas; API, panel, bandeja móvil y smoke integrado pendientes |
 | Evolución de estado y necesidades | Nueva respuesta vinculada a la anterior; señal mínima guardada antes de enriquecer; historial inmutable y estado más reciente sin duplicar destinatarios | Pendiente |
 | Operación del piloto | Participantes y revocación en el panel; arranque, diagnóstico y respaldo reproducibles; pruebas de restauración sin sobrescribir material existente | Pendiente |
 | Pruebas exigentes | Varios clientes y zonas, concurrencia, reinicios abruptos, entregas fuera de orden y cientos de dispositivos simulados; resultados medidos y repetibles | Pendiente |
