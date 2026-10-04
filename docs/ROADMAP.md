@@ -34,7 +34,9 @@ The Coluvi master product document and the InnovaFest Mérida preparation now gu
 - Demonstrate a fictional flood/refuge scenario through deterministic simulation and measured Android/LAN tests. Physical mesh remains unvalidated.
 - Freeze a reproducible prototype and record evidence for the climate-change category; this is adaptation/resilience, not disaster prediction or a production emergency service.
 
-These items are planned, not implemented. Native apps, responder credentials/matching, external hazard feeds, federation, and ecosystem integrations are later product stages, not prerequisites for this pilot.
+The first implementation block now includes shared Node/browser check-in validators, domain-separated signatures, a published fictitious command vector, private additive SQLite storage, frozen recipients, bounded scoped inbox queries, signed receipts, late-response history and deadline-derived UNKNOWN. See the [contract decision](adr/0002-coluvi-checkin-contract.md). Authenticated HTTP endpoints, enrollment proof, PWA inbox UI, operator panel and the bidirectional scenario are still pending; the existing general HTTP ingest fails closed for operational packets until that integration is configured.
+
+Native apps, responder credentials/matching, external hazard feeds, federation, and ecosystem integrations are later product stages, not prerequisites for this pilot.
 
 Hito 0 preparation is recorded in the [October Android pilot record](PILOT_20261002.md): refreshed non-overwriting TLS material, isolated pilot database, extended HTTPS restart/privacy coverage, and strict browser offline custody with the entire fixture backend stopped. Windows LAN forwarding and physical Samsung validation remain pending; the hito is not complete.
 

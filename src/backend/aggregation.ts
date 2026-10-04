@@ -72,6 +72,8 @@ export function aggregateReports(
   const groups = new Map<string, AreaAggregate>();
   const oldest = now - policy.maximumAgeMs;
   for (const report of reports) {
+    // Operational instructions and check-ins are private device state, not public reports.
+    if (report.eventType.startsWith("x-coluvi-")) continue;
     if (policy.maximumAgeMs !== Number.MAX_SAFE_INTEGER && (report.observedAt < oldest || report.observedAt > now + 5 * 60_000)) continue;
     const areaId = areaFor(report, policy.spatialPrecisionDecimals);
     const timeBucketStart = policy.timeBucketMs > 0

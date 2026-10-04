@@ -1,0 +1,45 @@
+{
+  "warning": "Public fictional test identity. Never use this seed as an operational authority.",
+  "seedHex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "authority": {
+    "issuerId": "oFCDfYUHBYLM9zlLCYiEfM",
+    "publicKey": "MCowBQYDK2VwAyEAA6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+    "zones": ["refugio-norte"],
+    "kinds": ["CHECKIN_REQUEST"]
+  },
+  "fingerprint": "a050837d85070582ccf7394b0988847cc312cb88259b894899f6f239cf1791a5",
+  "report": {
+    "protocolVersion": "0.1",
+    "eventId": "checkin-001",
+    "incidentRef": "simulacro-inundacion",
+    "eventType": "x-coluvi-checkin-request",
+    "reportMode": "SELF",
+    "priority": "NORMAL",
+    "createdAt": 1800000000000,
+    "observedAt": 1800000000000,
+    "validUntil": 1800000120000,
+    "anonymousDeviceId": "oFCDfYUHBYLM9zlLCYiEfM",
+    "nonce": "nonce-001",
+    "location": {"source": "ZONE", "zoneId": "refugio-norte", "timestamp": 1800000000000},
+    "extensions": {
+      "coluvi": {
+        "version": 1,
+        "kind": "CHECKIN_REQUEST",
+        "commandId": "checkin-001",
+        "incidentRef": "simulacro-inundacion",
+        "zoneId": "refugio-norte",
+        "nonce": "nonce-001",
+        "issuedAt": 1800000000000,
+        "promptUntil": 1800000060000,
+        "responseUntil": 1800000120000,
+        "issuerId": "oFCDfYUHBYLM9zlLCYiEfM",
+        "domainSignature": "ARkf6GIXcTLx_2jybZ9tSOLjclFpRSiMdAkl5CYITXWN1A2bDYZMYMpjN-kM8bL2dhAPeLIpDMGiar0csvXoDA"
+      }
+    },
+    "signature": {
+      "algorithm": "Ed25519",
+      "publicKey": "MCowBQYDK2VwAyEAA6EHv_POEL4dcN0Y50vAmWfk1jCbpQ1fHdyGZBJVMbg",
+      "value": "dQb2lzSq6nXItcRltS_50UWwxXFAkwmZMvSAi8XdhMDE6sSbzhrWH6Vlz8tQRvjxCrB6VG1k_t89yugOcojrDA"
+    }
+  }
+}

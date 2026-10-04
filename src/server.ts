@@ -90,6 +90,8 @@ const requestListener: import("node:http").RequestListener = (request, response)
       if (tooLarge) return json(response, 413, { status: "INVALID", error: "packet exceeds 65536 bytes" });
       try {
         const envelope = deserializeEnvelope(Buffer.concat(chunks));
+        // Fail closed until the authenticated Coluvi service is explicitly configured.
+        if (envelope.report.eventType.startsWith("x-coluvi-")) return json(response, 400, { status: "INVALID", error: "Coluvi operational packets require the private command service" });
         const identityAdmission = ingestAdmission.admitIdentity(envelope.report.anonymousDeviceId);
         if (!identityAdmission.allowed) return rateLimited(response, identityAdmission);
         const acknowledgedAt = Date.now();

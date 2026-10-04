@@ -7,6 +7,8 @@ import { serializeEnvelope } from "../src/protocol/codec.ts";
 import { DeterministicRoutingManager } from "../src/routing/manager.ts";
 import { makeReport } from "../src/simulator/fixtures.ts";
 import { SimulatedNode } from "../src/simulator/node.ts";
+import { createDeviceIdentityFromSeed } from "../src/protocol/identity.ts";
+import { authorityFor, createCheckinCommand } from "../src/commands/authority.ts";
 
 async function availablePort(): Promise<number> {
   const probe = createServer();
@@ -74,6 +76,39 @@ test("HTTP ingest rate limits never produce false custody evidence", { timeout: 
     if (child.exitCode === null && child.signalCode === null) {
       child.kill("SIGTERM");
       await new Promise((resolve) => child.once("exit", resolve));
+    }
+  }
+});
+
+test("unconfigured HTTP operational ingest fails closed without false backend acknowledgement", { timeout: 15_000 }, async () => {
+  const port = await availablePort();
+  const child = spawn(process.execPath, ["src/server.ts"], {
+    cwd: fileURLToPath(new URL("../", import.meta.url)),
+    env: { ...process.env, PORT: String(port), EMERGENCY_MESH_HOST: "127.0.0.1", EMERGENCY_MESH_DATABASE_PATH: ":memory:", EMERGENCY_MESH_TLS_CERT_PATH: "", EMERGENCY_MESH_TLS_KEY_PATH: "", EMERGENCY_MESH_ENABLE_DEBUG_EVENTS: "0" },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let diagnostics = "";
+  child.stderr.on("data", (chunk) => { diagnostics += chunk; });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`server startup timed out: ${diagnostics}`)), 5_000);
+      child.stdout.on("data", (chunk) => { if (chunk.toString().includes("Emergency Map:")) { clearTimeout(timer); resolve(); } });
+      child.once("exit", (code) => { clearTimeout(timer); reject(new Error(`server exited (${code}): ${diagnostics}`)); });
+    });
+    const issuer = createDeviceIdentityFromSeed(new Uint8Array(32).fill(3));
+    const now = Date.now();
+    const report = createCheckinCommand(issuer, authorityFor(issuer, ["north"]), {
+      commandId: "unconfigured-command", incidentRef: "flood-drill", zoneId: "north", nonce: "unconfigured-nonce", issuedAt: now, promptUntil: now + 60_000, responseUntil: now + 120_000,
+    });
+    const response = await fetch(`http://127.0.0.1:${port}/api/packets`, { method: "POST", body: serializeEnvelope({ packetId: "packet", report, expiresAt: report.validUntil, hopCount: 0, hopLimit: 12 }) });
+    const outcome = await response.json();
+    assert.equal(response.status, 400); assert.equal(outcome.status, "INVALID"); assert.equal(outcome.evidence, undefined);
+    assert.deepEqual((await (await fetch(`http://127.0.0.1:${port}/api/areas`)).json()).areas, []);
+    assert.equal((await fetch(`http://127.0.0.1:${port}/api/events`)).status, 404);
+  } finally {
+    if (child.exitCode === null && child.signalCode === null) {
+      const stopped = new Promise((resolve) => child.once("exit", resolve));
+      child.kill("SIGTERM"); await stopped;
     }
   }
 });

@@ -37,6 +37,7 @@ If `node` is already on `PATH`, the equivalent commands are `npm test`, `npm run
 - `src/gateway` and `src/backend`: semantics-preserving gateway, bounded ingest admission, deduplication, status projection, and policy-governed geographic/temporal aggregation.
 - `src/mobile-client`: installable offline PWA, browser Ed25519 identity, IndexedDB outbox, honest delivery states, and backend synchronization.
 - `src/web`: deliberately minimal public aggregate view.
+- `src/commands`: Coluvi domain-separated authority, frozen check-in recipients, private additive SQLite state, late-response history, and signed received/shown evidence. UI and authenticated API integration are still pending.
 
 ## Safety boundary
 
@@ -65,6 +66,7 @@ Signatures demonstrate integrity and pseudonymous continuity, **not truth, autho
 - [Reference backend API](docs/REFERENCE_API.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Coluvi development plan for InnovaFest Mérida](docs/COLUVI_INNOVAFEST_DEVELOPMENT_PLAN.md)
+- [Coluvi check-in contract and persistence decision](docs/adr/0002-coluvi-checkin-contract.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Status
