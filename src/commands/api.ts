@@ -86,6 +86,22 @@ export class ColuviApi {
           fields(await body(request), []); auth.logout(request.headers.cookie); this.store.recordAccess("OPERATOR_LOGOUT", now);
           return json(response, 200, { status: "LOGGED_OUT" }, { "set-cookie": "coluvi_operator=; Path=/api/operator/; Max-Age=0; Secure; HttpOnly; SameSite=Strict" });
         }
+        if (request.method === "GET" && url.pathname === "/api/operator/participants") {
+          for (const key of url.searchParams.keys()) if (!["zoneId", "state", "offset", "limit"].includes(key) || url.searchParams.getAll(key).length > 1) throw new ApiError(400, "Invalid participant query");
+          for (const key of ["offset", "limit"]) if (url.searchParams.has(key) && !/^\d+$/.test(url.searchParams.get(key)!)) throw new ApiError(400, "Invalid participant pagination");
+          return json(response, 200, this.store.listParticipants({ zoneId: url.searchParams.get("zoneId") ?? undefined,
+            state: url.searchParams.get("state") ?? "all", offset: Number(url.searchParams.get("offset") ?? 0), limit: Number(url.searchParams.get("limit") ?? 20) }, now));
+        }
+        const revoke = url.pathname.match(/^\/api\/operator\/participants\/([A-Za-z0-9_-]{1,80})\/revoke$/);
+        if (request.method === "POST" && revoke) {
+          if (url.search) throw new ApiError(400, "Unexpected query");
+          const input = fields(await body(request), ["confirmDeviceId"]);
+          const revokedAt = Date.now();
+          if (!auth.csrfValid(request.headers.cookie, request.headers["x-coluvi-csrf"], revokedAt)) throw new ApiError(403, "Session expired before mutation");
+          if (input.confirmDeviceId !== revoke[1]) throw new ApiError(400, "Participant confirmation mismatch");
+          if (!this.store.participant(revoke[1])) throw new ApiError(404, "Unknown participant");
+          return json(response, 200, { status: this.store.revokeParticipant(revoke[1], revokedAt), deviceId: revoke[1] });
+        }
         if (request.method === "POST" && url.pathname === "/api/operator/checkins") {
           const input = fields(await body(request), ["incidentRef", "zoneId", "promptMs", "lateMs"]);
           const issuedAt = Date.now();

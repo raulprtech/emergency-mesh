@@ -30,6 +30,8 @@ Set `EMERGENCY_MESH_COLUVI_CONFIG_PATH` and an explicit `EMERGENCY_MESH_DATABASE
 | `POST` | `/api/operator/login` | Same-origin JSON `{password}`; returns CSRF token and expiring session cookie. |
 | `GET` | `/api/operator/session` | Operator cookie; returns session expiry, CSRF, zones, authorized kinds and authority fingerprint. |
 | `POST` | `/api/operator/logout` | Operator cookie, same Origin and `X-Coluvi-CSRF`; body `{}`. |
+| `GET` | `/api/operator/participants?zoneId=north&state=all&offset=0&limit=20` | Operator cookie; authorized zones only, optional zone filter, state `all`/`active`/`revoked`, maximum limit 100. No keys or tokens. |
+| `POST` | `/api/operator/participants/:deviceId/revoke` | Operator cookie, Origin and CSRF; body `{confirmDeviceId}` must match the path. Idempotent revocation, never deletion. |
 | `POST` | `/api/operator/checkins` | Operator cookie, Origin and CSRF; JSON `{incidentRef, zoneId, promptMs, lateMs}`. |
 | `GET` | `/api/operator/checkins` | Operator cookie; latest 50 commands and complete per-command counts, without private histories. |
 | `GET` | `/api/operator/checkins/:id?offset=0&limit=50` | Operator cookie; complete counts and a bounded recipient/history page. Maximum limit 100. |
@@ -44,6 +46,8 @@ Set `EMERGENCY_MESH_COLUVI_CONFIG_PATH` and an explicit `EMERGENCY_MESH_DATABASE
 | `POST` | `/api/packets` | Existing bounded CBOR route; configured Coluvi accepts signed state responses and linked needs details from frozen active enrolled recipients. |
 
 All private responses use `Cache-Control: no-store` and vary on Cookie/Authorization. The session cookie is Secure, HttpOnly and SameSite=Strict, scoped to `/api/operator/`, with a one-hour lifetime. A restart invalidates operator sessions and enrollment challenges; hashed participant credentials survive and expire after seven days. Re-enrollment with successful key proof rotates the token and invalidates its predecessor. Revocation blocks the credential as well as signed response admission.
+
+The participant list returns counts across the selected authorized zones, filtered pagination and pseudonymous IDs, zones, enrollment/revocation times and credential status/expiry only. Revocation returns `REVOKED` or `ALREADY_REVOKED`, deletes the credential, preserves frozen recipients and all operational history, and excludes the device from future issuances. The same identity cannot be reactivated through enrollment. See [pilot operation and recovery](COLUVI_OPERATIONS.md) for the confirmation UI, foreground launcher and private SQLite backup/restore commands.
 
 Mutations require the exact configured Origin, and operator mutations also require CSRF. The private API checks Host and rejects cross-site fetch metadata; proxy-forwarded headers do not override these checks. Direct TLS is required for HTTPS origins and network access. The only HTTP exception is explicit loopback development bound to loopback; it does not authorize phone access over plain HTTP. Chromium verifies operator login with HttpOnly cookie, issuance, restart invalidation and logout through the panel. The panel keeps CSRF in memory, pages ten recipients at a time and bounds response bytes; it never stores credentials in localStorage or caches private responses.
 

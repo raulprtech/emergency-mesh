@@ -9,6 +9,10 @@ let selected;
 let selectedKind = "checkins";
 let offset = 0;
 let pageData;
+let participantOffset = 0;
+let participantPage;
+let revokeTarget;
+let revokePending = false;
 const LIMIT = 10;
 const NOTICE_METRICS = [["requested", "Destinatarios"], ["received", "Recibidos"], ["shown", "Mostrados"]];
 const formatTime = (time) => new Date(time).toLocaleString("es-MX");
@@ -16,10 +20,12 @@ const status = (message) => { if (byId("status").textContent !== message) byId("
 
 function clearPrivate(message = "Sesión cerrada. Vuelve a entrar para consultar el centro.") {
   epoch += 1; session = undefined; selected = undefined; selectedKind = "checkins"; offset = 0; pageData = undefined;
+  participantOffset = 0; participantPage = undefined; revokeTarget = undefined;
+  byId("revoke-dialog").close(); byId("revoke-form").reset(); byId("revoke-target").textContent = ""; byId("participants-filter").reset();
   clearTimeout(timer); byId("workspace").hidden = true; byId("detail-panel").hidden = true; byId("login-panel").hidden = false;
-  for (const id of ["requests", "recipients", "detail-counts", "zone", "notice-zone", "notices"]) byId(id).replaceChildren();
+  for (const id of ["requests", "recipients", "detail-counts", "zone", "notice-zone", "notices", "participants", "participant-zone"]) byId(id).replaceChildren();
   byId("notice-form").reset(); byId("notice-form").hidden = true; byId("notice-capability").textContent = "";
-  for (const id of ["fingerprint", "session-expiry", "updated", "detail-meta", "page"]) byId(id).textContent = "";
+  for (const id of ["fingerprint", "session-expiry", "updated", "detail-meta", "page", "participant-counts", "participants-page"]) byId(id).textContent = "";
   byId("password").value = ""; status(message);
 }
 
@@ -49,8 +55,36 @@ function showSession(value) {
   byId("session-expiry").textContent = `Sesión hasta ${formatTime(value.expiresAt)}. No se guardan contraseña ni token en el almacenamiento del navegador.`;
   byId("zone").replaceChildren(...value.zones.map((zone) => { const option = document.createElement("option"); option.value = zone; option.textContent = zone; return option; }));
   byId("notice-zone").replaceChildren(...value.zones.map(zone => new Option(zone, zone)));
+  byId("participant-zone").replaceChildren(new Option("Todas las zonas autorizadas", ""), ...value.zones.map(zone => new Option(zone, zone)));
   const noticesAllowed = value.kinds?.includes("OPERATIONAL_NOTICE"); byId("notice-form").hidden = !noticesAllowed;
   byId("notice-capability").textContent = noticesAllowed ? "Esta configuración autoriza avisos firmados para las zonas indicadas." : "Esta configuración solo autoriza las capacidades provisionadas anteriormente. No se han ampliado sus permisos.";
+}
+
+function renderParticipants(result) {
+  participantPage = result.pagination;
+  byId("participant-counts").textContent = `${result.counts.total} dispositivos en las zonas consultadas · ${result.counts.active} activos · ${result.counts.revoked} revocados`;
+  const list = byId("participants"); const focused = document.activeElement?.dataset.revoke; list.replaceChildren();
+  const credentials = { ACTIVE: "vigente", EXPIRED: "caducada; debe renovar inscripción", NONE: "sin credencial", REVOKED: "revocada" };
+  for (const participant of result.participants) {
+    const article = document.createElement("article"); article.dataset.participantId = participant.deviceId;
+    const heading = document.createElement("h3"); heading.textContent = `Dispositivo ${participant.deviceId}`;
+    const description = document.createElement("p"); description.textContent = `${participant.zoneId} · ${participant.active ? "Activo" : "Revocado"} · Inscrito ${formatTime(participant.enrolledAt)} · Credencial ${credentials[participant.credential]}`;
+    article.append(heading, description);
+    if (participant.revokedAt !== null) { const at = document.createElement("p"); at.textContent = `Revocado ${formatTime(participant.revokedAt)}`; article.append(at); }
+    if (participant.active) {
+      const button = document.createElement("button"); button.type = "button"; button.dataset.revoke = participant.deviceId; button.textContent = "Revocar dispositivo";
+      button.setAttribute("aria-label", `Revocar dispositivo ${participant.deviceId} de ${participant.zoneId}`);
+      button.addEventListener("click", () => {
+        if (busy || !session) return;
+        revokeTarget = { deviceId: participant.deviceId, zoneId: participant.zoneId };
+        byId("revoke-form").reset(); byId("revoke-target").textContent = `${participant.deviceId} · Zona ${participant.zoneId}`; byId("revoke-dialog").showModal();
+      });
+      article.append(button); list.append(article); if (focused === participant.deviceId) button.focus({ preventScroll: true });
+    } else list.append(article);
+  }
+  if (!result.participants.length) { const empty = document.createElement("p"); empty.textContent = "No hay participantes en esta página con los filtros seleccionados."; list.append(empty); }
+  byId("participants-previous").disabled = participantPage.offset === 0; byId("participants-next").disabled = !participantPage.hasMore;
+  byId("participants-page").textContent = result.participants.length ? `${participantPage.offset + 1}–${participantPage.offset + result.participants.length} de ${participantPage.total}` : `0 en esta página; ${participantPage.total} coinciden`;
 }
 
 function renderRequests(rows) {
@@ -138,6 +172,9 @@ async function refresh(focus = false) {
     if (generation !== epoch) return;
     renderRequests(result.checkins);
     const notices = await api("notices"); if (generation !== epoch) return; renderNotices(notices.notices);
+    const participantQuery = new URLSearchParams({ state: byId("participant-state").value, offset: String(participantOffset), limit: String(LIMIT) });
+    if (byId("participant-zone").value) participantQuery.set("zoneId", byId("participant-zone").value);
+    const participants = await api(`participants?${participantQuery}`); if (generation !== epoch) return; renderParticipants(participants);
     if (selected) {
       const detail = await api(`${selectedKind}/${encodeURIComponent(selected)}?offset=${offset}&limit=${LIMIT}`);
       if (generation !== epoch) return;
@@ -164,6 +201,27 @@ async function restoreSession() {
     if (generation === epoch) clearPrivate(error.status === 401 ? "Introduce la contraseña del operador." : "No se pudo comprobar el centro. Reintenta cuando esté disponible.");
   }
 }
+
+byId("participants-filter").addEventListener("submit", event => { event.preventDefault(); if (busy || !session) return; participantOffset = 0; void refresh(); });
+byId("participants-previous").addEventListener("click", () => { if (busy || !session) return; participantOffset = Math.max(0, participantOffset - LIMIT); void refresh(); });
+byId("participants-next").addEventListener("click", () => { if (busy || !session || !participantPage?.hasMore) return; participantOffset += LIMIT; void refresh(); });
+byId("revoke-cancel").addEventListener("click", () => { if (!revokePending) byId("revoke-dialog").close(); });
+byId("revoke-dialog").addEventListener("cancel", event => { if (revokePending) event.preventDefault(); });
+byId("revoke-dialog").addEventListener("close", () => { revokeTarget = undefined; byId("revoke-form").reset(); byId("revoke-target").textContent = ""; });
+byId("revoke-form").addEventListener("submit", async event => {
+  event.preventDefault(); if (busy || !session || !revokeTarget || !event.target.reportValidity()) return;
+  const target = revokeTarget; const generation = epoch; busy = true; revokePending = true; clearTimeout(timer); byId("revoke-confirm").disabled = true; byId("revoke-cancel").disabled = true;
+  try {
+    await api(`participants/${encodeURIComponent(target.deviceId)}/revoke`, { confirmDeviceId: target.deviceId });
+    if (generation !== epoch) return;
+    byId("revoke-dialog").close(); busy = false; await refresh(); if (generation === epoch) status("Dispositivo revocado. El historial se conserva; las copias offline no se retiran a distancia.");
+  } catch (error) {
+    if (generation === epoch) {
+      byId("revoke-dialog").close(); status(`${error.message} Consulta el estado antes de volver a intentar; la operación no se repitió automáticamente.`);
+      if (session) timer = setTimeout(() => { if (document.visibilityState === "visible") void refresh(); }, error.status === 429 ? 60_000 : 10_000);
+    }
+  } finally { busy = false; revokePending = false; byId("revoke-confirm").disabled = false; byId("revoke-cancel").disabled = false; }
+});
 
 byId("login-form").addEventListener("submit", async (event) => {
   event.preventDefault(); if (busy) return;

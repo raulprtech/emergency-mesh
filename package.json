@@ -20,6 +20,7 @@
     "check": "node --test tests/*.test.ts && node src/simulator/demo.ts",
     "fuzz:cbor": "node examples/fuzz-cbor.ts",
     "pilot:cert": "node scripts/generate-pilot-cert.mjs",
+    "pilot:ops": "node scripts/coluvi-pilot.mjs",
     "smoke:browser": "node examples/browser-smoke.mjs",
     "smoke:coluvi": "node examples/coluvi-browser-smoke.mjs",
     "smoke:map": "node examples/public-map-browser-smoke.mjs",

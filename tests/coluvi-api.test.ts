@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { ColuviStore } from "../src/commands/store.ts";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { mkdtempSync, writeFileSync, readFileSync, chmodSync, rmSync } from "node:fs";
 import { createServer, request as httpRequest } from "node:http";
@@ -180,6 +181,47 @@ test("configured HTTP cycle authenticates operator and participant, preserves pr
     assert.equal(typeof savedHash, "string"); assert.notEqual(savedHash, participant.token);
     assert.ok(Number(database.prepare("SELECT COUNT(*) AS n FROM coluvi_audit WHERE action='OPERATOR_LOGIN'").get()?.n) >= 2);
     database.close();
+  } finally { await stop(child); rmSync(directory, { recursive: true, force: true }); }
+});
+
+test("participant administration requires operator scope, CSRF and exact confirmation; revocation survives restart", { timeout: 20_000 }, async () => {
+  const directory = mkdtempSync("/tmp/coluvi-participant-api-"); const port = await availablePort(); const origin = `http://127.0.0.1:${port}`;
+  const material = await createColuviConfiguration(createDeviceIdentity(), origin, ["north"]);
+  const configPath = join(directory, "config.json"); const databasePath = join(directory, "test.sqlite"); writeFileSync(configPath, JSON.stringify(material.configuration), { mode: 0o600 });
+  const identity = await createBrowserIdentity(); const seeded = new ColuviStore(databasePath, material.mobileTrust.authorities);
+  seeded.enroll(identity.publicKey, "north"); const credential = seeded.grantCredential(identity.anonymousDeviceId); seeded.close();
+  let child;
+  const post = (path: string, body: unknown, headers = {}) => fetch(origin + path, { method: "POST", headers: { "content-type": "application/json", origin, ...headers }, body: JSON.stringify(body) });
+  try {
+    child = await start(port, configPath, databasePath);
+    const path = `/api/operator/participants/${identity.anonymousDeviceId}/revoke`;
+    assert.equal((await fetch(origin + "/api/operator/participants")).status, 401);
+    assert.equal((await fetch(origin + "/api/operator/participants", { headers: { authorization: `Bearer ${credential.token}` } })).status, 401);
+    const logged = await post("/api/operator/login", { password: material.operatorPassword }); const login = await logged.json(); const cookie = logged.headers.get("set-cookie")!.split(";")[0];
+    const headers = { cookie, "x-coluvi-csrf": login.csrf };
+    const participants = await fetch(origin + "/api/operator/participants?zoneId=north&limit=1", { headers });
+    assert.equal(participants.headers.get("cache-control"), "no-store"); const list = await participants.json();
+    assert.equal(list.participants[0].deviceId, identity.anonymousDeviceId); assert.equal(list.participants[0].credential, "ACTIVE");
+    assert.equal(JSON.stringify(list).includes(credential.token), false); assert.equal(JSON.stringify(list).includes(identity.publicKey), false);
+    for (const query of ["limit=101", "limit=", "offset=-1", "offset=1&offset=2", "unknown=1", "state=missing"]) assert.equal((await fetch(origin + "/api/operator/participants?" + query, { headers })).status, 400);
+    assert.equal((await fetch(origin + "/api/operator/participants?zoneId=elsewhere", { headers })).status, 403);
+    const command = await (await post("/api/operator/checkins", { incidentRef: "drill", zoneId: "north", promptMs: 60_000, lateMs: 60_000 }, headers)).json();
+    const response = await createCheckinResponse(command.command, "SAFE", identity);
+    assert.equal((await post(path, { confirmDeviceId: identity.anonymousDeviceId }, { cookie })).status, 403);
+    assert.equal((await post(path, { confirmDeviceId: "another" }, headers)).status, 400);
+    assert.equal((await post(path, { confirmDeviceId: identity.anonymousDeviceId }, { ...headers, origin: "https://other.test" })).status, 403);
+    assert.equal((await post(path, { confirmDeviceId: identity.anonymousDeviceId, extra: true }, headers)).status, 400);
+    assert.equal((await post("/api/operator/participants/missing/revoke", { confirmDeviceId: "missing" }, headers)).status, 404);
+    assert.equal((await (await post(path, { confirmDeviceId: identity.anonymousDeviceId }, headers)).json()).status, "REVOKED");
+    assert.equal((await (await post(path, { confirmDeviceId: identity.anonymousDeviceId }, headers)).json()).status, "ALREADY_REVOKED");
+    assert.equal((await fetch(origin + "/api/mobile/inbox", { headers: { authorization: `Bearer ${credential.token}` } })).status, 401);
+    const rejected = await fetch(origin + "/api/packets", { method: "POST", body: canonicalCbor(response.envelope) }); assert.equal(rejected.status, 400); assert.equal((await rejected.json()).evidence, undefined);
+    assert.equal((await (await fetch(origin + `/api/operator/checkins/${command.command.eventId}`, { headers })).json()).counts.requested, 1);
+    const next = await (await post("/api/operator/checkins", { incidentRef: "later", zoneId: "north", promptMs: 60_000, lateMs: 60_000 }, headers)).json(); assert.equal(next.counts.requested, 0);
+    await stop(child); child = await start(port, configPath, databasePath);
+    assert.equal((await fetch(origin + "/api/mobile/inbox", { headers: { authorization: `Bearer ${credential.token}` } })).status, 401);
+    const relog = await post("/api/operator/login", { password: material.operatorPassword }); const nextCookie = relog.headers.get("set-cookie")!.split(";")[0];
+    const after = await (await fetch(origin + "/api/operator/participants?state=revoked", { headers: { cookie: nextCookie } })).json(); assert.equal(after.participants[0].active, false);
   } finally { await stop(child); rmSync(directory, { recursive: true, force: true }); }
 });
 

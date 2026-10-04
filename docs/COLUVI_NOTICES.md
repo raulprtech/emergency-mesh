@@ -1,6 +1,6 @@
 # Avisos operativos de simulacro
 
-Estado del hito: contrato firmado, almacenamiento privado, API, panel y bandeja de la PWA integrados y verificados en Chromium. Las actualizaciones de estado y el enriquecimiento ya se integraron por separado; el bloque ampliado sigue abierto para operación del piloto, escala y entrega final.
+Estado del hito: contrato firmado, almacenamiento privado, API, panel y bandeja de la PWA integrados y verificados en Chromium. Las actualizaciones de estado, el enriquecimiento y la operación del piloto ya se integraron por separado; el bloque ampliado sigue abierto para escala y entrega final.
 
 ## Contrato
 

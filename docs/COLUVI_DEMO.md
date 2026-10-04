@@ -70,6 +70,10 @@ En el nuevo recorrido se guardó primero NEEDS_HELP, luego agua/transporte y tre
 
 Ninguna API privada apareció en CacheStorage y el agregado público no incluyó estados, necesidades ni avisos. Cerrar sesión vació la vista privada y el borrador de aviso. Ambas interfaces quedaron sin desbordamiento a 360 píxeles; el panel no tuvo controles interactivos sin nombre. Pasaron también las regresiones anteriores de reporte offline y accesibilidad móvil, sin diagnósticos de página. Estas pruebas no sustituyen Android físico ni prueban transporte por radio.
 
+## Operación y recuperación
+
+El hito posterior de operación aprobó 199 pruebas en Ubuntu WSL2, sin fallos, cancelaciones ni omisiones. Chromium añadió listado de participantes, cancelación y confirmación de revocación: la credencial quedó bloqueada, no se emitió un acuse falso y se conservaron el destinatario original y los dos estados históricos. Las herramientas de arranque, diagnóstico, respaldo SQLite con WAL activo y restauración en una carpeta nueva tienen pruebas propias; consulta [Operación y recuperación](COLUVI_OPERATIONS.md). La restauración advierte explícitamente sobre revocaciones realizadas después del inicio del respaldo. Esto no convierte las pruebas virtuales siguientes en mediciones físicas.
+
 ## Simulacro virtual de inundación
 
 Treinta ciclos usan los contratos y verificadores compartidos, `SimulatedNode`, colas SQLite, enlaces de pérdida con semilla y el gateway existente. Cada ciclo inscribe cinco dispositivos ficticios: cuatro destinatarios del refugio y uno de otra zona, excluido de la solicitud. Un destinatario alcanzable no responde por decisión del actor de prueba. Hay seis ciclos de cada condición: LAN sin Internet externo, aislamiento total, conectividad intermitente, entrega tardía y entrega después de caducar. Cada ciclo cierra y vuelve a abrir el centro y las colas.

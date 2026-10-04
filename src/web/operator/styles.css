@@ -28,3 +28,5 @@ nav { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 [hidden] { display: none !important; }
 @media (max-width: 480px) { header, main { padding: 12px; } section { padding: 14px; } }
 @media (forced-colors: active) { button, .warning, .metrics div { border: 1px solid CanvasText; } }
+dialog { max-width: min(620px, 94vw); border: 2px solid #365247; border-radius: 12px; overflow-wrap: anywhere; }
+dialog::backdrop { background: #17202a99; }

@@ -290,8 +290,23 @@ try {
   assert.equal(cacheSafe, true);
   const publicPrivacy = await operator.evaluate("fetch('/api/areas', { cache: 'no-store' }).then(response => response.json()).then(data => data.areas.length === 0)");
   assert.equal(publicPrivacy, true); // One ordinary old report is suppressed; private reply is excluded.
+  await operator.send("Page.bringToFront");
+  await operator.until("!document.querySelector('#refresh').disabled && Boolean(document.querySelector('[data-revoke]'))", "participant administration ready");
+  await operator.evaluate("document.querySelector('[data-revoke]').click()");
+  await operator.until("document.querySelector('#revoke-dialog').open", "explicit revoke confirmation");
+  assert.equal(await operator.evaluate("document.querySelector('#revoke-target').textContent.includes(document.querySelector('[data-participant-id]').dataset.participantId) && !document.querySelector('#revoke-consent').checked"), true);
+  assert.equal(await operator.evaluate("document.documentElement.scrollWidth <= innerWidth && document.querySelector('#revoke-dialog').getBoundingClientRect().width <= innerWidth"), true);
+  await operator.evaluate("document.querySelector('#revoke-cancel').click()");
+  await operator.until("!document.querySelector('#revoke-dialog').open", "revocation can be canceled");
+  assert.equal(await operator.evaluate("fetch('/api/operator/participants').then(response => response.json()).then(data => data.counts.active === 1)"), true);
+  await operator.evaluate("document.querySelector('[data-revoke]').click(); document.querySelector('#revoke-consent').checked = true; document.querySelector('#revoke-form').requestSubmit()");
+  await operator.until("!document.querySelector('#revoke-dialog').open && document.querySelector('#participants').textContent.includes('Revocado') && !document.querySelector('[data-revoke]')", "participant revoked through UI");
+  const revocationEvidence = await mobile.evaluate(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const { canonicalCbor } = await import('/mobile/crypto.js'); const db = await openClientDatabase(); try { const enrollment = await db.getSetting('coluviEnrollment'); const inbox = await fetch('/api/mobile/inbox', { headers: { authorization: 'Bearer ' + enrollment.token } }); const item = (await db.list()).find(row => row.envelope.report.eventType === 'x-coluvi-checkin-response'); const ingest = await fetch('/api/packets', { method: 'POST', body: canonicalCbor(item.envelope) }); return { inboxStatus: inbox.status, packetStatus: ingest.status, noFalseEvidence: !(await ingest.json()).evidence }; } finally { db.close(); } })()`);
+  assert.deepEqual(revocationEvidence, { inboxStatus: 401, packetStatus: 400, noFalseEvidence: true });
+  const retained = await operator.evaluate(`fetch('/api/operator/checkins/${commandId}?limit=10').then(response => response.json()).then(detail => ({ requested: detail.counts.requested, history: detail.recipients[0].history.length }))`);
+  assert.deepEqual(retained, { requested: 1, history: 2 });
   await operator.evaluate("document.querySelector('#logout').click()");
-  await operator.until("document.querySelector('#workspace').hidden && document.querySelector('#requests').children.length === 0 && document.querySelector('#notices').children.length === 0 && document.querySelector('#notice-message').value === ''", "logout clears private view and notice draft");
+  await operator.until("document.querySelector('#workspace').hidden && document.querySelector('#requests').children.length === 0 && document.querySelector('#notices').children.length === 0 && document.querySelector('#notice-message').value === '' && document.querySelector('#participants').children.length === 0 && document.querySelector('#revoke-target').textContent === ''", "logout clears private view and drafts");
   await wait(200);
   const loggedOut = await operator.evaluate("fetch('/api/operator/session', { cache: 'no-store' }).then(response => response.status === 401)");
   assert.equal(loggedOut, true);
@@ -306,7 +321,7 @@ try {
   assert.equal(legacy.queuedMarker.state, "QUEUED"); assert.equal(legacy.syncedMarker.state, "SYNCED");
   const accessibility = await regression("examples/accessibility-smoke.mjs", [String(new URL(debugOrigin).port), origin + "/mobile/", "127.0.0.1"]);
   assert.equal(accessibility.success, true);
-  console.log(JSON.stringify({ scenario: "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico", migration, migrationV2, indexedDbConcurrency, enrolledThroughUi: true, issuedThroughUi: true, noticeIssuedThroughUi: true, noticeEvidence, needsEvidence, updateEvidence, noticeSurvivedOfflineReopen: true, noticeTextNotHtml: true, expiredNoticeLabeled: true, backendStoppedWhileOffline: true, repeatedPollPreservesPromptDom: true, offlineQueued: queued.state, survivedWindowCloseAndReopen: true, reconnectedState: (await mobile.evaluate(responseState)).state, backendEvidence: "BACKEND", privateEvidence, duplicatePreserved: true, cacheSafe, publicPrivacy, logoutCleared: true, constrained360px: true, unnamedOperatorControls: 0, legacyOfflineRegression: true, mobileAccessibilityRegression: accessibility.success, diagnostics }, null, 2));
+  console.log(JSON.stringify({ scenario: "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico", migration, migrationV2, indexedDbConcurrency, enrolledThroughUi: true, issuedThroughUi: true, noticeIssuedThroughUi: true, noticeEvidence, needsEvidence, updateEvidence, revocationEvidence, revocationPreservedHistory: retained, noticeSurvivedOfflineReopen: true, noticeTextNotHtml: true, expiredNoticeLabeled: true, backendStoppedWhileOffline: true, repeatedPollPreservesPromptDom: true, offlineQueued: queued.state, survivedWindowCloseAndReopen: true, reconnectedState: (await mobile.evaluate(responseState)).state, backendEvidence: "BACKEND", privateEvidence, duplicatePreserved: true, cacheSafe, publicPrivacy, logoutCleared: true, constrained360px: true, unnamedOperatorControls: 0, legacyOfflineRegression: true, mobileAccessibilityRegression: accessibility.success, diagnostics }, null, 2));
 } finally {
   for (const connection of connections) connection.socket.close();
   await stop(browser); await stop(server);

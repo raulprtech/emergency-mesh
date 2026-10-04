@@ -27,6 +27,17 @@
         <p id="session-expiry"></p><p>Huella pública de la autoridad: <code id="fingerprint"></code></p>
         <button id="logout" type="button">Cerrar sesión</button>
       </section>
+      <section aria-labelledby="participants-title">
+        <h2 id="participants-title">Participantes del piloto</h2>
+        <p>Identidades de dispositivos, no personas verificadas. Revocar bloquea consultas y nuevos envíos al centro; no borra el historial ni retira copias ya recibidas offline.</p>
+        <form id="participants-filter">
+          <label for="participant-zone">Zona</label><select id="participant-zone"><option value="">Todas las zonas autorizadas</option></select>
+          <label for="participant-state">Estado de inscripción</label><select id="participant-state"><option value="all">Todos</option><option value="active">Activos</option><option value="revoked">Revocados</option></select>
+          <button type="submit">Filtrar participantes</button>
+        </form>
+        <p id="participant-counts"></p><div id="participants"></div>
+        <nav aria-label="Páginas de participantes"><button id="participants-previous" type="button">Participantes anteriores</button><span id="participants-page"></span><button id="participants-next" type="button">Participantes siguientes</button></nav>
+      </section>
       <section aria-labelledby="create-title">
         <h2 id="create-title">Solicitar estado</h2>
         <p>Solo dispositivos ya inscritos al emitir. No envía mensajes a teléfonos no inscritos ni garantiza recepción con la PWA cerrada.</p>
@@ -34,7 +45,7 @@
           <label for="incident">Referencia ficticia del simulacro</label><input id="incident" value="simulacro-inundacion" pattern="[A-Za-z0-9_-]{1,80}" maxlength="80" required>
           <label for="zone">Zona autorizada</label><select id="zone" required></select>
           <label for="prompt-minutes">Plazo para responder (minutos)</label><input id="prompt-minutes" type="number" min="1" max="1440" step="1" value="10" required>
-          <label for="late-minutes">Ventana adicional para entregar respuestas ya guardadas (minutos)</label><input id="late-minutes" type="number" min="0" max="1440" step="1" value="60" required>
+          <label for="late-minutes">Ventana adicional para respuestas tardías y actualizaciones (minutos)</label><input id="late-minutes" type="number" min="0" max="1440" step="1" value="60" required>
           <label class="consent"><input id="drill-consent" type="checkbox" required><span>Confirmo que es un simulacro con datos ficticios.</span></label>
           <button id="create" type="submit">Emitir «¿Estás bien?»</button>
         </form>
@@ -68,6 +79,14 @@
       </section>
     </div>
   </main>
+  <dialog id="revoke-dialog" aria-labelledby="revoke-title">
+    <h2 id="revoke-title">Revocar un dispositivo</h2><p id="revoke-target"></p>
+    <p>No se borra su historial. No hay reactivación de esta identidad en el piloto; para volver deberá inscribirse con otra identidad. Una copia offline no se puede retirar a distancia.</p>
+    <form id="revoke-form">
+      <label class="consent"><input id="revoke-consent" type="checkbox" required><span>He comprobado el dispositivo y confirmo la revocación.</span></label>
+      <button id="revoke-confirm" type="submit">Confirmar revocación</button><button id="revoke-cancel" type="button">Cancelar</button>
+    </form>
+  </dialog>
   <script type="module" src="/command-center/app.js"></script>
 </body>
 </html>

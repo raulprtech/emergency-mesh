@@ -96,11 +96,39 @@ export class ColuviStore {
     return deviceId;
   }
 
-  revokeParticipant(deviceId: string, now = Date.now()): void {
-    this.transaction(() => {
-      if (!this.database.prepare("UPDATE coluvi_participants SET active=0 WHERE device_id=?").run(deviceId).changes) throw new Error("Unknown participant");
+  revokeParticipant(deviceId: string, now = Date.now()): "REVOKED" | "ALREADY_REVOKED" {
+    return this.transaction(() => {
+      const participant = this.participant(deviceId);
+      if (!participant) throw new Error("Unknown participant");
+      if (!this.authorities.some(authority => authority.zones.includes(participant.zone_id))) throw new Error("Participant zone not authorized");
+      if (!participant.active) return "ALREADY_REVOKED";
+      this.database.prepare("UPDATE coluvi_participants SET active=0 WHERE device_id=?").run(deviceId);
+      this.database.prepare("DELETE FROM coluvi_credentials WHERE device_id=?").run(deviceId);
       this.audit("PARTICIPANT_REVOKED", deviceId, now);
+      return "REVOKED";
     });
+  }
+
+  listParticipants(options: { zoneId?: string; state?: string; offset?: number; limit?: number } = {}, now = Date.now()) {
+    const { zoneId, state = "all", offset = 0, limit = 20 } = options;
+    const zones = [...new Set(this.authorities.flatMap(authority => authority.zones))];
+    if (zoneId !== undefined && !zones.includes(zoneId)) throw new Error("Participant zone not authorized");
+    if (!["all", "active", "revoked"].includes(state) || !Number.isSafeInteger(offset) || offset < 0
+      || !Number.isSafeInteger(limit) || limit < 1 || limit > 100) throw new Error("Invalid participant pagination or filter");
+    const scope = zoneId === undefined ? zones : [zoneId];
+    const clause = scope.length ? `p.zone_id IN (${scope.map(() => "?").join(",")})` : "0";
+    const counts = this.database.prepare(`SELECT COUNT(*) AS total, COALESCE(SUM(active=1),0) AS active, COALESCE(SUM(active=0),0) AS revoked FROM coluvi_participants p WHERE ${clause}`).get(...scope) as { total: number; active: number; revoked: number };
+    const filter = state === "all" ? "" : ` AND p.active=${state === "active" ? 1 : 0}`;
+    const rows = this.database.prepare(`SELECT p.device_id, p.zone_id, p.active, p.enrolled_at, c.expires_at,
+      (SELECT MAX(at) FROM coluvi_audit a WHERE a.action='PARTICIPANT_REVOKED' AND a.subject_id=p.device_id) AS revoked_at
+      FROM coluvi_participants p LEFT JOIN coluvi_credentials c ON c.device_id=p.device_id WHERE ${clause}${filter}
+      ORDER BY p.enrolled_at, p.device_id LIMIT ? OFFSET ?`).all(...scope, limit, offset) as unknown as {
+        device_id: string; zone_id: string; active: number; enrolled_at: number; expires_at: number | null; revoked_at: number | null;
+      }[];
+    const total = state === "all" ? counts.total : counts[state];
+    return { counts: { ...counts }, participants: rows.map(row => ({ deviceId: row.device_id, zoneId: row.zone_id, active: Boolean(row.active), enrolledAt: row.enrolled_at,
+      revokedAt: row.revoked_at, credential: !row.active ? "REVOKED" : row.expires_at === null ? "NONE" : row.expires_at <= now ? "EXPIRED" : "ACTIVE",
+      credentialExpiresAt: row.expires_at })), pagination: { offset, limit, total, hasMore: offset + rows.length < total } };
   }
 
   participant(deviceId: string): ParticipantRow | undefined {
