@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { checkinInput, METRICS, STATES, requestPhase } from "../src/web/operator/view.js";
+import { checkinInput, noticeInput, METRICS, STATES, requestPhase } from "../src/web/operator/view.js";
 import { operatorAsset } from "../src/web/operator/assets.ts";
 
 test("operator input is scoped and keeps minutes bounded without implicit coercion to defaults", () => {
@@ -15,6 +15,11 @@ test("operator labels separate deadlines, custody and missing answers from dange
   assert.match(requestPhase(payload, 99), /abierto/); assert.match(requestPhase(payload, 100), /guardadas/); assert.match(requestPhase(payload, 200), /cerrada/);
   assert.match(STATES.UNKNOWN, /no implica peligro/);
   assert.deepEqual(METRICS.map(([key]) => key), ["requested", "received", "shown", "responded", "safe", "needsHelp", "unknown", "pending", "late"]);
+});
+test("notice form requires simulation consent, authorized zone and bounded UTF-8 text", () => {
+  const input = { incidentRef: "drill", zoneId: "north", sourceLabel: "Equipo", title: "Prueba", message: "SIMULACRO", level: "WARNING", minutes: "60", simulation: true };
+  assert.equal(noticeInput(input, ["north"]).validMs, 3_600_000);
+  for (const patch of [{ simulation: false }, { zoneId: "south" }, { minutes: "0" }, { level: "EMERGENCY" }, { message: "é".repeat(601) }, { sourceLabel: " " }]) assert.throws(() => noticeInput({ ...input, ...patch }, ["north"]));
 });
 test("operator assets are exact allowlist, static shell has no embedded private data or inline scripts", () => {
   for (const path of ["/command-center/", "/command-center/app.js", "/command-center/view.js", "/command-center/styles.css"]) assert.ok(operatorAsset(path));

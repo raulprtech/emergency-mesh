@@ -3,8 +3,9 @@ import { OUTBOX_SYNC_TAG, synchronizeOutboxExclusively } from "./background-sync
 import { createBrowserIdentity, createUnsignedIdentity } from "./crypto.js";
 import { openClientDatabase } from "./idb.js";
 import { formatMessage, getCatalog, normalizeLocale } from "./i18n.js";
-import { currentEnrollment, enrollPilot, markCheckinShown, pollInbox, respondToCheckin, synchronizeReceipts } from "./inbox.js";
+import { currentEnrollment, enrollPilot, markCheckinShown, pollInbox, respondToCheckin, synchronizeReceipts, pollNotices, markNoticeShown } from "./inbox.js";
 import { verifyCommandForDevice } from "./commands.js";
+import { verifyNoticeForDevice } from "./notices.js";
 
 window.addEventListener("CLIENT_DATABASE_BLOCKED", () => {
   document.getElementById("pilot-status").textContent = getCatalog(navigator.language).databaseBlocked;
@@ -20,6 +21,8 @@ let pilotBusy = false;
 let pilotTimer;
 let shownObserver;
 let inboxRenderedKey;
+let noticeObserver;
+let noticesRenderedKey;
 
 async function newIdentity() {
   try { return await createBrowserIdentity(); }
@@ -141,6 +144,7 @@ form.addEventListener("submit", async (event) => {
 
 async function render() {
   await renderInbox();
+  await renderNotices();
   const items = await db.list();
   byId("identity-status").textContent = identity.mode === "ED25519"
     ? formatMessage(catalog.localIdentity, { id: identity.anonymousDeviceId })
@@ -193,7 +197,7 @@ async function requirePrivateSafeWorker() {
     const timer = setTimeout(() => { channel.port1.close(); reject(new Error(catalog.pilotWorkerUpdate)); }, 3_000);
     channel.port1.onmessage = (event) => {
       clearTimeout(timer); channel.port1.close();
-      event.data?.cache === "emergency-mesh-mobile-v8" && event.data?.privateApiCache === false ? resolve() : reject(new Error(catalog.pilotWorkerUpdate));
+      event.data?.cache === "emergency-mesh-mobile-v9" && event.data?.privateApiCache === false ? resolve() : reject(new Error(catalog.pilotWorkerUpdate));
     };
     worker.postMessage({ type: "COLUVI_CACHE_VERSION" }, [channel.port2]);
   });
@@ -224,9 +228,9 @@ async function renderInbox() {
   shownObserver?.disconnect(); list.replaceChildren();
   shownObserver = typeof IntersectionObserver === "function" ? new IntersectionObserver((entries) => {
     for (const entry of entries) {
-      if (!entry.isIntersecting || document.visibilityState !== "visible") continue;
+      if (!entry.isIntersecting || entry.intersectionRatio < 0.25 || document.visibilityState !== "visible") continue;
       shownObserver.unobserve(entry.target);
-      void markCheckinShown(db, identity, entry.target.dataset.commandId).catch(() => {});
+      void markCheckinShown(db, identity, entry.target.dataset.commandId).catch(() => { inboxRenderedKey = undefined; });
     }
   }, { threshold: 0.25 }) : undefined;
   for (const { record, saved } of records) {
@@ -269,6 +273,43 @@ async function renderInbox() {
   if (!list.children.length) { const empty = document.createElement("p"); empty.textContent = catalog.pilotEmpty; list.append(empty); }
 }
 
+async function renderNotices() {
+  const enrollment = await currentEnrollment(db, identity); const list = byId("notices-list");
+  if (!enrollment) { noticeObserver?.disconnect(); noticesRenderedKey = undefined; if (list.children.length) list.replaceChildren(); return; }
+  const now = Date.now(); const records = [];
+  for (const record of await db.listNotices()) {
+    if (record.deviceId !== identity.anonymousDeviceId || record.report.createdAt > now
+      || !await verifyNoticeForDevice(record.report, enrollment.trust.authorities, enrollment.zoneId, record.report.createdAt)) continue;
+    records.push(record);
+  }
+  if ((await currentEnrollment(db, identity))?.token !== enrollment.token) return;
+  const key = JSON.stringify([locale, identity.anonymousDeviceId, enrollment.trust, records.map(record => [record.noticeId, record.report.signature.value, record.report.validUntil <= now])]);
+  if (noticesRenderedKey === key) return;
+  noticesRenderedKey = key; noticeObserver?.disconnect(); list.replaceChildren();
+  noticeObserver = typeof IntersectionObserver === "function" ? new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting || entry.intersectionRatio < 0.25 || document.visibilityState !== "visible") continue;
+      noticeObserver.unobserve(entry.target);
+      void markNoticeShown(db, identity, entry.target.dataset.noticeId).catch(() => { noticesRenderedKey = undefined; });
+    }
+  }, { threshold: 0.25 }) : undefined;
+  const paragraph = (text, className) => { const element = document.createElement("p"); element.textContent = text; if (className) element.className = className; return element; };
+  for (const record of records) {
+    const notice = record.report.extensions.coluvi; const expired = notice.expiresAt <= now;
+    const article = document.createElement("article"); article.className = "checkin-item notice-item"; article.dataset.noticeId = record.noticeId; article.dataset.expired = String(expired);
+    const heading = document.createElement("h3"); heading.textContent = `${catalog.noticeDrill} · ${notice.title}`;
+    const message = paragraph(notice.message, "notice-message");
+    article.append(heading, paragraph(expired ? catalog.noticeExpired : notice.level === "WARNING" ? catalog.noticeWarning : catalog.noticeInformation), message,
+      paragraph(formatMessage(catalog.noticeSource, { source: notice.sourceLabel })),
+      paragraph(formatMessage(catalog.noticeIssuer, { issuer: notice.issuerId }), "meta"),
+      paragraph(`${notice.incidentRef} · ${notice.zoneId}`, "meta"),
+      paragraph(formatMessage(catalog.noticeValidity, { issued: new Date(notice.issuedAt).toLocaleString(locale === "es" ? "es-MX" : "en"), expires: new Date(notice.expiresAt).toLocaleString(locale === "es" ? "es-MX" : "en") }), "meta"));
+    list.append(article);
+    if (!expired && record.shownAt === undefined) noticeObserver?.observe(article);
+  }
+  if (!records.length) list.append(paragraph(catalog.noticeEmpty));
+}
+
 async function refreshPilot() {
   clearTimeout(pilotTimer);
   if (pilotBusy) return;
@@ -283,12 +324,14 @@ async function refreshPilot() {
     if (enrollment && navigator.onLine && document.visibilityState === "visible") {
       await requirePrivateSafeWorker();
       await db.pruneInbox();
+      await db.pruneNotices();
       const result = await pollInbox(db, identity);
+      const notices = await pollNotices(db, identity);
       await synchronizeReceipts(db, identity);
       await render();
-      if (result.rejected) byId("pilot-status").textContent = formatMessage(catalog.pilotRejected, { count: result.rejected });
-      if (result.hasMore) nextDelay = 1_000;
-    } else if (document.visibilityState === "visible") await renderInbox();
+      if (result.rejected + notices.rejected) byId("pilot-status").textContent = formatMessage(catalog.pilotRejected, { count: result.rejected + notices.rejected });
+      if (result.hasMore || notices.hasMore) nextDelay = 1_000;
+    } else if (document.visibilityState === "visible") { await renderInbox(); await renderNotices(); }
   } catch (error) {
     nextDelay = error.retryAfterMs ?? 30_000;
     byId("pilot-status").textContent = navigator.onLine ? catalog.pilotFailed : catalog.pilotOffline;
@@ -312,4 +355,4 @@ byId("pilot-enrollment-form").addEventListener("submit", async (event) => {
 });
 byId("pilot-refresh").addEventListener("click", () => { void refreshPilot(); });
 window.addEventListener("online", () => { void refreshPilot(); });
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { void renderInbox(); void refreshPilot(); } });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") { void render(); void refreshPilot(); } });

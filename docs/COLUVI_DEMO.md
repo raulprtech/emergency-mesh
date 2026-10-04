@@ -20,6 +20,8 @@ node src/server.ts
 
 El generador informa rutas y huella pública, nunca secretos. Consulta localmente `operator-secrets.txt`: la contraseña es exclusiva del operador; el código de inscripción se comparte por separado con participantes que consientan. No copies ese archivo completo ni `operator-config.json` al teléfono, a GitHub o a esta conversación.
 
+El material nuevo incluye capacidades explícitas de check-in y avisos de simulacro. La configuración anterior de solo check-in sigue funcionando sin ampliar sus permisos. No sobrescribas el material del piloto para actualizarlo; los participantes necesitan un archivo público de confianza que autorice los tipos que van a recibir.
+
 ## Recorrido manual
 
 1. Abre `http://127.0.0.1:8797/mobile/`. Expande «Inscribirme en el piloto Coluvi».
@@ -31,6 +33,8 @@ El generador informa rutas y huella pública, nunca secretos. Consulta localment
 7. El reinicio invalida la sesión del operador: vuelve a entrar y abre el detalle. Debe aparecer una única respuesta y su historial. Las credenciales móviles sobreviven al reinicio, salvo expiración, rotación o revocación.
 
 La interfaz admite una primera respuesta por solicitud. El almacén conserva múltiples eventos válidos y ordenados, pero la edición posterior del estado todavía no tiene interfaz. SAFE no inscribe voluntarios y NEEDS_HELP no convierte automáticamente la respuesta en SOS. Las respuestas mínimas no contienen GPS, contactos ni texto libre.
+
+En «Emitir aviso de simulacro», el operador también puede enviar un mensaje firmado a su zona con fuente declarada y caducidad. La tarjeta móvil muestra SIMULACRO y la identidad firmante; una copia vencida se marca CADUCADO. Tanto su almacenamiento offline como sus recibos se conservan tras reabrir y reiniciar. El texto no se ejecuta como HTML y los avisos no se publican en el mapa. El [contrato de avisos](COLUVI_NOTICES.md) detalla permisos y límites.
 
 ## Plazos y falta de respuesta
 
@@ -48,7 +52,7 @@ node examples/coluvi-drill.ts 30 20261004
 
 La prueba de navegador genera configuración, perfil y SQLite temporales propios. No modifica datos del piloto, no instala navegadores y no desactiva validación TLS. Usa HTTP loopback como contexto seguro de desarrollo; no equivale a un origen HTTPS confiable desde Android. Al terminar detiene sus procesos y elimina únicamente sus archivos temporales.
 
-Verificación del 4 de octubre de 2026 en Ubuntu WSL2: 166 pruebas aprobadas, cero fallos, cancelaciones u omisiones. Chromium 151.0.7922.34 verificó migración real de IndexedDB v1 a v2 sin perder identidad ni reporte, inscripción y emisión desde las interfaces, backend completamente detenido durante la respuesta offline, cierre y reapertura de la ventana, QUEUED a SYNCED con evidencia BACKEND y recuperación de los dos recibos tras reiniciar. Consultar de nuevo una solicitud sin cambios conservó su tarjeta, sin reconstruir el aviso. El panel mostró una respuesta NEEDS_HELP, no dos, incluso al reenviar el mismo paquete. Ninguna API privada apareció en CacheStorage y el agregado público no incluyó el check-in. Cerrar sesión vació la vista privada. Ambas interfaces quedaron sin desbordamiento a 360 píxeles; el panel no tuvo controles interactivos sin nombre. Pasaron también las regresiones anteriores de reporte offline y accesibilidad móvil, sin diagnósticos de página.
+Verificación ampliada del 4 de octubre de 2026 en Ubuntu WSL2: 185 pruebas aprobadas con concurrencia de dos archivos, cero fallos, cancelaciones u omisiones. Chromium 151.0.7922.34 verificó migración real desde IndexedDB v1 y v2 a v3 sin perder los datos previos, inscripción y emisión desde las interfaces, backend completamente detenido durante la respuesta offline, cierre y reapertura de la ventana, QUEUED a SYNCED con evidencia BACKEND y recuperación de los cuatro recibos de check-in y aviso tras reiniciar. Consultar de nuevo una solicitud sin cambios conservó su tarjeta. El aviso mantuvo fuente, firma y caducidad; una prueba de reloj local comprobó su etiqueta histórica al vencer. El panel mostró una respuesta NEEDS_HELP, no dos, incluso al reenviar el mismo paquete. Ninguna API privada apareció en CacheStorage y el agregado público no incluyó check-in ni aviso. Cerrar sesión vació la vista privada y el borrador de aviso. Ambas interfaces quedaron sin desbordamiento a 360 píxeles; el panel no tuvo controles interactivos sin nombre. Pasaron también las regresiones anteriores de reporte offline y accesibilidad móvil, sin diagnósticos de página.
 
 ## Simulacro virtual de inundación
 
@@ -74,4 +78,4 @@ El actor del simulador marca SHOWN después de verificar el comando; la presenta
 
 Para S26 Ultra y A54 hay que confirmar Wi-Fi, Android y navegador, configurar acceso LAN desde Windows y aceptar el certificado verificado. Sigue [Phone pilot](PHONE_PILOT.md) y el [registro de preparación](PILOT_20261002.md); verifica IP y vigencia antes de reutilizar material TLS. No se abrieron puertos ni se modificó el firewall durante este bloque.
 
-La PWA recibe solicitudes mientras está abierta y tiene una ruta al centro. Una solicitud nunca recibida no aparece durante aislamiento total; no se garantiza recepción con la aplicación cerrada. Background Sync, si existe, intenta entregar respuestas ya firmadas, no recibir nuevas solicitudes. Continúan fuera de esta demostración la app nativa, BLE/Bitchat/LoRa reales, avisos operativos adicionales y el mapa geográfico nuevo. La vista pública actual conserva sus agregados y umbrales de privacidad.
+La PWA recibe solicitudes y avisos mientras está abierta y tiene una ruta al centro. Un elemento nunca recibido no aparece durante aislamiento total; no se garantiza recepción con la aplicación cerrada. Background Sync, si existe, intenta entregar respuestas ya firmadas, no recibir nuevas solicitudes. Continúan fuera de esta demostración la app nativa y BLE/Bitchat/LoRa reales. El [mapa geográfico](PUBLIC_MAP.md) ya usa cartografía local y conserva sus agregados y restricciones de privacidad; no mezcla datos privados con su proyección pública.

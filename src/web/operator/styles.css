@@ -9,8 +9,10 @@ section { background: white; padding: 20px; border: 1px solid #afbdc3; border-ra
 p, code, article { overflow-wrap: anywhere; }
 .warning { border-left: 6px solid #9e2a2b; padding: 16px; background: #fff2df; }
 label { display: block; margin: 14px 0 6px; }
-input, select, button { font: inherit; min-height: 44px; padding: 10px; border-radius: 6px; border: 1px solid #476472; }
-input, select { width: 100%; max-width: 540px; }
+input, select, button, textarea { font: inherit; min-height: 44px; padding: 10px; border-radius: 6px; border: 1px solid #476472; }
+input, select, textarea { width: 100%; max-width: 540px; }
+textarea { resize: vertical; }
+.notice-message { white-space: pre-wrap; }
 button { cursor: pointer; background: #173d49; color: white; margin: 8px 8px 8px 0; }
 button:disabled { opacity: .55; cursor: default; }
 :focus-visible { outline: 3px solid #bc5100; outline-offset: 3px; }

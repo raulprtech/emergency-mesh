@@ -3,6 +3,7 @@ import { lstatSync, readFileSync } from "node:fs";
 import type { DeviceIdentity } from "../protocol/identity.ts";
 import { authorityFor, authorityFingerprint, type ColuviAuthority } from "./authority.ts";
 import { ColuviAuth, enrollmentCodeHash, passwordVerifier, type PasswordVerifier } from "./auth.ts";
+import { validAuthorityKinds } from "../mobile-client/notices.js";
 
 export interface ColuviConfiguration {
   version: 1;
@@ -22,13 +23,15 @@ export function validatePilotOrigin(origin: unknown): string {
   return origin;
 }
 
-export async function createColuviConfiguration(identity: DeviceIdentity, origin: string, zones: string[]) {
+export async function createColuviConfiguration(identity: DeviceIdentity, origin: string, zones: string[], kinds: string[] = ["CHECKIN_REQUEST"]) {
   validatePilotOrigin(origin);
   if (!Array.isArray(zones) || zones.length < 1 || zones.length > 20 || new Set(zones).size !== zones.length
     || zones.some((zone) => !/^[A-Za-z0-9_-]{1,80}$/.test(zone))) throw new Error("Invalid pilot zones");
   const operatorPassword = randomBytes(24).toString("base64url");
   const enrollmentCode = randomBytes(24).toString("base64url");
   const authority = authorityFor(identity, zones);
+  if (!validAuthorityKinds(kinds)) throw new Error("Invalid pilot capabilities");
+  authority.kinds = [...kinds];
   const configuration: ColuviConfiguration = {
     version: 1, origin, privateKeyPem: identity.privateKey.export({ type: "pkcs8", format: "pem" }).toString(), authority,
     operatorPassword: await passwordVerifier(operatorPassword), enrollmentHash: enrollmentCodeHash(enrollmentCode),
@@ -58,7 +61,7 @@ export function loadColuviConfiguration(path: string, host: string, tlsEnabled: 
   if (!authority || authority.issuerId !== identity.anonymousDeviceId || authority.publicKey !== publicBytes.toString("base64url")
     || !Array.isArray(authority.zones) || authority.zones.length < 1 || authority.zones.length > 20 || new Set(authority.zones).size !== authority.zones.length
     || authority.zones.some((zone) => typeof zone !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(zone))
-    || !Array.isArray(authority.kinds) || authority.kinds.length !== 1 || authority.kinds[0] !== "CHECKIN_REQUEST"
+    || !validAuthorityKinds(authority.kinds)
     || (authority.revoked !== undefined && typeof authority.revoked !== "boolean")) throw new Error("Invalid configured authority or scope");
   return { origin, identity, authority: structuredClone(authority), auth: new ColuviAuth(config.operatorPassword, config.enrollmentHash) };
 }

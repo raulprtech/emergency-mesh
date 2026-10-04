@@ -7,7 +7,7 @@ const origin = process.argv[2];
 const directory = process.argv[3];
 const zones = process.argv.slice(4);
 if (!origin || !directory || !zones.length) throw new Error("Usage: node scripts/create-coluvi-pilot.mjs <https-origin-or-loopback> <new-private-directory> <zone> [zone...]");
-const material = await createColuviConfiguration(createDeviceIdentity(), origin, zones);
+const material = await createColuviConfiguration(createDeviceIdentity(), origin, zones, ["CHECKIN_REQUEST", "OPERATIONAL_NOTICE"]);
 const target = resolve(directory);
 // Exclusive directory creation and exclusive writes never replace existing pilot secrets.
 mkdirSync(target, { mode: 0o700 });

@@ -1,11 +1,11 @@
 import { OUTBOX_SYNC_TAG, runBackgroundSync } from "./background-sync.js";
 
-const CACHE = "emergency-mesh-mobile-v8";
+const CACHE = "emergency-mesh-mobile-v9";
 const ASSETS = [
   "/mobile/", "/mobile/styles.css", "/mobile/app.js", "/mobile/core.js",
   "/mobile/crypto.js", "/mobile/idb.js", "/mobile/i18n.js", "/mobile/protected.js",
   "/mobile/background-sync.js", "/mobile/manifest.webmanifest", "/mobile/icon.svg",
-  "/mobile/commands.js", "/mobile/inbox.js",
+  "/mobile/commands.js", "/mobile/inbox.js", "/mobile/notices.js",
 ];
 
 self.addEventListener("install", (event) => event.waitUntil(

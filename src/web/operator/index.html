@@ -39,6 +39,23 @@
           <button id="create" type="submit">Emitir «¿Estás bien?»</button>
         </form>
       </section>
+      <section aria-labelledby="notice-create-title">
+        <h2 id="notice-create-title">Emitir aviso de simulacro</h2>
+        <p id="notice-capability"></p>
+        <p>Solo destinatarios inscritos de la zona. La fuente es una etiqueta declarada, no una certificación oficial. No uses datos personales ni instrucciones para una emergencia real.</p>
+        <form id="notice-form">
+          <label for="notice-incident">Referencia ficticia</label><input id="notice-incident" value="simulacro-inundacion" pattern="[A-Za-z0-9_-]{1,80}" maxlength="80" required>
+          <label for="notice-zone">Zona del aviso</label><select id="notice-zone" required></select>
+          <label for="notice-source">Fuente declarada (máximo 120 bytes UTF-8)</label><input id="notice-source" value="Equipo del simulacro" maxlength="120" required>
+          <label for="notice-title">Título (máximo 160 bytes UTF-8)</label><input id="notice-title" maxlength="160" required>
+          <label for="notice-message">Mensaje ficticio (máximo 1.200 bytes UTF-8)</label><textarea id="notice-message" rows="4" maxlength="1200" required></textarea>
+          <label for="notice-level">Tipo</label><select id="notice-level"><option value="INFORMATION">Información de simulacro</option><option value="WARNING">Advertencia de simulacro</option></select>
+          <label for="notice-minutes">Vigencia (minutos)</label><input id="notice-minutes" type="number" min="1" max="1440" step="1" value="60" required>
+          <label class="consent"><input id="notice-consent" type="checkbox" required><span>Confirmo que el aviso pertenece a un simulacro y contiene datos ficticios.</span></label>
+          <button id="notice-create" type="submit">Emitir aviso firmado</button>
+        </form>
+      </section>
+      <section aria-labelledby="notices-title"><h2 id="notices-title">Avisos recientes</h2><p>Hasta 50 avisos. Recibido no significa mostrado; mostrado no confirma atención humana.</p><div id="notices"></div></section>
       <section aria-labelledby="requests-title">
         <div class="heading"><h2 id="requests-title">Solicitudes recientes</h2><button id="refresh" type="button">Actualizar</button></div>
         <p id="updated"></p><p>Unidades: dispositivos inscritos, no personas. Hasta 50 solicitudes recientes. Las cantidades de recepción, presentación y respuesta pueden solaparse.</p>

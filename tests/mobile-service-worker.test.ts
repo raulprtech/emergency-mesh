@@ -6,7 +6,7 @@ import { runInNewContext } from "node:vm";
 const source = readFileSync(new URL("../src/mobile-client/sw.js", import.meta.url), "utf8");
 
 test("service worker precaches every module required by the offline shell", () => {
-  for (const asset of ["/mobile/", "/mobile/app.js", "/mobile/core.js", "/mobile/crypto.js", "/mobile/idb.js", "/mobile/i18n.js", "/mobile/protected.js", "/mobile/styles.css"]) {
+  for (const asset of ["/mobile/", "/mobile/app.js", "/mobile/core.js", "/mobile/crypto.js", "/mobile/idb.js", "/mobile/i18n.js", "/mobile/protected.js", "/mobile/styles.css", "/mobile/notices.js", "/mobile/inbox.js"]) {
     assert.match(source, new RegExp(asset.replaceAll("/", "\\/")));
   }
 });
@@ -18,7 +18,7 @@ function workerHarness() {
     URL,
     self: { location: { origin: "https://pilot.test" }, addEventListener: (name: string, handler: (event: any) => void) => handlers.set(name, handler), clients: { claim: async () => {} } },
     caches: {
-      keys: async () => ["emergency-mesh-mobile-v7", "emergency-mesh-mobile-v8", "unrelated-cache"],
+      keys: async () => ["emergency-mesh-mobile-v7", "emergency-mesh-mobile-v8", "emergency-mesh-mobile-v9", "unrelated-cache"],
       delete: async (key: string) => { deleted.push(key); },
       open: async () => ({ put: async (request: any) => { puts.push(request.url); } }),
       match: async () => undefined,
@@ -31,7 +31,7 @@ function workerHarness() {
 
 test("worker never intercepts or caches private, public API, remote, or operator requests", async () => {
   const harness = workerHarness();
-  for (const path of ["/api/mobile/inbox", "/api/operator/checkins", "/api/areas", "/health", "/command-center/", "https://other.test/mobile/app.js", "/mobile/app.js?token=private"]) {
+  for (const path of ["/api/mobile/inbox", "/api/mobile/notices", "/api/operator/notices", "/api/operator/checkins", "/api/areas", "/health", "/command-center/", "https://other.test/mobile/app.js", "/mobile/app.js?token=private"]) {
     let intercepted = false;
     harness.handlers.get("fetch")!({
       request: { method: "GET", mode: "cors", url: new URL(path, "https://pilot.test").href, headers: new Headers() },
@@ -55,7 +55,7 @@ test("worker caches only successful shell assets and purges its old caches witho
   let activation: Promise<unknown> | undefined;
   harness.handlers.get("activate")!({ waitUntil: (value: Promise<unknown>) => { activation = value; } });
   await activation;
-  assert.deepEqual(harness.deleted, ["emergency-mesh-mobile-v7"]);
+  assert.deepEqual(harness.deleted, ["emergency-mesh-mobile-v7", "emergency-mesh-mobile-v8"]);
 });
 
 test("authenticated asset requests never enter the shell cache", async () => {

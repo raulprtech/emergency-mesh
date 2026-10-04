@@ -12,6 +12,7 @@ import { canonicalCbor, createBrowserIdentity } from "../src/mobile-client/crypt
 import { createCheckinResponse, createCheckinReceipt, verifyCommandForDevice } from "../src/mobile-client/commands.js";
 import { createOutboxItem } from "../src/mobile-client/core.js";
 import { DatabaseSync } from "node:sqlite";
+import { createNoticeReceipt, verifyNoticeForDevice } from "../src/mobile-client/notices.js";
 
 const repository = fileURLToPath(new URL("../", import.meta.url));
 async function availablePort() {
@@ -50,7 +51,7 @@ function rawStatus(url: string, headers: Record<string, string>): Promise<number
 
 test("configured HTTP cycle authenticates operator and participant, preserves private state across restart", { timeout: 30_000 }, async () => {
   const directory = mkdtempSync("/tmp/coluvi-api-"); const port = await availablePort(); const endpoint = `http://127.0.0.1:${port}`;
-  const material = await createColuviConfiguration(createDeviceIdentity(), endpoint, ["north", "south"]);
+  const material = await createColuviConfiguration(createDeviceIdentity(), endpoint, ["north", "south"], ["CHECKIN_REQUEST", "OPERATIONAL_NOTICE"]);
   const configPath = join(directory, "config.json"); const databasePath = join(directory, "pilot.sqlite");
   writeFileSync(configPath, JSON.stringify(material.configuration), { mode: 0o600 });
   let child: ChildProcessWithoutNullStreams | undefined;
@@ -119,6 +120,27 @@ test("configured HTTP cycle authenticates operator and participant, preserves pr
     const southParticipant = await (await post("/api/mobile/enrollment", { challengeId: southChallenge.challengeId, signature: southProof })).json();
     const southHeaders = { authorization: `Bearer ${southParticipant.token}` };
     assert.deepEqual((await (await fetch(endpoint + "/api/mobile/inbox", { headers: southHeaders })).json()).commands, []);
+    const noticeInput = { incidentRef: "drill", zoneId: "north", sourceLabel: "Equipo ficticio", title: "Prueba", message: "SIMULACRO de conectividad", level: "INFORMATION", validMs: 60_000, simulation: true };
+    assert.equal((await post("/api/operator/notices", noticeInput, { cookie })).status, 403);
+    assert.equal((await post("/api/operator/notices", noticeInput, { ...opHeaders, origin: "https://other.test" })).status, 403);
+    for (const patch of [{ simulation: false }, { validMs: 0 }, { title: " " }, { message: "é".repeat(601) }, { unexpected: true }]) assert.equal((await post("/api/operator/notices", { ...noticeInput, ...patch }, opHeaders)).status, 400);
+    assert.equal((await post("/api/operator/notices", { ...noticeInput, zoneId: "unknown" }, opHeaders)).status, 403);
+    const createdNotice = await post("/api/operator/notices", noticeInput, opHeaders); assert.equal(createdNotice.status, 201);
+    const notice = (await createdNotice.json()).notice;
+    assert.equal(await verifyNoticeForDevice(notice, material.mobileTrust.authorities, "north"), true);
+    assert.equal((await fetch(endpoint + "/api/mobile/notices")).status, 401);
+    assert.equal((await fetch(endpoint + "/api/mobile/notices?cursor=-1", { headers: mobileHeaders })).status, 400);
+    assert.equal((await fetch(endpoint + "/api/operator/notices/" + notice.eventId + "?limit=101", { headers: { cookie } })).status, 400);
+    const noticeInbox = await fetch(endpoint + "/api/mobile/notices", { headers: mobileHeaders }); assert.equal(noticeInbox.headers.get("cache-control"), "no-store");
+    assert.equal((await noticeInbox.json()).notices[0].eventId, notice.eventId);
+    assert.deepEqual((await (await fetch(endpoint + "/api/mobile/notices", { headers: southHeaders })).json()).notices, []);
+    const noticeReceipt = await createNoticeReceipt(notice, "RECEIVED", browserIdentity);
+    assert.equal((await post("/api/mobile/receipts", { report: noticeReceipt }, southHeaders)).status, 403);
+    assert.equal((await post("/api/mobile/receipts", { report: noticeReceipt }, mobileHeaders)).status, 202);
+    const noticeShown = await createNoticeReceipt(notice, "SHOWN", browserIdentity);
+    assert.equal((await post("/api/mobile/receipts", { report: noticeShown }, mobileHeaders)).status, 202);
+    const noticeDetail = await (await fetch(endpoint + "/api/operator/notices/" + notice.eventId, { headers: { cookie } })).json();
+    assert.deepEqual(noticeDetail.counts, { requested: 1, received: 1, shown: 1 });
     const received = await createCheckinReceipt(command, "RECEIVED", browserIdentity);
     assert.equal((await post("/api/mobile/receipts", { report: received })).status, 401);
     assert.equal((await post("/api/mobile/receipts", { report: received }, southHeaders)).status, 403);
@@ -147,6 +169,8 @@ test("configured HTTP cycle authenticates operator and participant, preserves pr
     const nextCookie = nextLogged.headers.get("set-cookie")!.split(";")[0];
     const afterRestart = await (await fetch(endpoint + "/api/operator/checkins/" + command.eventId, { headers: { cookie: nextCookie } })).json();
     assert.deepEqual(afterRestart, detail);
+    assert.deepEqual(await (await fetch(endpoint + "/api/operator/notices/" + notice.eventId, { headers: { cookie: nextCookie } })).json(), noticeDetail);
+    assert.equal((await (await post("/api/mobile/receipts", { report: noticeReceipt }, mobileHeaders)).json()).status, "DUPLICATE");
     assert.equal((await post("/api/operator/logout", {}, { cookie: nextCookie, "x-coluvi-csrf": nextLogin.csrf })).status, 200);
     assert.equal((await fetch(endpoint + "/api/operator/session", { headers: { cookie: nextCookie } })).status, 401);
     await stop(child); child = undefined;
@@ -159,16 +183,36 @@ test("configured HTTP cycle authenticates operator and participant, preserves pr
   } finally { await stop(child); rmSync(directory, { recursive: true, force: true }); }
 });
 
+test("legacy check-in-only configuration cannot emit notices through the API", { timeout: 15_000 }, async () => {
+  const directory = mkdtempSync("/tmp/coluvi-legacy-scope-"); const port = await availablePort(); const origin = `http://127.0.0.1:${port}`;
+  const material = await createColuviConfiguration(createDeviceIdentity(), origin, ["north"]);
+  const configPath = join(directory, "config.json"); writeFileSync(configPath, JSON.stringify(material.configuration), { mode: 0o600 });
+  let child;
+  try {
+    child = await start(port, configPath, join(directory, "private.sqlite"));
+    const login = await fetch(origin + "/api/operator/login", { method: "POST", headers: { "content-type": "application/json", origin }, body: JSON.stringify({ password: material.operatorPassword }) });
+    assert.equal(login.status, 200); const { csrf } = await login.json(); const cookie = login.headers.get("set-cookie")!.split(";")[0];
+    const response = await fetch(origin + "/api/operator/notices", { method: "POST", headers: { "content-type": "application/json", origin, cookie, "x-coluvi-csrf": csrf }, body: JSON.stringify({ incidentRef: "drill", zoneId: "north", sourceLabel: "Equipo", title: "Prueba", message: "SIMULACRO", level: "INFORMATION", validMs: 60_000, simulation: true }) });
+    assert.equal(response.status, 403);
+    assert.deepEqual((await (await fetch(origin + "/api/operator/notices", { headers: { cookie } })).json()).notices, []);
+  } finally { await stop(child); rmSync(directory, { recursive: true, force: true }); }
+});
+
 test("configuration requires owned private keys, valid origin, matching authority and secure network binding", async () => {
   const directory = mkdtempSync("/tmp/coluvi-config-"); const path = join(directory, "config.json");
   try {
     const material = await createColuviConfiguration(createDeviceIdentity(), "http://127.0.0.1:8797", ["north"]);
     writeFileSync(path, JSON.stringify(material.configuration), { mode: 0o600 });
     assert.equal(loadColuviConfiguration(path, "127.0.0.1", false).authority.issuerId, material.configuration.authority.issuerId);
+    assert.deepEqual(loadColuviConfiguration(path, "127.0.0.1", false).authority.kinds, ["CHECKIN_REQUEST"], "legacy capabilities are not expanded");
     assert.throws(() => loadColuviConfiguration(path, "0.0.0.0", false), /loopback/);
     assert.throws(() => loadColuviConfiguration(path, "127.0.0.1", true), /scheme/);
     chmodSync(path, 0o644); assert.throws(() => loadColuviConfiguration(path, "127.0.0.1", false), /private/); chmodSync(path, 0o600);
     const wrongKey = { ...material.configuration, authority: { ...material.configuration.authority, publicKey: "other" } };
+    for (const kinds of [[], ["OPERATIONAL_NOTICE", "OPERATIONAL_NOTICE"], ["OTHER"]]) {
+      writeFileSync(path, JSON.stringify({ ...material.configuration, authority: { ...material.configuration.authority, kinds } }));
+      assert.throws(() => loadColuviConfiguration(path, "127.0.0.1", false), /scope/);
+    }
     writeFileSync(path, JSON.stringify(wrongKey)); assert.throws(() => loadColuviConfiguration(path, "127.0.0.1", false), /authority/);
     const https = { ...material.configuration, origin: "https://192.168.1.252:8797" };
     writeFileSync(path, JSON.stringify(https)); assert.throws(() => loadColuviConfiguration(path, "127.0.0.1", false), /TLS/);

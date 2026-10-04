@@ -1,4 +1,4 @@
-import { checkinInput, metricsElement, requestPhase, STATES } from "./view.js";
+import { checkinInput, noticeInput, metricsElement, requestPhase, STATES } from "./view.js";
 
 const byId = (id) => document.getElementById(id);
 let session;
@@ -6,16 +6,19 @@ let epoch = 0;
 let busy = false;
 let timer;
 let selected;
+let selectedKind = "checkins";
 let offset = 0;
 let pageData;
 const LIMIT = 10;
+const NOTICE_METRICS = [["requested", "Destinatarios"], ["received", "Recibidos"], ["shown", "Mostrados"]];
 const formatTime = (time) => new Date(time).toLocaleString("es-MX");
 const status = (message) => { if (byId("status").textContent !== message) byId("status").textContent = message; };
 
 function clearPrivate(message = "Sesión cerrada. Vuelve a entrar para consultar el centro.") {
-  epoch += 1; session = undefined; selected = undefined; offset = 0; pageData = undefined;
+  epoch += 1; session = undefined; selected = undefined; selectedKind = "checkins"; offset = 0; pageData = undefined;
   clearTimeout(timer); byId("workspace").hidden = true; byId("detail-panel").hidden = true; byId("login-panel").hidden = false;
-  for (const id of ["requests", "recipients", "detail-counts", "zone"]) byId(id).replaceChildren();
+  for (const id of ["requests", "recipients", "detail-counts", "zone", "notice-zone", "notices"]) byId(id).replaceChildren();
+  byId("notice-form").reset(); byId("notice-form").hidden = true; byId("notice-capability").textContent = "";
   for (const id of ["fingerprint", "session-expiry", "updated", "detail-meta", "page"]) byId(id).textContent = "";
   byId("password").value = ""; status(message);
 }
@@ -45,6 +48,9 @@ function showSession(value) {
   byId("fingerprint").textContent = value.fingerprint;
   byId("session-expiry").textContent = `Sesión hasta ${formatTime(value.expiresAt)}. No se guardan contraseña ni token en el almacenamiento del navegador.`;
   byId("zone").replaceChildren(...value.zones.map((zone) => { const option = document.createElement("option"); option.value = zone; option.textContent = zone; return option; }));
+  byId("notice-zone").replaceChildren(...value.zones.map(zone => new Option(zone, zone)));
+  const noticesAllowed = value.kinds?.includes("OPERATIONAL_NOTICE"); byId("notice-form").hidden = !noticesAllowed;
+  byId("notice-capability").textContent = noticesAllowed ? "Esta configuración autoriza avisos firmados para las zonas indicadas." : "Esta configuración solo autoriza las capacidades provisionadas anteriormente. No se han ampliado sus permisos.";
 }
 
 function renderRequests(rows) {
@@ -58,26 +64,42 @@ function renderRequests(rows) {
     const meta = document.createElement("p"); meta.textContent = `${requestPhase(payload)} · Responder antes de ${formatTime(payload.promptUntil)}`;
     const button = document.createElement("button"); button.type = "button"; button.dataset.detail = row.command.eventId; button.textContent = "Ver destinatarios e historial";
     button.setAttribute("aria-label", `${button.textContent} · ${payload.incidentRef} · ${payload.zoneId}`);
-    button.addEventListener("click", () => { if (busy) return; selected = row.command.eventId; offset = 0; void refresh(true); });
+    button.addEventListener("click", () => { if (busy) return; selected = row.command.eventId; selectedKind = "checkins"; offset = 0; void refresh(true); });
     article.append(title, meta, metricsElement(row.counts), button); list.append(article);
     if (focusedId === row.command.eventId) button.focus({ preventScroll: true });
   }
   if (!rows.length) { const empty = document.createElement("p"); empty.textContent = "Sin solicitudes. Inscribe al menos un cliente antes de emitir el simulacro."; list.append(empty); }
 }
 
+function renderNotices(rows) {
+  const list = byId("notices"); const focused = document.activeElement?.dataset.noticeDetail; list.replaceChildren();
+  for (const row of rows) {
+    const notice = row.notice.extensions.coluvi; const article = document.createElement("article"); article.dataset.noticeId = notice.noticeId;
+    const title = document.createElement("h3"); title.textContent = `SIMULACRO · ${notice.title}`;
+    const meta = document.createElement("p"); meta.textContent = `${notice.zoneId} · ${Date.now() >= notice.expiresAt ? "CADUCADO" : "Vigente"} · Caduca ${formatTime(notice.expiresAt)} · Fuente: ${notice.sourceLabel}`;
+    const message = document.createElement("p"); message.className = "notice-message"; message.textContent = notice.message;
+    const button = document.createElement("button"); button.type = "button"; button.textContent = "Ver evidencia del aviso"; button.dataset.noticeDetail = notice.noticeId;
+    button.setAttribute("aria-label", `${button.textContent} · ${notice.title} · ${notice.zoneId}`);
+    button.addEventListener("click", () => { if (busy) return; selected = notice.noticeId; selectedKind = "notices"; offset = 0; void refresh(true); });
+    article.append(title, meta, message, metricsElement(row.counts, document, NOTICE_METRICS), button); list.append(article);
+    if (focused === notice.noticeId) button.focus({ preventScroll: true });
+  }
+  if (!rows.length) { const empty = document.createElement("p"); empty.textContent = "Sin avisos emitidos."; list.append(empty); }
+}
+
 function renderDetail(detail, focus) {
   pageData = detail.pagination;
-  const payload = detail.command.extensions.coluvi;
+  const isNotice = Boolean(detail.notice); const payload = (detail.notice ?? detail.command).extensions.coluvi;
   byId("detail-panel").hidden = false;
-  byId("detail-meta").textContent = `${payload.incidentRef} · ${payload.zoneId} · ${requestPhase(payload)} · Entrega hasta ${formatTime(payload.responseUntil)}`;
-  byId("detail-counts").replaceChildren(metricsElement(detail.counts));
+  byId("detail-meta").textContent = isNotice ? `${payload.incidentRef} · ${payload.zoneId} · Aviso de simulacro · Caduca ${formatTime(payload.expiresAt)}` : `${payload.incidentRef} · ${payload.zoneId} · ${requestPhase(payload)} · Entrega hasta ${formatTime(payload.responseUntil)}`;
+  byId("detail-counts").replaceChildren(isNotice ? metricsElement(detail.counts, document, NOTICE_METRICS) : metricsElement(detail.counts));
   byId("recipients").replaceChildren();
   for (const recipient of detail.recipients) {
     const article = document.createElement("article");
     const heading = document.createElement("h3"); heading.textContent = `Dispositivo ${recipient.deviceId}`;
-    const evidence = document.createElement("p"); evidence.textContent = `${STATES[recipient.state]} · Evidencia de recepción: ${recipient.received ? "sí" : "no"} · Presentación: ${recipient.shown ? "sí" : "no"}`;
+    const evidence = document.createElement("p"); evidence.textContent = `${isNotice ? "Aviso de simulacro" : STATES[recipient.state]} · Evidencia de recepción: ${recipient.received ? "sí" : "no"} · Presentación: ${recipient.shown ? "sí" : "no"}`;
     const history = document.createElement("ol");
-    for (const entry of recipient.history) {
+    for (const entry of recipient.history ?? []) {
       const item = document.createElement("li"); item.textContent = `${STATES[entry.report.extensions.coluvi.status]} · Declarado ${formatTime(entry.report.observedAt)} · Recibido ${formatTime(entry.receivedAt)}${entry.late ? " · Entrega tardía" : ""}`; history.append(item);
     }
     article.append(heading, evidence, history); byId("recipients").append(article);
@@ -97,8 +119,9 @@ async function refresh(focus = false) {
     const result = await api("checkins");
     if (generation !== epoch) return;
     renderRequests(result.checkins);
+    const notices = await api("notices"); if (generation !== epoch) return; renderNotices(notices.notices);
     if (selected) {
-      const detail = await api(`checkins/${encodeURIComponent(selected)}?offset=${offset}&limit=${LIMIT}`);
+      const detail = await api(`${selectedKind}/${encodeURIComponent(selected)}?offset=${offset}&limit=${LIMIT}`);
       if (generation !== epoch) return;
       renderDetail(detail, focus);
     }
@@ -138,7 +161,7 @@ byId("checkin-form").addEventListener("submit", async (event) => {
     const input = checkinInput(byId("incident").value.trim(), byId("zone").value, byId("prompt-minutes").value, byId("late-minutes").value, session.zones);
     const detail = await api("checkins", input);
     if (generation !== epoch) return;
-    selected = detail.command.eventId; offset = 0; byId("drill-consent").checked = false;
+    selected = detail.command.eventId; selectedKind = "checkins"; offset = 0; byId("drill-consent").checked = false;
     busy = false; await refresh(true);
   } catch (error) {
     // A lost POST response is ambiguous: never resend automatically.
@@ -147,6 +170,21 @@ byId("checkin-form").addEventListener("submit", async (event) => {
       if (session) timer = setTimeout(() => { if (document.visibilityState === "visible") void refresh(); }, error.status === 429 ? 60_000 : 30_000);
     }
   } finally { busy = false; byId("create").disabled = false; }
+});
+byId("notice-form").addEventListener("submit", async event => {
+  event.preventDefault(); if (busy || !session?.kinds?.includes("OPERATIONAL_NOTICE")) return;
+  busy = true; byId("notice-create").disabled = true; clearTimeout(timer); const generation = epoch;
+  try {
+    const input = noticeInput({ incidentRef: byId("notice-incident").value.trim(), zoneId: byId("notice-zone").value, sourceLabel: byId("notice-source").value.trim(), title: byId("notice-title").value.trim(), message: byId("notice-message").value.trim(), level: byId("notice-level").value, minutes: byId("notice-minutes").value, simulation: byId("notice-consent").checked }, session.zones);
+    const detail = await api("notices", input); if (generation !== epoch) return;
+    selected = detail.notice.eventId; selectedKind = "notices"; offset = 0; byId("notice-consent").checked = false;
+    busy = false; await refresh(true);
+  } catch (error) {
+    if (generation === epoch) {
+      status(`${error.message} El aviso no se reemitió automáticamente. Consulta la lista antes de reintentar.`);
+      if (session) timer = setTimeout(() => { if (document.visibilityState === "visible") void refresh(); }, error.status === 429 ? 60_000 : 30_000);
+    }
+  } finally { busy = false; byId("notice-create").disabled = false; }
 });
 byId("logout").addEventListener("click", async () => {
   const request = api("logout", {}); clearPrivate(); byId("password").focus();

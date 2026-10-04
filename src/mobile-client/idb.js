@@ -1,5 +1,5 @@
 const DATABASE = "emergency-mesh-client";
-const VERSION = 2;
+const VERSION = 3;
 
 function requestPromise(request) {
   return new Promise((resolve, reject) => {
@@ -18,6 +18,7 @@ export async function openClientDatabase(indexedDb = globalThis.indexedDB) {
     if (!database.objectStoreNames.contains("settings")) database.createObjectStore("settings", { keyPath: "key" });
     if (!database.objectStoreNames.contains("inbox")) database.createObjectStore("inbox", { keyPath: "commandId" });
     if (!database.objectStoreNames.contains("receipts")) database.createObjectStore("receipts", { keyPath: "eventId" });
+    if (!database.objectStoreNames.contains("notices")) database.createObjectStore("notices", { keyPath: "noticeId" });
   };
   const database = await requestPromise(request);
   database.onversionchange = () => { database.close(); globalThis.dispatchEvent?.(new Event("CLIENT_DATABASE_BLOCKED")); };
@@ -64,6 +65,52 @@ export async function openClientDatabase(indexedDb = globalThis.indexedDB) {
     }),
     replaceIdentity: (identity) => atomic(["settings"], ({ settings }, done) => {
       settings.put({ key: "identity", value: identity }); settings.put({ key: "coluviEnrollment", value: undefined }); done(true);
+    }),
+    updateNoticeCursor: (deviceId, token, cursor) => atomic(["settings"], ({ settings }, done, fail) => {
+      const request = settings.get("coluviEnrollment");
+      request.onsuccess = () => {
+        const enrollment = request.result?.value;
+        if (!enrollment || enrollment.deviceId !== deviceId || enrollment.token !== token) return fail(new Error("Enrollment changed during notice polling"));
+        settings.put({ key: "coluviEnrollment", value: { ...enrollment, noticeCursor: Math.max(enrollment.noticeCursor ?? 0, cursor) } }); done(true);
+      };
+    }),
+    getNotice: noticeId => transaction("notices", "readonly", store => store.get(noticeId)),
+    listNotices: () => transaction("notices", "readonly", store => store.getAll()).then(items => items.sort((a, b) => b.report.createdAt - a.report.createdAt)),
+    receiveNotice: (record, receipt, token) => atomic(["notices", "receipts", "settings"], ({ notices, receipts, settings }, done, fail) => {
+      const enrollment = settings.get("coluviEnrollment");
+      enrollment.onsuccess = () => {
+        if (enrollment.result?.value?.deviceId !== record.deviceId || enrollment.result.value.token !== token) return fail(new Error("Enrollment changed during notice custody"));
+        const request = notices.get(record.noticeId);
+        request.onsuccess = () => {
+          if (request.result) {
+            if (request.result.report.signature.value !== record.report.signature.value || request.result.deviceId !== record.deviceId) return fail(new Error("Notice conflict"));
+            return done(false);
+          }
+          const count = notices.count(); count.onsuccess = () => {
+            if (count.result >= 200) return fail(new Error("Notice inbox capacity exceeded"));
+            notices.put(record); receipts.put(receipt); done(true);
+          };
+        };
+      };
+    }),
+    markNoticeShown: (noticeId, deviceId, receipt, at) => atomic(["notices", "receipts", "settings"], ({ notices, receipts, settings }, done, fail) => {
+      const enrollment = settings.get("coluviEnrollment");
+      enrollment.onsuccess = () => {
+        if (enrollment.result?.value?.deviceId !== deviceId) return fail(new Error("Enrollment changed before notice presentation"));
+        const request = notices.get(noticeId); request.onsuccess = () => {
+          const record = request.result;
+          if (!record || record.deviceId !== deviceId) return fail(new Error("Unknown notice recipient"));
+          if (record.shownAt !== undefined) return done(false);
+          notices.put({ ...record, shownAt: at }); receipts.put(receipt); done(true);
+        };
+      };
+    }),
+    pruneNotices: (now = Date.now()) => atomic(["notices"], ({ notices }, done) => {
+      let removed = 0; const request = notices.openCursor(); request.onsuccess = () => {
+        const cursor = request.result; if (!cursor) return done(removed);
+        if (cursor.value.report.validUntil + 30 * 24 * 60 * 60_000 <= now) { cursor.delete(); removed++; }
+        cursor.continue();
+      };
     }),
     getCommand: (commandId) => transaction("inbox", "readonly", (store) => store.get(commandId)),
     listCommands: () => transaction("inbox", "readonly", (store) => store.getAll()).then((items) => items.sort((a, b) => b.receivedAt - a.receivedAt)),

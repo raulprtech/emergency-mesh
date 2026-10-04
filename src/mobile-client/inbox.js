@@ -1,5 +1,6 @@
 import { canonicalCbor } from "./crypto.js";
 import { createCheckinReceipt, createCheckinResponse, verifyCommandForDevice } from "./commands.js";
+import { createNoticeReceipt, verifyNoticeForDevice, validAuthorityKinds } from "./notices.js";
 
 const fromBase64 = (value) => Uint8Array.from(atob(value.replaceAll("-", "+").replaceAll("_", "/")), (char) => char.charCodeAt(0));
 const toBase64 = (bytes) => btoa(String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
@@ -12,7 +13,7 @@ export async function verifyPilotTrust(document, expectedFingerprint, origin) {
   const authority = document.authorities[0];
   if (!authority || typeof authority.publicKey !== "string" || !/^[A-Za-z0-9_-]{59}$/.test(authority.publicKey)
     || !Array.isArray(authority.zones) || authority.zones.length < 1 || authority.zones.length > 20 || authority.zones.some((zone) => !/^[A-Za-z0-9_-]{1,80}$/.test(zone))
-    || !Array.isArray(authority.kinds) || authority.kinds.length !== 1 || authority.kinds[0] !== "CHECKIN_REQUEST"
+    || !validAuthorityKinds(authority.kinds)
     || authority.revoked) throw new Error("Invalid pilot authority");
   const publicBytes = fromBase64(authority.publicKey);
   if (publicBytes.length !== 44 || toBase64(publicBytes) !== authority.publicKey) throw new Error("Invalid authority key encoding");
@@ -66,7 +67,7 @@ export async function enrollPilot(store, identity, input, origin, fetcher = glob
   const credential = await requestJson(fetcher, "/api/mobile/enrollment", jsonPost({ challengeId: challenge.challengeId, signature }));
   if (credential.deviceId !== identity.anonymousDeviceId || credential.zoneId !== input.zoneId || !/^[A-Za-z0-9_-]{43}$/.test(credential.token)
     || !Number.isSafeInteger(credential.expiresAt) || credential.expiresAt <= Date.now() || credential.expiresAt > Date.now() + 8 * 24 * 60 * 60_000) throw new Error("Invalid participant credential");
-  const enrollment = { ...credential, trust, cursor: 0 };
+  const enrollment = { ...credential, trust, cursor: 0, noticeCursor: 0 };
   await store.saveEnrollment(enrollment);
   return enrollment;
 }
@@ -108,6 +109,37 @@ export async function markCheckinShown(store, identity, commandId, now = Date.no
   return store.markCommandShown(commandId, identity.anonymousDeviceId, { eventId: report.eventId, report, state: "QUEUED", attempts: 0 }, now);
 }
 
+export async function pollNotices(store, identity, fetcher = globalThis.fetch, now = Date.now()) {
+  const enrollment = await currentEnrollment(store, identity);
+  if (!enrollment || !enrollment.trust.authorities.some(authority => authority.kinds.includes("OPERATIONAL_NOTICE"))) return { received: 0, rejected: 0, hasMore: false };
+  if (enrollment.expiresAt <= now) throw new Error("Participant credential expired");
+  const cursor = enrollment.noticeCursor ?? 0;
+  const page = await requestJson(fetcher, `/api/mobile/notices?cursor=${cursor}&limit=50`, { headers: { authorization: `Bearer ${enrollment.token}` } });
+  if (!Array.isArray(page.notices) || page.notices.length > 50 || !Number.isSafeInteger(page.cursor) || page.cursor < cursor || typeof page.hasMore !== "boolean"
+    || (page.hasMore && page.cursor <= cursor)) throw new Error("Invalid notice inbox page");
+  let received = 0; let rejected = 0;
+  for (const report of page.notices) {
+    const receivedAt = Math.max(now, Date.now());
+    if (!await verifyNoticeForDevice(report, enrollment.trust.authorities, enrollment.zoneId, receivedAt)) {
+      if (report?.createdAt > receivedAt && report.createdAt - receivedAt <= 5 * 60_000
+        && await verifyNoticeForDevice(report, enrollment.trust.authorities, enrollment.zoneId, report.createdAt)) throw new Error("Notice clock is ahead; polling will retry");
+      rejected++; continue;
+    }
+    const receipt = await createNoticeReceipt(report, "RECEIVED", identity, receivedAt);
+    if (await store.receiveNotice({ noticeId: report.eventId, deviceId: identity.anonymousDeviceId, report, receivedAt }, { eventId: receipt.eventId, report: receipt, state: "QUEUED", attempts: 0 }, enrollment.token)) received++;
+  }
+  await store.updateNoticeCursor(identity.anonymousDeviceId, enrollment.token, page.cursor);
+  return { received, rejected, hasMore: page.hasMore };
+}
+
+export async function markNoticeShown(store, identity, noticeId, now = Date.now()) {
+  const enrollment = await currentEnrollment(store, identity); const record = await store.getNotice(noticeId);
+  if (!enrollment || !record || record.deviceId !== identity.anonymousDeviceId || record.shownAt !== undefined) return false;
+  if (!await verifyNoticeForDevice(record.report, enrollment.trust.authorities, enrollment.zoneId, now)) return false;
+  const report = await createNoticeReceipt(record.report, "SHOWN", identity, now);
+  return store.markNoticeShown(noticeId, identity.anonymousDeviceId, { eventId: report.eventId, report, state: "QUEUED", attempts: 0 }, now);
+}
+
 export async function respondToCheckin(store, identity, commandId, status, now = Date.now()) {
   const enrollment = await currentEnrollment(store, identity); const record = await store.getCommand(commandId);
   if (!enrollment || !record || record.deviceId !== identity.anonymousDeviceId) throw new Error("Unknown enrolled check-in");
@@ -122,8 +154,7 @@ export async function synchronizeReceipts(store, identity, fetcher = globalThis.
   const enrollment = await currentEnrollment(store, identity);
   if (!enrollment || enrollment.expiresAt <= now) return [];
   const results = [];
-  for (const current of (await store.listReceipts()).slice(0, 400)) {
-    if (current.report.anonymousDeviceId !== identity.anonymousDeviceId || current.state !== "QUEUED" || current.nextAttemptAt > now) continue;
+  for (const current of (await store.listReceipts()).filter(item => item.report.anonymousDeviceId === identity.anonymousDeviceId && item.state === "QUEUED" && !(item.nextAttemptAt > now)).slice(0, 400)) {
     const item = { ...current };
     if (item.report.validUntil <= now) { item.state = "EXPIRED"; await store.putReceipt(item); results.push(item); continue; }
     item.attempts += 1;

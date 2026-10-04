@@ -28,15 +28,19 @@ Set `EMERGENCY_MESH_COLUVI_CONFIG_PATH` and an explicit `EMERGENCY_MESH_DATABASE
 |---|---|---|
 | `GET` | `/command-center/` | Static operator shell only when configured; no private data before authentication, `no-store`, self-only CSP. |
 | `POST` | `/api/operator/login` | Same-origin JSON `{password}`; returns CSRF token and expiring session cookie. |
-| `GET` | `/api/operator/session` | Operator cookie; returns session expiry, CSRF, zones and authority fingerprint. |
+| `GET` | `/api/operator/session` | Operator cookie; returns session expiry, CSRF, zones, authorized kinds and authority fingerprint. |
 | `POST` | `/api/operator/logout` | Operator cookie, same Origin and `X-Coluvi-CSRF`; body `{}`. |
 | `POST` | `/api/operator/checkins` | Operator cookie, Origin and CSRF; JSON `{incidentRef, zoneId, promptMs, lateMs}`. |
 | `GET` | `/api/operator/checkins` | Operator cookie; latest 50 commands and complete per-command counts, without private histories. |
 | `GET` | `/api/operator/checkins/:id?offset=0&limit=50` | Operator cookie; complete counts and a bounded recipient/history page. Maximum limit 100. |
+| `POST` | `/api/operator/notices` | Operator cookie, Origin, CSRF and `OPERATIONAL_NOTICE` capability; JSON `{incidentRef, zoneId, sourceLabel, title, message, level, validMs, simulation:true}`. |
+| `GET` | `/api/operator/notices` | Operator cookie; latest 50 signed notices with recipient/received/shown counts. |
+| `GET` | `/api/operator/notices/:id?offset=0&limit=50` | Operator cookie; complete counts and paginated private recipient evidence, maximum limit 100. |
 | `POST` | `/api/mobile/enrollment/challenge` | Same-origin JSON `{code, publicKey, zoneId}`; returns a one-use two-minute challenge. |
 | `POST` | `/api/mobile/enrollment` | Same-origin JSON `{challengeId, signature}`; proves key possession, returns scoped participant token. |
 | `GET` | `/api/mobile/inbox?cursor=0&limit=50` | `Authorization: Bearer <participant token>`; frozen recipient scope, cursor pagination, maximum limit 100. |
-| `POST` | `/api/mobile/receipts` | Participant token and same Origin; JSON `{report}` with signed RECEIVED or SHOWN report. |
+| `GET` | `/api/mobile/notices?cursor=0&limit=50` | Participant token; authorized, unexpired notices for frozen recipients; cursor independent of check-ins. |
+| `POST` | `/api/mobile/receipts` | Participant token and same Origin; JSON `{report}` with signed check-in or notice RECEIVED/SHOWN report. |
 | `POST` | `/api/packets` | Existing bounded CBOR route; configured Coluvi accepts only signed responses from frozen enrolled recipients. |
 
 All private responses use `Cache-Control: no-store` and vary on Cookie/Authorization. The session cookie is Secure, HttpOnly and SameSite=Strict, scoped to `/api/operator/`, with a one-hour lifetime. A restart invalidates operator sessions and enrollment challenges; hashed participant credentials survive and expire after seven days. Re-enrollment with successful key proof rotates the token and invalidates its predecessor. Revocation blocks the credential as well as signed response admission.
@@ -58,6 +62,6 @@ EMERGENCY_MESH_COLUVI_CONFIG_PATH=.data/coluvi-dev-20261004/operator-config.json
 node src/server.ts
 ```
 
-The generator uses a fresh Ed25519 authority and random operator password/enrollment code. It creates a 0700 directory with exclusive 0600 files and refuses to overwrite it. The private configuration contains the signing key and password verifier; `operator-secrets.txt` is operator-only. Keep both in Ubuntu and outside Git. Standard output lists paths and a public fingerprint, not secrets.
+The generator uses a fresh Ed25519 authority with explicit check-in and simulation-notice capabilities and random operator password/enrollment code. Existing check-in-only configurations remain supported without implicit capability expansion. It creates a 0700 directory with exclusive 0600 files and refuses to overwrite it. The private configuration contains the signing key and password verifier; `operator-secrets.txt` is operator-only. Keep both in Ubuntu and outside Git. Standard output lists paths and a public fingerprint, not secrets.
 
-Only `mobile-trust.json`, containing public authority information, is intended for participant provisioning; share the enrollment code separately with consenting pilot participants, never the operator password or complete secrets file. Verify its fingerprint through an independent trusted channel before accepting commands. Receiving authority data through the inbox is not a trust bootstrap. The PWA imports the public file and requires the independently checked fingerprint, zone, code and consent. Its private API calls require confirmation that the updated v8 service worker excludes private caches. Follow the [bidirectional demo guide](COLUVI_DEMO.md) for the UI and reproducible browser smoke.
+Only `mobile-trust.json`, containing public authority information, is intended for participant provisioning; share the enrollment code separately with consenting pilot participants, never the operator password or complete secrets file. Verify its fingerprint through an independent trusted channel before accepting commands. Receiving authority data through the inbox is not a trust bootstrap. The PWA imports the public file and requires the independently checked fingerprint, zone, code and consent. Its private API calls require confirmation that the updated v9 service worker excludes private caches. Follow the [bidirectional demo guide](COLUVI_DEMO.md) and [notice contract](COLUVI_NOTICES.md) for the UI and reproducible browser smoke.

@@ -4,11 +4,15 @@ export const NOTICE_EVENT = "x-coluvi-operational-notice";
 export const NOTICE_RECEIPT_EVENT = "x-coluvi-notice-receipt";
 export const MAX_NOTICE_MS = 24 * 60 * 60_000;
 export const NOTICE_LEVELS = Object.freeze(["INFORMATION", "WARNING"]);
+export function validAuthorityKinds(kinds) {
+  return Array.isArray(kinds) && kinds.length >= 1 && kinds.length <= 2 && new Set(kinds).size === kinds.length
+    && kinds.every(kind => ["CHECKIN_REQUEST", "OPERATIONAL_NOTICE"].includes(kind));
+}
 const token = value => typeof value === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(value);
 const time = value => Number.isSafeInteger(value) && value >= 0;
 const exact = (value, fields) => value && typeof value === "object" && !Array.isArray(value)
   && Object.keys(value).length === fields.length && fields.every(key => Object.hasOwn(value, key));
-const text = (value, bytes) => typeof value === "string" && value.trim().length > 0 && new TextEncoder().encode(value).length <= bytes && !/[\u0000-\u0008\u000b-\u001f\u007f]/.test(value);
+export const validNoticeText = (value, bytes) => typeof value === "string" && value.trim().length > 0 && new TextEncoder().encode(value).length <= bytes && !/[\u0000-\u0008\u000b-\u001f\u007f]/.test(value);
 const domainSignature = value => typeof value === "string" && /^[A-Za-z0-9_-]{86}$/.test(value);
 
 /** Operational notices are private, explicitly simulated and independently authorized by kind. */
@@ -21,7 +25,7 @@ export function noticeErrors(report) {
   if (notice.version !== 1 || notice.kind !== "OPERATIONAL_NOTICE" || notice.simulation !== true || !NOTICE_LEVELS.includes(notice.level)) errors.push("invalid notice kind or simulation status");
   for (const field of ["noticeId", "incidentRef", "issuerId", "zoneId", "nonce"]) if (!token(notice[field])) errors.push(`invalid ${field}`);
   if (![notice.issuedAt, notice.expiresAt].every(time) || notice.expiresAt - notice.issuedAt < 1_000 || notice.expiresAt - notice.issuedAt > MAX_NOTICE_MS) errors.push("invalid notice validity");
-  if (!text(notice.sourceLabel, 120) || !text(notice.title, 160) || !text(notice.message, 1_200)) errors.push("invalid notice text");
+  if (!validNoticeText(notice.sourceLabel, 120) || !validNoticeText(notice.title, 160) || !validNoticeText(notice.message, 1_200)) errors.push("invalid notice text");
   if (!domainSignature(notice.domainSignature)) errors.push("invalid domain signature");
   if (report.protocolVersion !== "0.1" || report.eventType !== NOTICE_EVENT || report.reportMode !== "SELF" || report.priority !== "NORMAL"
     || report.eventId !== notice.noticeId || report.incidentRef !== notice.incidentRef || report.anonymousDeviceId !== notice.issuerId

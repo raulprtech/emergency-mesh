@@ -52,6 +52,8 @@ small, .muted { display: block; color: #59554f; font-weight: 400; margin-top: 5p
 .empty { padding: 20px 0; color: #555; }
 .checkin-item { border-top: 1px solid var(--line); padding: 16px 0; overflow-wrap: anywhere; }
 .checkin-item h3 { margin: 0 0 8px; }
+.notice-message { white-space: pre-wrap; }
+.notice-item[data-expired="true"] { border-left: 4px solid #6c7074; padding-left: 12px; }
 .checkin-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .checkin-actions button { border: 0; border-radius: 10px; padding: 14px; color: #fff; font-weight: 700; }
 .pilot-consent { display: flex; gap: 10px; align-items: start; font-weight: 400; }

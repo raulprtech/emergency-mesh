@@ -7,6 +7,9 @@ import { MAX_LATE_MS, MAX_PROMPT_MS } from "../mobile-client/commands.js";
 import { authorityFingerprint, createCheckinCommand } from "./authority.ts";
 import type { LoadedColuviConfiguration } from "./config.ts";
 import { ColuviStore } from "./store.ts";
+import { NoticeStore } from "./notice-store.ts";
+import { createOperationalNotice } from "./notices.ts";
+import { MAX_NOTICE_MS, NOTICE_LEVELS, NOTICE_RECEIPT_EVENT, validNoticeText } from "../mobile-client/notices.js";
 
 class ApiError extends Error {
   status: number;
@@ -40,9 +43,14 @@ function body(request: IncomingMessage): Promise<unknown> {
 
 export class ColuviApi {
   readonly store: ColuviStore;
+  readonly notices: NoticeStore;
   private readonly config: LoadedColuviConfiguration;
   private readonly admission = new IngestAdmissionController({ maximumGlobalRequests: 600, maximumRequestsPerIdentity: 120, maximumTrackedIdentities: 1_000 });
-  constructor(databasePath: string, config: LoadedColuviConfiguration) { this.config = config; this.store = new ColuviStore(databasePath, [config.authority]); }
+  constructor(databasePath: string, config: LoadedColuviConfiguration) {
+    this.config = config; this.store = new ColuviStore(databasePath, [config.authority]);
+    try { this.notices = new NoticeStore(databasePath, [config.authority]); }
+    catch (error) { this.store.close(); throw error; }
+  }
 
   handles(url: string | undefined): boolean { return Boolean(url?.startsWith("/api/operator/") || url?.startsWith("/api/mobile/")); }
   async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
@@ -72,7 +80,7 @@ export class ColuviApi {
         if (!session) throw new ApiError(401, "Operator login required");
         if (request.method === "POST" && !auth.csrfValid(request.headers.cookie, request.headers["x-coluvi-csrf"], now)) throw new ApiError(403, "CSRF verification required");
         if (request.method === "GET" && url.pathname === "/api/operator/session") return json(response, 200, {
-          csrf: session.csrf, expiresAt: session.expiresAt, zones: this.config.authority.zones, fingerprint: authorityFingerprint(this.config.authority),
+          csrf: session.csrf, expiresAt: session.expiresAt, zones: this.config.authority.zones, kinds: this.config.authority.kinds, fingerprint: authorityFingerprint(this.config.authority),
         });
         if (request.method === "POST" && url.pathname === "/api/operator/logout") {
           fields(await body(request), []); auth.logout(request.headers.cookie); this.store.recordAccess("OPERATOR_LOGOUT", now);
@@ -92,6 +100,30 @@ export class ColuviApi {
           });
           this.store.issue(command, issuedAt);
           return json(response, 201, this.store.projection(command.eventId, issuedAt));
+        }
+        if (request.method === "POST" && url.pathname === "/api/operator/notices") {
+          const input = fields(await body(request), ["incidentRef", "zoneId", "sourceLabel", "title", "message", "level", "validMs", "simulation"]);
+          const issuedAt = Date.now();
+          if (!auth.csrfValid(request.headers.cookie, request.headers["x-coluvi-csrf"], issuedAt)) throw new ApiError(403, "Session expired before mutation");
+          if (this.config.authority.revoked || !this.config.authority.kinds.includes("OPERATIONAL_NOTICE") || typeof input.zoneId !== "string" || !this.config.authority.zones.includes(input.zoneId)) throw new ApiError(403, "Notice scope not authorized");
+          if (input.simulation !== true || !Number.isSafeInteger(input.validMs) || Number(input.validMs) < 1_000 || Number(input.validMs) > MAX_NOTICE_MS
+            || typeof input.incidentRef !== "string" || !/^[A-Za-z0-9_-]{1,80}$/.test(input.incidentRef)
+            || !validNoticeText(input.sourceLabel, 120) || !validNoticeText(input.title, 160) || !validNoticeText(input.message, 1_200) || !NOTICE_LEVELS.includes(input.level as string)) throw new ApiError(400, "Invalid simulation notice");
+          const notice = createOperationalNotice(this.config.identity, this.config.authority, {
+            noticeId: randomUUID(), nonce: randomUUID(), incidentRef: input.incidentRef, zoneId: input.zoneId,
+            issuedAt, expiresAt: issuedAt + Number(input.validMs), sourceLabel: input.sourceLabel as string, title: input.title as string, message: input.message as string, level: input.level as "INFORMATION" | "WARNING",
+          });
+          this.notices.issue(notice, issuedAt); return json(response, 201, this.notices.projection(notice.eventId));
+        }
+        if (request.method === "GET" && url.pathname === "/api/operator/notices") {
+          if (url.search) throw new ApiError(400, "Unexpected query");
+          return json(response, 200, { notices: this.notices.list().map(notice => { const projection = this.notices.projection(notice.eventId); return { notice, units: projection.units, counts: projection.counts }; }) });
+        }
+        const noticeDetail = url.pathname.match(/^\/api\/operator\/notices\/([A-Za-z0-9_-]{1,80})$/);
+        if (request.method === "GET" && noticeDetail) {
+          for (const key of url.searchParams.keys()) if (!["offset", "limit"].includes(key) || url.searchParams.getAll(key).length > 1) throw new ApiError(400, "Invalid notice query");
+          if (!this.notices.notice(noticeDetail[1])) throw new ApiError(404, "Unknown notice");
+          return json(response, 200, this.notices.projection(noticeDetail[1], Number(url.searchParams.get("offset") ?? 0), Number(url.searchParams.get("limit") ?? 50)));
         }
         if (request.method === "GET" && url.pathname === "/api/operator/checkins") {
           if (url.search) throw new ApiError(400, "Unexpected query");
@@ -128,11 +160,16 @@ export class ColuviApi {
         const cursor = Number(url.searchParams.get("cursor") ?? 0); const limit = Number(url.searchParams.get("limit") ?? 50);
         return json(response, 200, this.store.inbox(participant.device_id, cursor, limit, now));
       }
+      if (request.method === "GET" && url.pathname === "/api/mobile/notices") {
+        for (const key of url.searchParams.keys()) if (!["cursor", "limit"].includes(key) || url.searchParams.getAll(key).length > 1) throw new ApiError(400, "Invalid notice query");
+        return json(response, 200, this.notices.inbox(participant.device_id, Number(url.searchParams.get("cursor") ?? 0), Number(url.searchParams.get("limit") ?? 50), now));
+      }
       if (request.method === "POST" && url.pathname === "/api/mobile/receipts") {
         const input = fields(await body(request), ["report"]);
         const receivedAt = Date.now();
         if (!this.store.authenticateCredential(request.headers.authorization, receivedAt)) throw new ApiError(401, "Participant credential expired");
-        const status = this.store.acceptReceipt(input.report as EmergencyReport, participant.device_id, receivedAt);
+        const report = input.report as EmergencyReport;
+        const status = report?.eventType === NOTICE_RECEIPT_EVENT ? this.notices.acceptReceipt(report, participant.device_id, receivedAt) : this.store.acceptReceipt(report, participant.device_id, receivedAt);
         return json(response, 202, { status });
       }
       throw new ApiError(404, "Not found");
@@ -149,5 +186,5 @@ export class ColuviApi {
     const result = this.store.acceptResponse(envelope, now);
     return { ...result, evidence: createBackendAcknowledgement("coluvi-backend", envelope, now, result.status === "DUPLICATE") };
   }
-  close(): void { this.store.close(); }
+  close(): void { this.notices.close(); this.store.close(); }
 }

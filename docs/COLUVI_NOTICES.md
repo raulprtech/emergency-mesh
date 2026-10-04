@@ -1,6 +1,6 @@
 # Avisos operativos de simulacro
 
-Estado del hito: contrato firmado y almacenamiento privado implementados y verificados. **Todavía no están conectados a la API, el panel ni la bandeja de la PWA.** Esta base no se presenta como una función terminada para participantes. El bloque ampliado sigue abierto.
+Estado del hito: contrato firmado, almacenamiento privado, API, panel y bandeja de la PWA integrados y verificados en Chromium. El bloque ampliado sigue abierto: actualización de estado, enriquecimiento, operación del piloto y pruebas de escala siguen siendo entregables independientes.
 
 ## Contrato
 
@@ -16,16 +16,28 @@ La capacidad `CHECKIN_REQUEST` no autoriza avisos por sí sola. Se necesita `OPE
 
 Los destinatarios activos se fijan por zona al emitir. Un participante inscrito después no se añade retroactivamente. La bandeja tiene su propio cursor y devuelve solo avisos vigentes y autorizados. La paginación está limitada a 100 elementos y el almacén a 5.000 avisos conservados. No se pierden datos para admitir uno nuevo: la capacidad rechaza la escritura hasta una operación explícita de retención.
 
-`x-coluvi-notice-receipt`, con dominio `COLUVI/NOTICE_RECEIPT/v1`, contiene evidencia `RECEIVED` o `SHOWN`, vinculada al aviso y firmada por el destinatario. Se comprueban la identidad autenticada, la clave del destinatario original, su estado activo, autorización del emisor y vigencia. No se cuenta dos veces el mismo tipo de evidencia de un dispositivo. `SHOWN` será evidencia de presentación en la interfaz, no de lectura humana, comprensión ni asistencia. Hasta integrar el navegador, las pruebas solo acreditan el contrato y la persistencia de ese campo.
+`x-coluvi-notice-receipt`, con dominio `COLUVI/NOTICE_RECEIPT/v1`, contiene evidencia `RECEIVED` o `SHOWN`, vinculada al aviso y firmada por el destinatario. Se comprueban la identidad autenticada, la clave del destinatario original, su estado activo, autorización del emisor y vigencia. No se cuenta dos veces el mismo tipo de evidencia de un dispositivo. `SHOWN` se genera cuando al menos el 25 % de la tarjeta entra en la pantalla de una página visible; no acredita lectura humana, comprensión ni asistencia. Sin IntersectionObserver no se inventa esa evidencia.
 
-La recepción tardía de un recibo después de caducar el aviso se rechaza. La PWA deberá conservar su evidencia local y marcarla caducada sin fingir confirmación del servidor. La retención explícita elimina avisos, destinatarios y recibos 30 días después de su caducidad por defecto; preserva participantes y revocaciones. La auditoría compartida sigue su política existente. Todos los eventos `x-coluvi-*` siguen excluidos del mapa público.
+La recepción tardía de un recibo después de caducar el aviso se rechaza. La PWA conserva su evidencia local y la marca caducada sin fingir confirmación del servidor. La retención explícita elimina avisos, destinatarios y recibos 30 días después de su caducidad por defecto; preserva participantes y revocaciones. La auditoría compartida sigue su política existente. Todos los eventos `x-coluvi-*` siguen excluidos del mapa público.
 
-## Evidencia y trabajo pendiente
+## Configuración e interfaz
+
+El generador de material nuevo provisiona `CHECKIN_REQUEST` y `OPERATIONAL_NOTICE`. Las configuraciones existentes siguen siendo válidas y mantienen sus capacidades originales: no se modifica ningún archivo privado ni se amplía una autoridad antigua al arrancar. El panel oculta el formulario de avisos si la configuración no los autoriza; la API también rechaza su emisión. Un cliente con confianza antigua de solo check-in no consulta ni acepta avisos hasta que el operador provisione explícitamente un archivo público de confianza adecuado. No basta con que el servidor envíe una capacidad nueva en la bandeja.
+
+Después de inscribir participantes, el operador completa «Emitir aviso de simulacro»: incidente, zona, fuente declarada, título, mensaje, tipo y vigencia. La confirmación de simulacro es obligatoria. Ante una respuesta POST perdida, el panel no reemite automáticamente: hay que consultar la lista antes de reintentar. Los avisos recientes incluyen conteos y detalle privado de destinatarios; al cerrar sesión se eliminan de la vista junto con el borrador.
+
+La PWA conserva el aviso y su recibo RECEIVED en una transacción, antes de avanzar su cursor independiente. La migración IndexedDB v3 añade `notices` sin borrar identidad, outbox, solicitudes ni recibos anteriores. Admite hasta 200 avisos locales y elimina explícitamente los que superan 30 días después de su caducidad. El worker v9 precarga el código nuevo; ninguna API privada entra en Cache Storage. Si falla la escritura o cambia la credencial durante la consulta, el cursor no avanza.
+
+Cada tarjeta muestra SIMULACRO, texto literal —nunca HTML ejecutable—, fuente declarada, identidad firmante, zona, emisión y caducidad. Una copia vencida se conserva como historial claramente marcado CADUCADO, no como una instrucción vigente. La presentación depende del reloj local; una revocación de autoridad aún desconocida por un cliente aislado no puede propagarse por magia: su confianza debe actualizarse por el canal de provisión. La PWA no garantiza recepción con la aplicación cerrada. Los recibos se sincronizan mientras está abierta y dispone de ruta al centro; la firma no implica entrega.
+
+## Evidencia reproducible
 
 ```bash
 node --test tests/coluvi-notices.test.ts tests/coluvi-notice-store.test.ts
+node --test tests/coluvi-api.test.ts tests/coluvi-inbox.test.ts tests/operator-view.test.ts
+COLUVI_CHROMIUM_PATH=/ruta/al/chromium node examples/coluvi-browser-smoke.mjs
 ```
 
-Seis pruebas aprobadas en Ubuntu WSL2: verificadores Node/navegador, manipulación de campos y firmas, simulación obligatoria, límites temporales, destinatarios congelados, paginación, duplicados, recepción por otro dispositivo, revocación, cierre/reapertura de SQLite, integridad y retención.
+La suite completa pasó 185 pruebas en Ubuntu WSL2 el 4 de octubre de 2026 (`node --test --test-concurrency=2 tests/*.test.ts`), sin fallos, cancelaciones ni omisiones. Además del contrato y SQLite, cubre permisos antiguos, CSRF/origen, tipos y límites de texto, cursor independiente, fallo de disco, reloj adelantado, rotación de credenciales y recuperación de un recibo nuevo aunque existan más de 400 recibos ya sincronizados.
 
-Siguiente integración: ampliar configuraciones nuevas sin modificar secretos existentes; añadir rutas privadas y capacidades a la sesión; almacenamiento móvil aditivo con cursor propio; emisión y conteos en el panel; presentación verificada con fuente y caducidad; recibos generados solo después de custodia/presentación efectiva; y smoke real que incluya desconexión, reapertura y reinicio. Ninguno de esos puntos queda acreditado por las seis pruebas actuales.
+Chromium 151 verificó migración desde v1 y desde una base v2 con comandos y recibos previos a v3, emisión por formulario, recepción y presentación, texto literal, backend detenido durante la recarga offline, cierre y reapertura, recuperación de los cuatro recibos de check-in y aviso después de reiniciar, etiqueta de caducidad, aislamiento de caché y limpieza de sesión. El aviso contó un destinatario, una recepción y una presentación: no se suman como tres personas. También pasaron las regresiones anteriores de reporte offline y accesibilidad. Estos resultados no sustituyen una prueba física en los Samsung.

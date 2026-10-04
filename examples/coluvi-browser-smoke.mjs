@@ -57,7 +57,7 @@ async function connect(debugOrigin, url) {
     const message = JSON.parse(event.data);
     if (message.id && pending.has(message.id)) {
       const item = pending.get(message.id); pending.delete(message.id); clearTimeout(item.timer);
-      message.error ? item.reject(new Error(message.error.message)) : item.resolve(message.result);
+      message.error ? item.reject(new Error(`CDP ${item.method}: ${message.error.message}`)) : item.resolve(message.result);
     }
     if (message.method === "Runtime.exceptionThrown") diagnostics.push(message.params.exceptionDetails.text);
     if (message.method === "Runtime.consoleAPICalled" && ["error", "warning"].includes(message.params.type)) diagnostics.push(message.params.type);
@@ -66,10 +66,12 @@ async function connect(debugOrigin, url) {
   const send = (method, params = {}) => new Promise((resolve, reject) => {
     const id = ++sequence;
     const timer = setTimeout(() => { pending.delete(id); reject(new Error(`CDP ${method} timed out`)); }, 20_000);
-    pending.set(id, { resolve, reject, timer }); socket.send(JSON.stringify({ id, method, params }));
+    pending.set(id, { resolve, reject, timer, method }); socket.send(JSON.stringify({ id, method, params }));
   });
   const evaluate = async (expression) => {
-    const result = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
+    let result;
+    try { result = await send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true }); }
+    catch (error) { throw new Error("Browser evaluation transport failed", { cause: error }); }
     if (result.exceptionDetails) throw new Error(`Browser evaluation failed: ${result.exceptionDetails.text}`);
     return result.result.value;
   };
@@ -86,7 +88,7 @@ async function connect(debugOrigin, url) {
 
 try {
   const port = await freePort(); const origin = `http://127.0.0.1:${port}`;
-  const material = await createColuviConfiguration(createDeviceIdentity(), origin, ["refugio-ficticio"]);
+  const material = await createColuviConfiguration(createDeviceIdentity(), origin, ["refugio-ficticio"], ["CHECKIN_REQUEST", "OPERATIONAL_NOTICE"]);
   const configPath = join(directory, "config.json"); const databasePath = join(directory, "fixture.sqlite");
   writeFileSync(configPath, JSON.stringify(material.configuration), { mode: 0o600 });
   const startServer = async () => {
@@ -123,13 +125,29 @@ try {
   })()`);
   await mobile.send("Page.navigate", { url: origin + "/mobile/" });
   await mobile.until("Boolean(document.querySelector('#identity-status')?.textContent)", "mobile startup");
-  await mobile.until("Boolean(navigator.serviceWorker.controller)", "worker v8 control");
+  await mobile.until("Boolean(navigator.serviceWorker.controller)", "worker v9 control");
   const migration = await mobile.evaluate(`(async () => {
     const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase();
     try { return { preservedIdentity: (await db.getSetting('identity')).anonymousDeviceId === ${JSON.stringify(originalId)}, preservedReport: (await db.list()).some(item => item.envelope.report.shortMessage === 'SIMULACRO anterior a migración'), missingIsUndefined: (await db.getSetting('missing')) === undefined }; }
     finally { db.close(); }
   })()`);
   assert.deepEqual(migration, { preservedIdentity: true, preservedReport: true, missingIsUndefined: true });
+  // A second loopback origin exercises the existing v2 inbox/receipt migration independently.
+  const legacyV2 = await connect(debugOrigin, `http://localhost:${port}/health`);
+  await legacyV2.until("location.pathname === '/health' && document.readyState === 'complete'", "v2 migration origin");
+  await legacyV2.evaluate(`new Promise((resolve, reject) => {
+    const request = indexedDB.open('emergency-mesh-client', 2);
+    request.onupgradeneeded = () => { for (const [name, keyPath] of [['outbox','eventId'],['settings','key'],['inbox','commandId'],['receipts','eventId']]) request.result.createObjectStore(name, { keyPath }); };
+    request.onerror = () => reject(request.error); request.onsuccess = () => {
+      const db = request.result; const tx = db.transaction(['inbox','receipts'], 'readwrite');
+      tx.objectStore('inbox').put({ commandId: 'v2-sentinel-command', deviceId: 'v2-sentinel', retained: true });
+      tx.objectStore('receipts').put({ eventId: 'v2-sentinel-receipt', retained: true });
+      tx.oncomplete = () => { db.close(); resolve(true); }; tx.onerror = () => { db.close(); reject(tx.error); };
+    };
+  })`);
+  const migrationV2 = await legacyV2.evaluate(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { return { preservedCommand: (await db.getCommand('v2-sentinel-command')).retained, preservedReceipt: (await db.listReceipts())[0].retained, emptyNotices: (await db.listNotices()).length === 0, version: (await indexedDB.databases()).find(row => row.name === 'emergency-mesh-client').version }; } finally { db.close(); } })()`);
+  assert.deepEqual(migrationV2, { preservedCommand: true, preservedReceipt: true, emptyNotices: true, version: 3 });
+  await mobile.send("Page.bringToFront");
   await mobile.evaluate(`(() => {
     document.querySelector('#pilot-setup').open = true;
     const transfer = new DataTransfer(); transfer.items.add(new File([${JSON.stringify(JSON.stringify(material.mobileTrust))}], 'mobile-trust.json', { type: 'application/json' }));
@@ -149,6 +167,14 @@ try {
     await operator.until("document.querySelector('#workspace')?.hidden === false && document.querySelector('#zone').options.length === 1", "operator session");
   };
   await loginOperator();
+  await operator.evaluate(`(() => {
+    document.querySelector('#notice-title').value = 'SIMULACRO: revisión de enlace';
+    document.querySelector('#notice-message').value = 'SIMULACRO: texto <b>sin HTML</b> para la prueba de conectividad.';
+    document.querySelector('#notice-consent').checked = true;
+    document.querySelector('#notice-form').requestSubmit();
+  })()`);
+  await operator.until("document.querySelector('#notices [data-notice-id]') && !document.querySelector('#notice-create').disabled", "notice issued through operator form");
+  const noticeId = await operator.evaluate("document.querySelector('#notices [data-notice-id]').dataset.noticeId");
   await operator.evaluate("document.querySelector('#drill-consent').checked = true; document.querySelector('#checkin-form').requestSubmit()");
   await operator.until("document.querySelector('#requests [data-command-id]') && !document.querySelector('#create').disabled", "issued check-in");
   const commandId = await operator.evaluate("document.querySelector('#requests [data-command-id]').dataset.commandId");
@@ -158,6 +184,10 @@ try {
   await mobile.until("document.querySelector('[data-checkin-status=NEEDS_HELP]') !== null", "verified prompt");
   await mobile.evaluate("document.querySelector('.checkin-item').scrollIntoView()");
   await mobile.until(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { return (await db.listCommands()).some(row => row.shownAt !== undefined); } finally { db.close(); } })()`, "shown evidence");
+  await mobile.until("Boolean(document.querySelector('.notice-item'))", "verified notice presentation");
+  await mobile.evaluate("document.querySelector('.notice-item').scrollIntoView()");
+  await mobile.until(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { return (await db.listNotices()).some(row => row.shownAt !== undefined); } finally { db.close(); } })()`, "notice shown evidence");
+  assert.equal(await mobile.evaluate("document.querySelector('.notice-item').textContent.includes('Equipo del simulacro') && document.querySelector('.notice-item').textContent.includes('Caduca:') && document.querySelector('.notice-message').textContent.includes('<b>sin HTML</b>') && !document.querySelector('.notice-message b')"), true);
   const setOffline = async (offline) => {
     const conditions = { offline, latency: 0, downloadThroughput: -1, uploadThroughput: -1, connectionType: offline ? "none" : "wifi" };
     await mobile.send("Network.emulateNetworkConditions", conditions); await mobile.send("Network.overrideNetworkState", conditions);
@@ -165,6 +195,7 @@ try {
   await stop(server); server = undefined; await setOffline(true);
   await mobile.send("Page.reload", { ignoreCache: true });
   await mobile.until("Boolean(document.querySelector('[data-checkin-status=NEEDS_HELP]'))", "offline saved prompt");
+  await mobile.until("document.querySelector('.notice-item')?.dataset.expired === 'false'", "saved notice survives offline reload");
   await mobile.evaluate("window.savedPromptNode = document.querySelector('.checkin-item'); document.querySelector('#pilot-refresh').click()");
   await wait(300);
   assert.equal(await mobile.evaluate("window.savedPromptNode === document.querySelector('.checkin-item')"), true);
@@ -178,13 +209,14 @@ try {
   await setOffline(true);
   await mobile.send("Page.navigate", { url: origin + "/mobile/" });
   await mobile.until("Boolean(document.querySelector('.checkin-item')) && !document.querySelector('[data-checkin-status]')", "reopened answered prompt");
+  await mobile.until("Boolean(document.querySelector('.notice-item'))", "notice survives closing and reopening the window");
   const queued = await mobile.evaluate(responseState); assert.equal(queued.count, 1); assert.equal(queued.state, "QUEUED");
   await startServer(); await setOffline(false);
   await mobile.evaluate("Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => true }); window.dispatchEvent(new Event('online')); document.querySelector('#sync').click()");
   await mobile.until(`(${responseState}).then(value => value.count === 1 && value.state === 'SYNCED')`, "correlated backend custody");
   assert.equal((await mobile.evaluate(responseState)).evidence, "BACKEND");
   await mobile.evaluate("document.querySelector('#pilot-refresh').click()");
-  await mobile.until(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { return (await db.listReceipts()).length === 2 && (await db.listReceipts()).every(row => row.state === 'SYNCED'); } finally { db.close(); } })()`, "receipt recovery");
+  await mobile.until(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { return (await db.listReceipts()).length === 4 && (await db.listReceipts()).every(row => row.state === 'SYNCED'); } finally { db.close(); } })()`, "check-in and notice receipt recovery");
   await operator.send("Page.bringToFront");
   await operator.evaluate("document.querySelector('#refresh').click()");
   await operator.until("document.querySelector('#login-panel').hidden === false", "restart invalidates operator session");
@@ -195,6 +227,8 @@ try {
   const privateEvidence = await operator.evaluate(`(async () => { const response = await fetch('/api/operator/checkins/${commandId}?limit=10', { cache: 'no-store' }); const detail = await response.json(); return { counts: detail.counts, histories: detail.recipients.map(row => row.history.length) }; })()`);
   assert.equal(privateEvidence.counts.requested, 1); assert.equal(privateEvidence.counts.received, 1); assert.equal(privateEvidence.counts.shown, 1);
   assert.equal(privateEvidence.counts.responded, 1); assert.equal(privateEvidence.counts.needsHelp, 1); assert.deepEqual(privateEvidence.histories, [1]);
+  const noticeEvidence = await operator.evaluate(`fetch('/api/operator/notices/${noticeId}?limit=10', { cache: 'no-store' }).then(response => response.json()).then(detail => detail.counts)`);
+  assert.deepEqual(noticeEvidence, { requested: 1, received: 1, shown: 1 });
   // Check the populated private UI, not merely the login page.
   await operator.send("Emulation.setDeviceMetricsOverride", { width: 360, height: 800, deviceScaleFactor: 1, mobile: true });
   assert.equal(await operator.evaluate("document.documentElement.scrollWidth <= innerWidth"), true);
@@ -211,17 +245,22 @@ try {
   const publicPrivacy = await operator.evaluate("fetch('/api/areas', { cache: 'no-store' }).then(response => response.json()).then(data => data.areas.length === 0)");
   assert.equal(publicPrivacy, true); // One ordinary old report is suppressed; private reply is excluded.
   await operator.evaluate("document.querySelector('#logout').click()");
-  await operator.until("document.querySelector('#workspace').hidden && document.querySelector('#requests').children.length === 0", "logout clears private view");
+  await operator.until("document.querySelector('#workspace').hidden && document.querySelector('#requests').children.length === 0 && document.querySelector('#notices').children.length === 0 && document.querySelector('#notice-message').value === ''", "logout clears private view and notice draft");
   await wait(200);
   const loggedOut = await operator.evaluate("fetch('/api/operator/session', { cache: 'no-store' }).then(response => response.status === 401)");
   assert.equal(loggedOut, true);
+  await mobile.send("Page.bringToFront");
+  await mobile.until("document.querySelector('#pilot-refresh').disabled === false", "mobile foreground polling ready");
+  await mobile.evaluate(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { window.actualNow = Date.now; const expiresAt = (await db.listNotices())[0].report.validUntil; Date.now = () => expiresAt + 1; Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => false }); } finally { db.close(); } document.querySelector('#pilot-refresh').click(); })()`);
+  await mobile.until("document.querySelector('.notice-item')?.dataset.expired === 'true' && document.querySelector('.notice-item').textContent.includes('CADUCADO')", "expired historical notice clearly labeled");
+  await mobile.evaluate("Date.now = window.actualNow; Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => true }); true");
   const diagnostics = connections.flatMap(connection => connection.diagnostics); assert.deepEqual(diagnostics, []);
   const legacyPort = await freePort();
   const legacy = await regression("examples/browser-smoke.mjs", [String(new URL(debugOrigin).port), `http://127.0.0.1:${legacyPort}/mobile/`, "127.0.0.1", "--managed-server"]);
   assert.equal(legacy.queuedMarker.state, "QUEUED"); assert.equal(legacy.syncedMarker.state, "SYNCED");
   const accessibility = await regression("examples/accessibility-smoke.mjs", [String(new URL(debugOrigin).port), origin + "/mobile/", "127.0.0.1"]);
   assert.equal(accessibility.success, true);
-  console.log(JSON.stringify({ scenario: "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico", migration, enrolledThroughUi: true, issuedThroughUi: true, backendStoppedWhileOffline: true, repeatedPollPreservesPromptDom: true, offlineQueued: queued.state, survivedWindowCloseAndReopen: true, reconnectedState: (await mobile.evaluate(responseState)).state, backendEvidence: "BACKEND", privateEvidence, duplicatePreserved: true, cacheSafe, publicPrivacy, logoutCleared: true, constrained360px: true, unnamedOperatorControls: 0, legacyOfflineRegression: true, mobileAccessibilityRegression: accessibility.success, diagnostics }, null, 2));
+  console.log(JSON.stringify({ scenario: "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico", migration, migrationV2, enrolledThroughUi: true, issuedThroughUi: true, noticeIssuedThroughUi: true, noticeEvidence, noticeSurvivedOfflineReopen: true, noticeTextNotHtml: true, expiredNoticeLabeled: true, backendStoppedWhileOffline: true, repeatedPollPreservesPromptDom: true, offlineQueued: queued.state, survivedWindowCloseAndReopen: true, reconnectedState: (await mobile.evaluate(responseState)).state, backendEvidence: "BACKEND", privateEvidence, duplicatePreserved: true, cacheSafe, publicPrivacy, logoutCleared: true, constrained360px: true, unnamedOperatorControls: 0, legacyOfflineRegression: true, mobileAccessibilityRegression: accessibility.success, diagnostics }, null, 2));
 } finally {
   for (const connection of connections) connection.socket.close();
   await stop(browser); await stop(server);

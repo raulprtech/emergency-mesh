@@ -69,10 +69,11 @@ Signatures demonstrate integrity and pseudonymous continuity, **not truth, autho
 - [Coluvi development plan for InnovaFest Mérida](docs/COLUVI_INNOVAFEST_DEVELOPMENT_PLAN.md)
 - [Coluvi check-in contract and persistence decision](docs/adr/0002-coluvi-checkin-contract.md)
 - [Coluvi bidirectional demonstration and verification](docs/COLUVI_DEMO.md)
+- [Signed simulation notices and private receipt evidence](docs/COLUVI_NOTICES.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Status
 
 The simulated vertical slice and bilingual offline mobile PWA are implemented and tested with progressive Background Sync, focus restoration, and real Chromium offline and constrained-mobile accessibility smoke tests. Meshtastic now has a researched raw-frame policy, a structural active-SDK-compatible port and pinned serial bench, and a custody bridge with atomic SQLite custody/ACK recovery across restart, but has not been tested on physical hardware; no physical BLE, Bitchat, LoRa, Wi-Fi, or SMS integration exists yet.
 
-The configured Coluvi panel and mobile inbox complete an authorized check-in round trip in real Chromium, including offline response, window reopening and backend restart. Thirty seeded fictional flood cycles reuse the actual contracts, routing and SQLite queues; their metrics are virtual, not physical measurements. See the [demo guide](docs/COLUVI_DEMO.md). The geographic public map now includes local cartography, filters, guarded breakdowns and an explicitly dated offline snapshot verified after an abrupt fixture-server stop. Physical Samsung/LAN validation and operational notices remain pending; the [expanded work block](docs/COLUVI_EXPANDED_BLOCK.md) tracks the remaining integrated delivery.
+The configured Coluvi panel and mobile inbox complete an authorized check-in round trip and signed simulation notices in real Chromium, including offline response, window reopening, notice expiry and backend restart. Thirty seeded fictional flood cycles reuse the actual contracts, routing and SQLite queues; their metrics are virtual, not physical measurements. See the [demo guide](docs/COLUVI_DEMO.md). The geographic public map includes local cartography, filters, guarded breakdowns and an explicitly dated offline snapshot verified after an abrupt fixture-server stop. The expanded suite passed 185 tests; physical Samsung/LAN validation remains pending. The [expanded work block](docs/COLUVI_EXPANDED_BLOCK.md) tracks state updates, pilot operations, scale tests and the remaining integrated delivery.
