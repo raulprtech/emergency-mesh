@@ -165,6 +165,7 @@ async function refresh(focus = false) {
   if (busy || !session) return;
   busy = true; clearTimeout(timer); const generation = epoch; let delay = 10_000;
   byId("refresh").disabled = true;
+  byId("create").disabled = true; byId("notice-create").disabled = true;
   try {
     if (Date.now() >= session.expiresAt) { clearPrivate("Sesión caducada. Vuelve a entrar."); return; }
     if (!navigator.onLine) throw new Error("Sin ruta al centro. Los datos visibles son la última consulta, no estado actualizado.");
@@ -186,6 +187,7 @@ async function refresh(focus = false) {
     if (generation === epoch) { status(error.message); delay = error.status === 429 ? 60_000 : 30_000; }
   } finally {
     busy = false; byId("refresh").disabled = false;
+    byId("create").disabled = false; byId("notice-create").disabled = false;
     if (session && generation === epoch) timer = setTimeout(() => {
       if (document.visibilityState === "visible") void refresh();
     }, delay);
@@ -232,7 +234,7 @@ byId("login-form").addEventListener("submit", async (event) => {
 });
 byId("checkin-form").addEventListener("submit", async (event) => {
   event.preventDefault(); if (busy || !session) return;
-  busy = true; byId("create").disabled = true; clearTimeout(timer); const generation = epoch;
+  busy = true; byId("create").disabled = true; byId("notice-create").disabled = true; clearTimeout(timer); const generation = epoch;
   try {
     const input = checkinInput(byId("incident").value.trim(), byId("zone").value, byId("prompt-minutes").value, byId("late-minutes").value, session.zones);
     const detail = await api("checkins", input);
@@ -245,11 +247,11 @@ byId("checkin-form").addEventListener("submit", async (event) => {
       status(`${error.message} No se reemitió automáticamente. Actualiza la lista antes de intentar otra solicitud.`);
       if (session) timer = setTimeout(() => { if (document.visibilityState === "visible") void refresh(); }, error.status === 429 ? 60_000 : 30_000);
     }
-  } finally { busy = false; byId("create").disabled = false; }
+  } finally { busy = false; byId("create").disabled = false; byId("notice-create").disabled = false; }
 });
 byId("notice-form").addEventListener("submit", async event => {
   event.preventDefault(); if (busy || !session?.kinds?.includes("OPERATIONAL_NOTICE")) return;
-  busy = true; byId("notice-create").disabled = true; clearTimeout(timer); const generation = epoch;
+  busy = true; byId("notice-create").disabled = true; byId("create").disabled = true; clearTimeout(timer); const generation = epoch;
   try {
     const input = noticeInput({ incidentRef: byId("notice-incident").value.trim(), zoneId: byId("notice-zone").value, sourceLabel: byId("notice-source").value.trim(), title: byId("notice-title").value.trim(), message: byId("notice-message").value.trim(), level: byId("notice-level").value, minutes: byId("notice-minutes").value, simulation: byId("notice-consent").checked }, session.zones);
     const detail = await api("notices", input); if (generation !== epoch) return;
@@ -260,7 +262,7 @@ byId("notice-form").addEventListener("submit", async event => {
       status(`${error.message} El aviso no se reemitió automáticamente. Consulta la lista antes de reintentar.`);
       if (session) timer = setTimeout(() => { if (document.visibilityState === "visible") void refresh(); }, error.status === 429 ? 60_000 : 30_000);
     }
-  } finally { busy = false; byId("notice-create").disabled = false; }
+  } finally { busy = false; byId("notice-create").disabled = false; byId("create").disabled = false; }
 });
 byId("logout").addEventListener("click", async () => {
   const request = api("logout", {}); clearPrivate(); byId("password").focus();

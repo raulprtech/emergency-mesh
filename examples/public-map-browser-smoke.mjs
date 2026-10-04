@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { SqliteBackend } from "../src/backend/sqlite-backend.ts";
 import { createDeviceIdentity, signReport } from "../src/protocol/identity.ts";
 import { makeReport } from "../src/simulator/fixtures.ts";
-import { connect, freePort, ready, stop, wait } from "./browser-fixture.mjs";
+import { connect, freePort, ready, stop, wait, reloadDocument } from "./browser-fixture.mjs";
 
 const executable = process.env.COLUVI_CHROMIUM_PATH;
 if (!executable) throw new Error("Set COLUVI_CHROMIUM_PATH to an installed Chromium executable");
@@ -76,13 +76,13 @@ try {
   await stop(server, "SIGKILL"); server = undefined;
   const conditions = { offline: true, latency: 0, downloadThroughput: -1, uploadThroughput: -1, connectionType: "none" };
   await client.send("Network.emulateNetworkConditions", conditions); await client.send("Network.overrideNetworkState", conditions);
-  await client.send("Page.reload", { ignoreCache: true });
+  await reloadDocument(client, "offline public map");
   await client.until("document.querySelector('#status')?.textContent.includes('Sin actualización del servidor. Vista anterior') && document.querySelectorAll('#areas .area').length === 4", "offline saved public snapshot");
   assert.equal(await client.evaluate("document.querySelectorAll('#land path').length"), 177);
   assert.equal(await client.evaluate("document.querySelectorAll('#cells path').length"), 3);
   await client.evaluate(`(async () => { const request = indexedDB.open('coluvi-public-map', 1); const db = await new Promise((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
     try { await new Promise((resolve, reject) => { const tx = db.transaction('snapshot', 'readwrite'); const store = tx.objectStore('snapshot'); const request = store.get('last'); request.onsuccess = () => store.put({ ...request.result, privacy: { ...request.result.privacy, generatedAt: Date.now() - 25 * 60 * 60_000 } }, 'last'); tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); }); } finally { db.close(); } })()`);
-  await client.send("Page.reload", { ignoreCache: true });
+  await reloadDocument(client, "expired public snapshot");
   await client.until("document.querySelector('#status')?.textContent.includes('ni una vista guardada vigente')", "expired snapshot not presented");
   assert.equal(await client.evaluate("document.querySelectorAll('#areas .area').length"), 0);
   assert.equal(await client.evaluate("document.querySelectorAll('#land path').length"), 177);

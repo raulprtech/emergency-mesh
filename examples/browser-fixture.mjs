@@ -1,6 +1,14 @@
 import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 
 export const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+// A successful old DOM predicate is not evidence that Page.reload loaded a new page.
+export async function reloadDocument(client, label) {
+  const witness = JSON.stringify(randomUUID());
+  await client.evaluate(`globalThis.__coluviReloadWitness = ${witness}; true`);
+  await client.send("Page.reload", { ignoreCache: true });
+  await client.until(`globalThis.__coluviReloadWitness !== ${witness} && document.readyState === 'complete'`, `${label}: new document`);
+}
 export async function stop(child, signal = "SIGTERM") {
   if (!child || child.exitCode !== null || child.signalCode !== null) return;
   const exited = new Promise(resolve => child.once("exit", resolve));

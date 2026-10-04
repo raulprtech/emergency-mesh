@@ -9,6 +9,7 @@ import { makeReport } from "../src/simulator/fixtures.ts";
 import { canonicalCbor } from "../src/mobile-client/crypto.js";
 import { createColuviConfiguration } from "../src/commands/config.ts";
 import { authorityFor, createCheckinCommand } from "../src/commands/authority.ts";
+import { reloadDocument } from "./browser-fixture.mjs";
 
 // Owns only fresh fixture processes/files. No TLS bypass, real participant or pilot DB.
 const executable = process.env.COLUVI_CHROMIUM_PATH;
@@ -212,9 +213,19 @@ try {
   assert.equal(await operator.evaluate("document.querySelector('#workspace').hidden && !document.querySelector('#requests').textContent"), true);
   const loginOperator = async () => {
     await operator.evaluate(`(() => { document.querySelector('#password').value = ${JSON.stringify(material.operatorPassword)}; document.querySelector('#login-form').requestSubmit(); })()`);
-    await operator.until("document.querySelector('#workspace')?.hidden === false && document.querySelector('#zone').options.length === 1", "operator session");
+    await operator.until("document.querySelector('#workspace')?.hidden === false && document.querySelector('#zone').options.length === 1 && !document.querySelector('#refresh').disabled && !document.querySelector('#login').disabled", "operator session and initial refresh complete");
   };
   await loginOperator();
+  // Hold a real GET while checking that visible command buttons cannot silently drop clicks.
+  await operator.evaluate(`(() => {
+    window.operatorOriginalFetch = window.fetch;
+    const held = new Promise(resolve => { window.releaseOperatorRead = resolve; });
+    window.fetch = async (...args) => { if (args[0] === '/api/operator/checkins' && args[1]?.method === 'GET') await held; return window.operatorOriginalFetch(...args); };
+    document.querySelector('#refresh').click();
+  })()`);
+  await operator.until("document.querySelector('#refresh').disabled && document.querySelector('#create').disabled && document.querySelector('#notice-create').disabled", "command controls disabled during polling");
+  await operator.evaluate("window.releaseOperatorRead(); window.fetch = window.operatorOriginalFetch; true");
+  await operator.until("!document.querySelector('#refresh').disabled && !document.querySelector('#create').disabled && !document.querySelector('#notice-create').disabled", "command controls restored after polling");
   await operator.evaluate(`(() => {
     document.querySelector('#notice-title').value = 'SIMULACRO: revisión de enlace';
     document.querySelector('#notice-message').value = 'SIMULACRO: texto <b>sin HTML</b> para la prueba de conectividad.';
@@ -244,7 +255,7 @@ try {
   await stop(server); server = undefined; await setOffline(true);
   assert.equal(await map.evaluate("caches.open('coluvi-public-map-v1').then(cache => cache.match('/map/')).then(Boolean)"), true, "Map shell must remain cached alongside mobile shell");
   await map.send("Page.bringToFront");
-  await mapOffline(true); await map.send("Page.reload", { ignoreCache: true });
+  await mapOffline(true); await reloadDocument(map, "offline map reload");
   try {
     await map.until("document.querySelector('#status')?.textContent.includes('Sin actualización del servidor. Vista anterior') && document.querySelectorAll('#areas .area').length === 1", "same outage preserves dated map snapshot");
   } catch (error) {
@@ -253,7 +264,7 @@ try {
   }
   assert.deepEqual(await map.evaluate(mapSnapshot), initialPublicAreas);
   await mobile.send("Page.bringToFront");
-  await mobile.send("Page.reload", { ignoreCache: true });
+  await reloadDocument(mobile, "offline mobile reload");
   await mobile.until("Boolean(document.querySelector('[data-checkin-status=NEEDS_HELP]'))", "offline saved prompt");
   await mobile.until("document.querySelector('.notice-item')?.dataset.expired === 'false'", "saved notice survives offline reload");
   await mobile.evaluate("window.savedPromptNode = document.querySelector('.checkin-item'); document.querySelector('#pilot-refresh').click()");
@@ -311,7 +322,7 @@ try {
   await mobile.send("Page.bringToFront"); await setOffline(true);
   await mobile.evaluate("Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => false }); document.querySelector('[data-checkin-status=SAFE]').click()");
   await mobile.until(`(${responseState}).then(value => value.count === 2 && value.state === 'QUEUED')`, "offline status update preserves initial response");
-  await mobile.send("Page.reload", { ignoreCache: true });
+  await reloadDocument(mobile, "offline updated mobile reload");
   await mobile.until("Boolean(document.querySelector('[data-checkin-status=NEEDS_HELP]')) && !document.querySelector('[data-checkin-status=SAFE]')", "updated safe state survives offline reload");
   await setOffline(false);
   await mobile.evaluate("Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => true }); window.dispatchEvent(new Event('online')); document.querySelector('#sync').click()");
@@ -319,11 +330,11 @@ try {
   const updateEvidence = await operator.evaluate(`fetch('/api/operator/checkins/${commandId}?limit=10', { cache: 'no-store' }).then(response => response.json()).then(detail => ({ counts: detail.counts, needs: detail.recipients[0].needs, needsCounts: detail.needsCounts, history: detail.recipients[0].history.length, needsHistory: detail.recipients[0].needsHistory.length, link: detail.recipients[0].history.at(-1).link }))`);
   assert.equal(updateEvidence.counts.requested, 1); assert.equal(updateEvidence.counts.responded, 1); assert.equal(updateEvidence.counts.safe, 1); assert.equal(updateEvidence.counts.needsHelp, 0);
   assert.equal(updateEvidence.needs, null); assert.equal(updateEvidence.needsCounts.WATER, 0); assert.equal(updateEvidence.history, 2); assert.equal(updateEvidence.needsHistory, 1); assert.equal(updateEvidence.link, "LINKED");
-  await mapOffline(false); await map.send("Page.reload", { ignoreCache: true });
-  await map.until("document.querySelector('#saved-status')?.textContent.includes('Vista pública guardada') && document.querySelectorAll('#areas .area').length === 1", "map reconnects after private resolution");
+  await map.send("Page.bringToFront"); await mapOffline(false); await reloadDocument(map, "reconnected map reload");
+  await map.until("document.querySelector('#status')?.textContent.startsWith('Vista consultada:') && document.querySelector('#saved-status')?.textContent.includes('Vista pública guardada') && document.querySelectorAll('#areas .area').length === 1", "map reconnects after private resolution");
   assert.deepEqual(await map.evaluate(mapSnapshot), initialPublicAreas);
   const integratedMapEvidence = { sameBackendAndOrigin: true, ordinaryPublicReports: 6, publicGroups: 1,
-    offlineSnapshotDuringPrivateResponse: true, privateUpdatesDoNotChangePublicCounts: true };
+    offlineSnapshotDuringPrivateResponse: true, privateUpdatesDoNotChangePublicCounts: true, reloadsRequireNewDocument: true, commandControlsBlockedDuringPolling: true };
   // Resend the exact signed packet: duplicate does not grow history.
   await mobile.evaluate(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const { canonicalCbor } = await import('/mobile/crypto.js'); const db = await openClientDatabase(); try { const item = (await db.list()).find(row => row.envelope.report.eventType === 'x-coluvi-checkin-response'); const response = await fetch('/api/packets', { method: 'POST', body: canonicalCbor(item.envelope) }); const result = await response.json(); if (result.status !== 'DUPLICATE') throw new Error('Duplicate not preserved'); } finally { db.close(); } })()`);
   const cacheSafe = await mobile.evaluate(`(async () => { for (const name of await caches.keys()) { for (const request of await (await caches.open(name)).keys()) { const url = new URL(request.url); if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/command-center/')) return false; } } return true; })()`);
