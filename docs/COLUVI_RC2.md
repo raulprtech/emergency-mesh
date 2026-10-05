@@ -11,7 +11,7 @@ Este bloque ejecuta el plan de diez horas autorizado después de la RC1. El obje
 | Simulacros repetibles | 2 h | Escenarios ficticios con cortes intermitentes, llegada tardía, cambios, avisos vencidos y no respuesta; cronología y comparación entre esperado y observado | Seis escenarios implementados y verificados, incluidos cambios fuera de orden; ejecutor con directorio exclusivo, informe, cronología, semilla, procedencia y cancelación |
 | Carga mixta | 2 h | Reproducción instrumentada del límite observado con 990 dispositivos; mapa, avisos y respuestas concurrentes; causa y corrección verificadas o límite reproducible documentado | Perfiles aprobados con 30, 300 y 990 dispositivos; corregido el actor ante 429 privado. El timeout de RC1 no se reprodujo y su causa sigue sin establecerse |
 | Continuidad del cliente | 1,5 h | Cierre abrupto del navegador, actualización con cola pendiente y fallos de almacenamiento; no afirmar guardado cuando falla una escritura | Verificada en Chromium con archivos RC1 reales, SIGKILL del navegador, reapertura sin servidor, actualización v10 a v12 y fallos inyectados de IndexedDB |
-| Calificación y entrega | 1,5 h | Suite, navegador, reproducción limpia, documentación reconciliada, paquete de ensayo físico y versión identificada en GitHub | Pendiente |
+| Calificación y entrega | 1,5 h | Suite, navegador, reproducción limpia, documentación reconciliada, paquete de ensayo físico y versión identificada en GitHub | Calificación limpia de ocho etapas aprobada con 217 pruebas; guía Samsung preparada. Etiqueta RC2 pendiente del ensayo de tres horas y revisión final |
 
 Además se requiere una ejecución sostenida de al menos tres horas de tiempo real sobre una versión fija, con datos desechables y resultados persistidos. Comenzó el 5 de octubre de 2026 aproximadamente a las 03:05 UTC (21:05 del día 4 en Ciudad de México), sobre una copia limpia de `c7f6ce9864e84435153e7639d503192256ea82d4`. Sigue en curso; no tiene resultado aprobado. No se sustituirá por tiempo virtual ni por sumar varias ejecuciones breves. Coincide parcialmente con mediciones de carga mixta, lo que debe tenerse en cuenta al interpretar los tiempos.
 
@@ -81,6 +81,8 @@ El ensayo previo del comando, solicitado con mínimo de cinco segundos y treinta
 
 ## Pantallas pequeñas y texto ampliado
 
+Se conservan también los resultados negativos: [fallo de carga por 429 antes de corregir el actor](coluvi-mixed-300-20261005-failed.json) y [desbordamiento al 200 % antes de ajustar los estilos](coluvi-mobile-reflow-20261005-failed.json). Este último corresponde al comprobador con cada documento aislado; no se usa como evidencia el intento anterior que midió botones después de ocultarlos ni la variante que omitía aislar las transiciones de viewport.
+
 ```bash
 COLUVI_CHROMIUM_PATH=/ruta/al/chromium \
   node examples/mobile-readiness-smoke.mjs /tmp/coluvi-pantallas-nuevas
@@ -91,6 +93,14 @@ Se verifican doce combinaciones: 320, 360 y 412 píxeles CSS, español e inglés
 La comprobación aislada inicial confirmó que las seis combinaciones con texto al 200 % desbordaban la pantalla. Se corrigieron títulos flexibles, mínimos de formularios, campos de necesidades y ajuste de textos largos, sin ocultar contenido ni reducir su tamaño. Las doce combinaciones aprobaron después en `/tmp/coluvi-rc2-readiness-20261005-07/readiness.json`; también se inspeccionaron las capturas. La caché pasa a v12 para distribuir esos estilos. La calificación integrada incorpora esta prueba.
 
 La emulación no equivale a TalkBack, a la escala de texto del sistema Android ni a una auditoría completa de WCAG. La observación sostenida sigue en su copia inmutable `c7f6ce9`: estos cambios posteriores afectan la PWA y sus pruebas, no los módulos del backend ni el ejecutor de observación. La entrega debe identificar ambas procedencias y calificar de nuevo la PWA modificada.
+
+## Calificación limpia y procedencia
+
+El [informe integrado](coluvi-qualification-20261005-rc2.json) registra PASS para `0eb4f761b105c33cbc8d9a49f2da82c5085d6981`, desde una copia limpia, con SHA-256 de fuentes `27b30fd3f4c028e3f5baa451541440355dbc66a2ff301cc5fdae1b79dd99f7e9`. Aprobó 217 pruebas sin fallos, cancelaciones u omisiones, seis simulacros, navegador integrado, continuidad RC1–v12, doce casos visuales, mapa offline, ensayo breve y carga base de 300 dispositivos. Las ocho etapas tardaron 307,59 segundos y coincidieron con la observación sostenida. El [CI de la revisión](https://github.com/raulprtech/emergency-mesh/actions/runs/37260074835) también aprobó.
+
+La carga mixta y la observación de tres horas usan `c7f6ce9`, con SHA-256 `57e66eb28871611f5dfb2c64397713e30567aa8faa612c23319fd9141ee1b185`. Entre ese código y `0eb4f76`, los únicos archivos modificados dentro de `src` son `mobile-client/styles.css`, `mobile-client/sw.js` y la comprobación de versión de caché en `mobile-client/app.js`. El backend, la persistencia y los ejecutores de carga y observación no cambiaron. Las adiciones de pruebas visuales y su integración explican el cambio de huella; no se presenta la observación como una prueba de tres horas de la PWA v12.
+
+El informe integrado contiene algún identificador aleatorio del fixture ficticio, no credenciales ni datos del piloto. Los informes de diagnóstico descargables de la PWA tienen un contrato distinto: excluyen también esos identificadores. El ensayo breve integrado tiene `qualifiesThreeHours: false`. RC2 no se etiqueta como terminada mientras falte el resultado largo.
 
 ## Restricciones operativas
 
