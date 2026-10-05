@@ -15,6 +15,7 @@
     "scenario": "node examples/run-scenario.ts examples/scenario-fragmented-network.json",
     "scenario:mtu": "node examples/run-scenario.ts examples/scenario-small-mtu.json",
     "scenario:coluvi": "node examples/coluvi-drill.ts",
+    "rehearse:coluvi": "node scripts/rehearse-coluvi.mjs",
     "load:coluvi": "node examples/coluvi-load.mjs",
     "qualify:coluvi": "node scripts/qualify-coluvi.mjs",
     "start": "node src/server.ts",

@@ -60,6 +60,10 @@ try {
   const testSummary = Object.fromEntries(["tests", "pass", "fail", "cancelled", "skipped", "todo"].map(field => [field, count(field)]));
   assert.ok(testSummary.tests > 0); assert.equal(testSummary.pass, testSummary.tests);
   for (const field of ["fail", "cancelled", "skipped", "todo"]) assert.equal(testSummary[field], 0);
+  await run("rehearsal", ["scripts/rehearse-coluvi.mjs", join(destination, "rehearsal")], 60_000);
+  const rehearsal = JSON.parse(readFileSync(join(destination, "rehearsal", "rehearsal.json"), "utf8"));
+  assert.equal(rehearsal.status, "PASS"); assert.equal(rehearsal.sourceUnchanged, true); assert.equal(rehearsal.scenarios.length, 6);
+  for (const scenario of rehearsal.scenarios) assert.ok(scenario.timeline.every(step => step.status === "PASS"));
   const integrated = JSON.parse(await run("integrated-browser", ["examples/coluvi-browser-smoke.mjs"], 5 * 60_000));
   assert.equal(integrated.integratedMapEvidence.sameBackendAndOrigin, true);
   assert.equal(integrated.integratedMapEvidence.offlineSnapshotDuringPrivateResponse, true);
@@ -76,7 +80,7 @@ try {
   assert.equal(sourceHash(), provenance.sourceSha256, "Source changed during qualification; results cannot qualify the current tree");
   const report = { version: 1, status: "PASS", startedAt, completedAt: new Date().toISOString(), wallMs: performance.now() - started,
     provenance, environment: { node: process.version, distro: process.env.WSL_DISTRO_NAME }, steps, tests: testSummary,
-    integrated, map, load, limitations: ["Software qualification in Ubuntu WSL and loopback Chromium, not physical Android/LAN/radio validation", "Not a production certification or guarantee of emergency assistance"] };
+    integrated, map, load, rehearsal, limitations: ["Software qualification in Ubuntu WSL and loopback Chromium, not physical Android/LAN/radio validation", "Not a production certification or guarantee of emergency assistance"] };
   save("qualification.json", JSON.stringify(report, null, 2) + "\n");
   process.stdout.write(JSON.stringify({ status: report.status, report: join(destination, "qualification.json"), tests: testSummary.tests, devices: load.configuration.devices }, null, 2) + "\n");
 } catch (error) {

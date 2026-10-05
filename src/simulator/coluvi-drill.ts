@@ -30,15 +30,17 @@ function statistics(values: number[]) {
 }
 
 /** Fictional topology, virtual milliseconds, never a physical-network benchmark. */
-export async function runColuviDrill(cycles = 30, baseSeed = 20261004) {
+export async function runColuviDrill(cycles = 30, baseSeed = 20261004, options: { signal?: AbortSignal } = {}) {
   if (!Number.isSafeInteger(cycles) || cycles < 5 || cycles > 100 || cycles % DRILL_MODES.length !== 0) throw new Error("Cycles must be a multiple of five from 5 to 100");
   if (!Number.isSafeInteger(baseSeed) || baseSeed < 0 || baseSeed > 0xffffffff) throw new Error("Invalid simulation seed");
+  options.signal?.throwIfAborted();
   const directory = mkdtempSync("/tmp/coluvi-drill-");
   const issuer = identity(200); const authority = authorityFor(issuer, ["refugio-ficticio", "otra-zona"]);
   const devices = [1, 2, 3, 4, 5].map(browserIdentity);
   const results = [];
   try {
     for (let cycle = 0; cycle < cycles; cycle += 1) {
+      options.signal?.throwIfAborted();
       const mode = DRILL_MODES[cycle % DRILL_MODES.length]; const seed = (baseSeed + cycle) >>> 0;
       const clock = new VirtualClock(START + cycle * 120_000); const issuedAt = clock.now();
       const databasePath = join(directory, `center-${cycle}.sqlite`);
@@ -90,6 +92,7 @@ export async function runColuviDrill(cycles = 30, baseSeed = 20261004) {
           client.source.create(store.inbox(device.anonymousDeviceId, 0, 50, issuedAt).commands[0]); clients.push(client);
         }
         for (let tick = 0; tick <= 70_000; tick += 1_000) {
+          options.signal?.throwIfAborted();
           clock.set(issuedAt + tick);
           if (tick === 7_000) {
             // Close/reopen command state and all custody queues without clearing signed packets.

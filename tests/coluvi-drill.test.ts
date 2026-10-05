@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { runColuviDrill, DRILL_MODES } from "../src/simulator/coluvi-drill.ts";
 
-test("thirty bidirectional fictional flood cycles use real queues/contracts and replay deterministically", { timeout: 120_000 }, async () => {
-  const first = await runColuviDrill(); const second = await runColuviDrill();
+test("thirty bidirectional fictional flood cycles use real queues/contracts and replay deterministically", { timeout: 120_000 }, async context => {
+  const first = await runColuviDrill(30, 20261004, { signal: context.signal }); const second = await runColuviDrill(30, 20261004, { signal: context.signal });
   assert.deepEqual(second, first);
   assert.equal(first.cycles.length, 30); assert.equal(first.totals.requested, 120);
   assert.equal(first.configuration.externalInternetUsed, false); assert.equal(first.evidence, "VIRTUAL_SIMULATION_ONLY");
@@ -18,4 +18,6 @@ test("thirty bidirectional fictional flood cycles use real queues/contracts and 
 test("fictional drill rejects unbounded or malformed run parameters", async () => {
   for (const cycles of [0, 1, 6, 101, Infinity]) await assert.rejects(runColuviDrill(cycles));
   for (const seed of [-1, NaN, 2 ** 32]) await assert.rejects(runColuviDrill(5, seed));
+  const controller = new AbortController(); controller.abort();
+  await assert.rejects(runColuviDrill(5, 20261004, { signal: controller.signal }), { name: "AbortError" });
 });
