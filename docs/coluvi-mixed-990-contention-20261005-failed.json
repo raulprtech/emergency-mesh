@@ -1,0 +1,205 @@
+{
+  "version": 1,
+  "status": "FAIL",
+  "provenance": {
+    "baseCommit": "0eb4f761b105c33cbc8d9a49f2da82c5085d6981",
+    "dirtyWorktree": false,
+    "sourceSha256": "27b30fd3f4c028e3f5baa451541440355dbc66a2ff301cc5fdae1b79dd99f7e9",
+    "sourceFiles": 172
+  },
+  "startedAt": "2026-10-05T03:47:34.635Z",
+  "completedAt": "2026-10-05T03:49:29.037Z",
+  "evidence": {
+    "status": "FAIL",
+    "devices": 990,
+    "concurrency": 48,
+    "seed": 3735928559,
+    "mixed": true,
+    "acknowledgedPackets": 869,
+    "elapsedMs": 114357.583971,
+    "measurements": {
+      "server": {
+        "samples": 75,
+        "cpuUserMs": 3490.9520000000007,
+        "cpuSystemMs": 424.13500000000016,
+        "maxRssBytes": 127447040,
+        "maxHeapUsedBytes": 18959904,
+        "maxEventLoopDelayMs": 1105.199103,
+        "maxSampleGapMs": 2058.640953
+      },
+      "mixedWorkload": {
+        "enabled": true,
+        "concurrentReaders": 6,
+        "readerPauseMs": 100,
+        "successfulReads": 990,
+        "interruptedReadsAtPlannedCrash": 6,
+        "failedReads": 0,
+        "noticesIssued": 3,
+        "privateApiRateLimited": 1
+      },
+      "endpoints": {
+        "POST /api/operator/login": {
+          "requests": 2,
+          "errors": {},
+          "httpStatuses": {
+            "200": 2
+          },
+          "responseHeadersMs": {
+            "samples": 2,
+            "p50": 102.82058100000722,
+            "p95": 155.82128800000646,
+            "maximum": 155.82128800000646
+          }
+        },
+        "GET /api/mobile/inbox": {
+          "requests": 38,
+          "errors": {
+            "CONNECTION_ERROR": 1
+          },
+          "httpStatuses": {
+            "200": 36,
+            "429": 1
+          },
+          "responseHeadersMs": {
+            "samples": 37,
+            "p50": 344.70034399999713,
+            "p95": 1461.6385010000013,
+            "maximum": 1563.4666829999987
+          }
+        },
+        "GET /api/operator/session": {
+          "requests": 2,
+          "errors": {},
+          "httpStatuses": {
+            "200": 1,
+            "401": 1
+          },
+          "responseHeadersMs": {
+            "samples": 2,
+            "p50": 2.6388630000001285,
+            "p95": 6.589617999998154,
+            "maximum": 6.589617999998154
+          }
+        },
+        "POST /api/operator/notices": {
+          "requests": 3,
+          "errors": {},
+          "httpStatuses": {
+            "201": 3
+          },
+          "responseHeadersMs": {
+            "samples": 3,
+            "p50": 44.93576899999607,
+            "p95": 45.90887600000133,
+            "maximum": 45.90887600000133
+          }
+        },
+        "POST /api/packets": {
+          "requests": 966,
+          "errors": {
+            "CONNECTION_ERROR": 47,
+            "TIMEOUT": 22
+          },
+          "httpStatuses": {
+            "202": 869,
+            "400": 2,
+            "429": 26
+          },
+          "responseHeadersMs": {
+            "samples": 897,
+            "p50": 515.7769739999931,
+            "p95": 1628.3997530000051,
+            "maximum": 9005.989875
+          }
+        },
+        "GET /health": {
+          "requests": 435,
+          "errors": {
+            "CONNECTION_ERROR": 1
+          },
+          "httpStatuses": {
+            "200": 434
+          },
+          "responseHeadersMs": {
+            "samples": 434,
+            "p50": 2.1312140000009094,
+            "p95": 298.76986499999475,
+            "maximum": 1526.783144000001
+          }
+        },
+        "GET /api/areas": {
+          "requests": 434,
+          "errors": {
+            "CONNECTION_ERROR": 1
+          },
+          "httpStatuses": {
+            "200": 433
+          },
+          "responseHeadersMs": {
+            "samples": 433,
+            "p50": 2.2458730000071228,
+            "p95": 298.7474250000014,
+            "maximum": 1550.3613230000046
+          }
+        },
+        "GET /api/operator/checkins": {
+          "requests": 32,
+          "errors": {
+            "CONNECTION_ERROR": 1
+          },
+          "httpStatuses": {
+            "200": 31
+          },
+          "responseHeadersMs": {
+            "samples": 31,
+            "p50": 556.6324329999989,
+            "p95": 1276.2527980000013,
+            "maximum": 1641.7486379999973
+          }
+        },
+        "GET /api/operator/notices": {
+          "requests": 31,
+          "errors": {
+            "CONNECTION_ERROR": 1
+          },
+          "httpStatuses": {
+            "200": 30
+          },
+          "responseHeadersMs": {
+            "samples": 30,
+            "p50": 593.4234180000058,
+            "p95": 1436.3645870000037,
+            "maximum": 1550.2943959999975
+          }
+        },
+        "GET /api/mobile/notices": {
+          "requests": 33,
+          "errors": {
+            "CONNECTION_ERROR": 1
+          },
+          "httpStatuses": {
+            "200": 32
+          },
+          "responseHeadersMs": {
+            "samples": 32,
+            "p50": 401.3200219999999,
+            "p95": 1268.108739000003,
+            "maximum": 1513.4989810000043
+          }
+        }
+      }
+    },
+    "crashes": [
+      {
+        "label": "during-concurrent-updates",
+        "signal": "SIGKILL",
+        "acknowledgedVerified": 12,
+        "persisted": 12,
+        "committedWithoutObservedAck": 0,
+        "integrity": "ok",
+        "foreignKeyViolations": 0
+      }
+    ]
+  },
+  "message": "Mixed workload did not pass; this is not a successful capacity qualification"
+}

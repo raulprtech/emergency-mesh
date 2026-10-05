@@ -20,6 +20,7 @@
     "load:mixed": "node examples/coluvi-mixed-load.mjs",
     "soak:coluvi": "node scripts/soak-coluvi.mjs",
     "qualify:coluvi": "node scripts/qualify-coluvi.mjs",
+    "verify:rc2": "node scripts/verify-coluvi-rc2.mjs",
     "start": "node src/server.ts",
     "test": "node --test tests/*.test.ts",
     "check": "node --test tests/*.test.ts && node src/simulator/demo.ts",

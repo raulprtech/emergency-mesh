@@ -1,0 +1,289 @@
+{
+  "version": 1,
+  "recordedAt": "2026-10-05T04:03:18.078Z",
+  "evidence": "LOCAL_HTTP_SQLITE_ONLY",
+  "scenario": "SIMULACRO fictitious flood load and crash recovery",
+  "harnessSha256": "d44d28b565cae87d742ad7f604b6da084171ce1a13d8f5b51afbb89075697abc",
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "linux",
+    "distro": "Ubuntu"
+  },
+  "configuration": {
+    "devices": 990,
+    "zones": 3,
+    "concurrency": 48,
+    "seed": 3735928559,
+    "mixed": true,
+    "admissionLimits": {
+      "windowMs": 60000,
+      "globalRequests": 600,
+      "identityRequests": 60,
+      "trackedIdentities": 10000
+    },
+    "privateApiLimits": {
+      "globalRequests": 600,
+      "perSourceRequests": 120,
+      "windowMs": 60000
+    },
+    "enrollment": "trusted fixture provisioning, not HTTP enrollment",
+    "silentDevices": 99
+  },
+  "measurements": {
+    "server": {
+      "samples": 519,
+      "cpuUserMs": 25693.760999999995,
+      "cpuSystemMs": 2934.9899999999993,
+      "maxRssBytes": 134918144,
+      "maxHeapUsedBytes": 22102952,
+      "maxEventLoopDelayMs": 490.471423,
+      "maxSampleGapMs": 1383.8982809999998
+    },
+    "mixedWorkload": {
+      "enabled": true,
+      "concurrentReaders": 6,
+      "readerPauseMs": 100,
+      "successfulReads": 9582,
+      "interruptedReadsAtPlannedCrash": 0,
+      "failedReads": 0,
+      "noticesIssued": 3,
+      "privateApiRateLimited": 21
+    },
+    "endpoints": {
+      "POST /api/operator/login": {
+        "requests": 3,
+        "errors": {},
+        "httpStatuses": {
+          "200": 3
+        },
+        "responseHeadersMs": {
+          "samples": 3,
+          "p50": 90.18534899997758,
+          "p95": 108.07721599999968,
+          "maximum": 108.07721599999968
+        }
+      },
+      "GET /api/mobile/inbox": {
+        "requests": 252,
+        "errors": {},
+        "httpStatuses": {
+          "200": 245,
+          "429": 7
+        },
+        "responseHeadersMs": {
+          "samples": 252,
+          "p50": 57.16286500002025,
+          "p95": 255.55114900000262,
+          "maximum": 453.732095000003
+        }
+      },
+      "GET /api/operator/session": {
+        "requests": 2,
+        "errors": {},
+        "httpStatuses": {
+          "200": 1,
+          "401": 1
+        },
+        "responseHeadersMs": {
+          "samples": 2,
+          "p50": 3.895298000001276,
+          "p95": 7.450941999999486,
+          "maximum": 7.450941999999486
+        }
+      },
+      "POST /api/operator/notices": {
+        "requests": 3,
+        "errors": {},
+        "httpStatuses": {
+          "201": 3
+        },
+        "responseHeadersMs": {
+          "samples": 3,
+          "p50": 19.50751599999967,
+          "p95": 20.580455999999685,
+          "maximum": 20.580455999999685
+        }
+      },
+      "POST /api/packets": {
+        "requests": 5779,
+        "errors": {
+          "CONNECTION_ERROR": 47
+        },
+        "httpStatuses": {
+          "202": 5346,
+          "400": 2,
+          "429": 384
+        },
+        "responseHeadersMs": {
+          "samples": 5732,
+          "p50": 109.46454900002573,
+          "p95": 429.6353080000008,
+          "maximum": 8468.921413
+        }
+      },
+      "GET /health": {
+        "requests": 4319,
+        "errors": {},
+        "httpStatuses": {
+          "200": 4319
+        },
+        "responseHeadersMs": {
+          "samples": 4319,
+          "p50": 2.2173899999979767,
+          "p95": 49.59971899999073,
+          "maximum": 1228.4187650000094
+        }
+      },
+      "GET /api/areas": {
+        "requests": 4321,
+        "errors": {},
+        "httpStatuses": {
+          "200": 4321
+        },
+        "responseHeadersMs": {
+          "samples": 4321,
+          "p50": 2.2531749999616295,
+          "p95": 50.17975999999908,
+          "maximum": 1050.4194070000085
+        }
+      },
+      "GET /api/operator/checkins": {
+        "requests": 239,
+        "errors": {},
+        "httpStatuses": {
+          "200": 236,
+          "429": 3
+        },
+        "responseHeadersMs": {
+          "samples": 239,
+          "p50": 57.54746899998281,
+          "p95": 311.508851999999,
+          "maximum": 452.7393030000021
+        }
+      },
+      "GET /api/operator/notices": {
+        "requests": 242,
+        "errors": {},
+        "httpStatuses": {
+          "200": 236,
+          "429": 6
+        },
+        "responseHeadersMs": {
+          "samples": 242,
+          "p50": 57.32213899999624,
+          "p95": 279.3346540000002,
+          "maximum": 552.3098820000014
+        }
+      },
+      "GET /api/mobile/notices": {
+        "requests": 240,
+        "errors": {},
+        "httpStatuses": {
+          "200": 235,
+          "429": 5
+        },
+        "responseHeadersMs": {
+          "samples": 240,
+          "p50": 57.02837600000203,
+          "p95": 296.12457899999936,
+          "maximum": 591.3807649999999
+        }
+      },
+      "GET /api/operator/checkins/:id": {
+        "requests": 48,
+        "errors": {},
+        "httpStatuses": {
+          "200": 48
+        },
+        "responseHeadersMs": {
+          "samples": 48,
+          "p50": 21.812218000006396,
+          "p95": 28.219390999991447,
+          "maximum": 29.269122000026982
+        }
+      }
+    }
+  },
+  "counts": {
+    "uniqueSignedPackets": 2673,
+    "stateEvents": 1782,
+    "needsEvents": 891,
+    "requested": 990,
+    "responded": 891,
+    "safe": 396,
+    "needsHelp": 495,
+    "pending": 99,
+    "activeWater": 495,
+    "activeTransport": 495
+  },
+  "http": {
+    "accepted": 2673,
+    "duplicates": 2673,
+    "rateLimited": 384,
+    "interruptedRequests": 47,
+    "maximumInFlight": 48,
+    "requestsOutstandingAtKill": 47,
+    "fullReplayDuplicates": 2673
+  },
+  "crashes": [
+    {
+      "label": "during-concurrent-updates",
+      "signal": "SIGKILL",
+      "acknowledgedVerified": 12,
+      "persisted": 12,
+      "committedWithoutObservedAck": 0,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "after-all-confirmations",
+      "signal": "SIGKILL",
+      "acknowledgedVerified": 2673,
+      "persisted": 2673,
+      "committedWithoutObservedAck": 0,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    }
+  ],
+  "checks": {
+    "allAcknowledgedReportsDurable": true,
+    "immutableHistoryAfterReplay": true,
+    "allRecipientPagesVerified": true,
+    "missingPredecessorsExplicitBeforeArrival": true,
+    "independentlyArrivingNeedsVerified": true,
+    "invalidPacketsRejectedWithoutAck": 2,
+    "privateReportsExcludedFromPublicMap": true,
+    "sampledCredentialsSurviveRestarts": 3,
+    "operatorSessionInvalidated": true
+  },
+  "timing": {
+    "wallMs": 537014.9920679999,
+    "setupMs": 12822.363708,
+    "replayMs": 259100.422939,
+    "successfulRequestMs": {
+      "samples": 5346,
+      "p50": 112.14462599996477,
+      "p95": 408.21268099999725,
+      "maximum": 8399.78147
+    }
+  },
+  "limitations": [
+    "Synthetic Node clients, not simultaneous PWA instances or physical Android phones",
+    "Loopback HTTP; no LAN, Internet, TLS, radio, range or battery measurement",
+    "SIGKILL of backend process, not host power loss or disk failure",
+    "Client ledger remains in parent memory; not proof of client crash recovery",
+    "Successful request timings exclude queue and Retry-After waiting; wall time includes them",
+    "Seed fixes fixture identities and scheduling shuffle, not OS timing or the crash commit boundary",
+    "Notice publication and inbox reads measured; no human presentation or receipt throughput claim",
+    "HTTP enrollment throughput not measured"
+  ],
+  "status": "PASS",
+  "provenance": {
+    "baseCommit": "0eb4f761b105c33cbc8d9a49f2da82c5085d6981",
+    "dirtyWorktree": false,
+    "sourceSha256": "27b30fd3f4c028e3f5baa451541440355dbc66a2ff301cc5fdae1b79dd99f7e9",
+    "sourceFiles": 172
+  },
+  "startedAt": "2026-10-05T03:54:21.065Z",
+  "sourceUnchanged": true
+}

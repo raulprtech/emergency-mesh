@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "evidence": "CONCURRENT_QUALIFICATION_SUMMARIES",
+  "runs": [
+    {
+      "sourceReport": "/tmp/coluvi-rc2-qualification-contention-20261005-01/qualification.json",
+      "sourceReportSha256": "306012db5e1053ba12e0e7c6d2a0a3e6afc632b902d846c08ab32b824ce3e710",
+      "status": "PASS",
+      "startedAt": "2026-10-05T03:48:08.145Z",
+      "completedAt": "2026-10-05T03:53:23.718Z",
+      "wallMs": 315571.37568600004,
+      "provenance": {
+        "baseCommit": "0eb4f761b105c33cbc8d9a49f2da82c5085d6981",
+        "dirtyWorktree": false,
+        "sourceSha256": "27b30fd3f4c028e3f5baa451541440355dbc66a2ff301cc5fdae1b79dd99f7e9",
+        "sourceFiles": 172
+      },
+      "tests": {
+        "tests": 217,
+        "pass": 217,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "steps": [
+        {
+          "name": "tests",
+          "code": 0,
+          "signal": null,
+          "wallMs": 92788.890747,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "rehearsal",
+          "code": 0,
+          "signal": null,
+          "wallMs": 2458.8693979999953,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "integrated-browser",
+          "code": 0,
+          "signal": null,
+          "wallMs": 16049.778904000006,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "client-continuity",
+          "code": 0,
+          "signal": null,
+          "wallMs": 5089.069957999993,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "mobile-readiness",
+          "code": 0,
+          "signal": null,
+          "wallMs": 4957.693064000006,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "map-browser",
+          "code": 0,
+          "signal": null,
+          "wallMs": 3921.330218999996,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "soak-smoke",
+          "code": 0,
+          "signal": null,
+          "wallMs": 62219.134867999994,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "load-300",
+          "code": 0,
+          "signal": null,
+          "wallMs": 128069.30808400002,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        }
+      ]
+    },
+    {
+      "sourceReport": "/tmp/coluvi-rc2-qualification-contention-20261005-02/qualification.json",
+      "sourceReportSha256": "82204cf50f3864ef059eef96512d9cb17341992817d3ed559f9d4fb65f0592e3",
+      "status": "PASS",
+      "startedAt": "2026-10-05T04:04:59.419Z",
+      "completedAt": "2026-10-05T04:10:03.977Z",
+      "wallMs": 304557.59120100003,
+      "provenance": {
+        "baseCommit": "0eb4f761b105c33cbc8d9a49f2da82c5085d6981",
+        "dirtyWorktree": false,
+        "sourceSha256": "27b30fd3f4c028e3f5baa451541440355dbc66a2ff301cc5fdae1b79dd99f7e9",
+        "sourceFiles": 172
+      },
+      "tests": {
+        "tests": 217,
+        "pass": 217,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "steps": [
+        {
+          "name": "tests",
+          "code": 0,
+          "signal": null,
+          "wallMs": 83503.678562,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "rehearsal",
+          "code": 0,
+          "signal": null,
+          "wallMs": 2102.6446670000005,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "integrated-browser",
+          "code": 0,
+          "signal": null,
+          "wallMs": 15808.363524,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "client-continuity",
+          "code": 0,
+          "signal": null,
+          "wallMs": 4724.044164999999,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "mobile-readiness",
+          "code": 0,
+          "signal": null,
+          "wallMs": 4573.051978000003,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "map-browser",
+          "code": 0,
+          "signal": null,
+          "wallMs": 3637.7167489999993,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "soak-smoke",
+          "code": 0,
+          "signal": null,
+          "wallMs": 62060.403741999995,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        },
+        {
+          "name": "load-300",
+          "code": 0,
+          "signal": null,
+          "wallMs": 128134.67598499998,
+          "timedOut": false,
+          "exceededOutputLimit": false
+        }
+      ]
+    }
+  ]
+}
