@@ -1,0 +1,273 @@
+{
+  "version": 1,
+  "status": "PASS",
+  "evidence": "SUSTAINED_LOCAL_HTTP_REAL_TIME",
+  "startedAt": "2026-10-05T03:05:43.475Z",
+  "completedAt": "2026-10-05T06:07:35.422Z",
+  "observedMs": 10855935.782396,
+  "qualifiesThreeHours": true,
+  "configuration": {
+    "durationMs": 10800000,
+    "intervalMs": 30000,
+    "devices": 30,
+    "restartEvery": 20,
+    "seed": 20261005
+  },
+  "counts": {
+    "rounds": 167,
+    "commands": 501,
+    "notices": 501,
+    "receiptAcknowledgements": 9018,
+    "packetAcknowledgements": 14175,
+    "duplicates": 648,
+    "heartbeats": 175,
+    "rateLimited": 898,
+    "restarts": 8
+  },
+  "audits": [
+    {
+      "label": "AFTER_SIGKILL",
+      "round": 20,
+      "acknowledgedPacketsVerified": 1620,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "AFTER_SIGKILL",
+      "round": 40,
+      "acknowledgedPacketsVerified": 3240,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "AFTER_SIGKILL",
+      "round": 60,
+      "acknowledgedPacketsVerified": 4860,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "AFTER_SIGKILL",
+      "round": 80,
+      "acknowledgedPacketsVerified": 6480,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "AFTER_SIGKILL",
+      "round": 100,
+      "acknowledgedPacketsVerified": 8100,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "AFTER_SIGKILL",
+      "round": 120,
+      "acknowledgedPacketsVerified": 9720,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "AFTER_SIGKILL",
+      "round": 140,
+      "acknowledgedPacketsVerified": 11340,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "AFTER_SIGKILL",
+      "round": 160,
+      "acknowledgedPacketsVerified": 12960,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "FINAL",
+      "round": 167,
+      "acknowledgedPacketsVerified": 13527,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    }
+  ],
+  "acknowledgedPackets": 13527,
+  "server": {
+    "samples": 10824,
+    "maxRssBytes": 148152320,
+    "maxHeapUsedBytes": 24768096,
+    "maxEventLoopDelayMs": 836.763647,
+    "cpuUserMs": 193599.87399999987,
+    "cpuSystemMs": 21312.921
+  },
+  "roundMs": {
+    "samples": 167,
+    "p50": 61722.67720300052,
+    "p95": 66157.10449900012,
+    "max": 132850.8053050004
+  },
+  "endpoints": {
+    "POST /api/operator/login": {
+      "requestMs": {
+        "samples": 17,
+        "p50": 90.86483100056648,
+        "p95": 129.53112800046802,
+        "max": 129.53112800046802
+      },
+      "statuses": {
+        "200": 17
+      },
+      "failures": 0
+    },
+    "POST /api/operator/checkins": {
+      "requestMs": {
+        "samples": 501,
+        "p50": 11.462110999971628,
+        "p95": 29.03881900012493,
+        "max": 108.72026000008918
+      },
+      "statuses": {
+        "201": 501
+      },
+      "failures": 0
+    },
+    "POST /api/operator/notices": {
+      "requestMs": {
+        "samples": 501,
+        "p50": 10.320086000021547,
+        "p95": 27.141429000068456,
+        "max": 61.684424000792205
+      },
+      "statuses": {
+        "201": 501,
+        "429": 8
+      },
+      "failures": 0
+    },
+    "GET /api/mobile/inbox": {
+      "requestMs": {
+        "samples": 5010,
+        "p50": 48.58662400022149,
+        "p95": 120.45048899995163,
+        "max": 2044.3405079999939
+      },
+      "statuses": {
+        "200": 5010,
+        "429": 373
+      },
+      "failures": 0
+    },
+    "GET /api/mobile/notices": {
+      "requestMs": {
+        "samples": 5010,
+        "p50": 47.47970900032669,
+        "p95": 121.87466000020504,
+        "max": 955.2342210002244
+      },
+      "statuses": {
+        "200": 5010,
+        "429": 178
+      },
+      "failures": 0
+    },
+    "POST /api/mobile/receipts": {
+      "requestMs": {
+        "samples": 9018,
+        "p50": 37.64831499941647,
+        "p95": 113.73522000014782,
+        "max": 1216.5449069999158
+      },
+      "statuses": {
+        "202": 9018,
+        "429": 331
+      },
+      "failures": 0
+    },
+    "POST /api/packets": {
+      "requestMs": {
+        "samples": 14175,
+        "p50": 38.31238400004804,
+        "p95": 122.0348140001297,
+        "max": 1014.4086009999737
+      },
+      "statuses": {
+        "202": 14175
+      },
+      "failures": 0
+    },
+    "GET /api/operator/checkins/:id": {
+      "requestMs": {
+        "samples": 501,
+        "p50": 4.321677001193166,
+        "p95": 6.675618999637663,
+        "max": 54.71093000005931
+      },
+      "statuses": {
+        "200": 501
+      },
+      "failures": 0
+    },
+    "GET /api/operator/notices/:id": {
+      "requestMs": {
+        "samples": 501,
+        "p50": 2.3101840000599623,
+        "p95": 3.3260020001325756,
+        "max": 7.893869999796152
+      },
+      "statuses": {
+        "200": 501,
+        "429": 8
+      },
+      "failures": 0
+    },
+    "GET /health": {
+      "requestMs": {
+        "samples": 175,
+        "p50": 1.8956750000361353,
+        "p95": 2.4490470001474023,
+        "max": 2.7788340002298355
+      },
+      "statuses": {
+        "200": 175
+      },
+      "failures": 0
+    },
+    "GET /api/areas": {
+      "requestMs": {
+        "samples": 175,
+        "p50": 2.022893999936059,
+        "p95": 2.940050999983214,
+        "max": 5.81704599969089
+      },
+      "statuses": {
+        "200": 175
+      },
+      "failures": 0
+    },
+    "GET /api/operator/session": {
+      "requestMs": {
+        "samples": 8,
+        "p50": 6.757184999994934,
+        "p95": 10.335936999879777,
+        "max": 10.335936999879777
+      },
+      "statuses": {
+        "401": 8
+      },
+      "failures": 0
+    }
+  },
+  "limitations": [
+    "Synthetic Node clients and local HTTP, no Android, browser, TLS, radio or battery evidence",
+    "Client ledger in parent memory, not a client-crash test",
+    "Planned backend SIGKILLs between rounds, not in-flight or physical power loss",
+    "Silence means no response, never danger",
+    "No SHOWN or human-attention claim",
+    "Fixed fixture keys are not pilot keys"
+  ],
+  "provenance": {
+    "baseCommit": "c7f6ce9864e84435153e7639d503192256ea82d4",
+    "dirtyWorktree": false,
+    "sourceSha256": "57e66eb28871611f5dfb2c64397713e30567aa8faa612c23319fd9141ee1b185",
+    "sourceFiles": 171
+  },
+  "sourceUnchanged": true
+}

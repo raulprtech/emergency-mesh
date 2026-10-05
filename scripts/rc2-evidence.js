@@ -42,8 +42,42 @@ function load(report, devices, mixed) {
   }
 }
 
+function soakChronology(s, rows) {
+  check(Array.isArray(rows) && rows.length === s.counts.rounds + 1, "SOAK_TIMELINE_INCOMPLETE");
+  const first = rows[0]; const started = Date.parse(s.startedAt);
+  check(first?.type === "STARTED" && first.startedAt === s.startedAt && first.durationMs === s.configuration.durationMs
+    && first.devices === s.configuration.devices && Math.abs(Date.parse(first.recordedAt) - started) < 2000, "SOAK_TIMELINE_START");
+  let previousObserved = 0; let previousWall = started; let previousCounts;
+  let maxClockDifferencePerIntervalMs = 0;
+  for (let index = 1; index < rows.length; index++) {
+    const row = rows[index]; const c = row?.counts; const restarts = Math.floor(index / 20);
+    check(row?.type === "ROUND" && row.phase === "OBSERVING" && c?.rounds === index, "SOAK_TIMELINE_SEQUENCE");
+    check(c && Object.values(c).every(count) && c.commands === index * 3 && c.notices === index * 3 && c.receiptAcknowledgements === index * 54
+      && c.restarts === restarts && c.duplicates === restarts * 81 && c.packetAcknowledgements === index * 81 + c.duplicates
+      && c.heartbeats >= index + restarts && row.acknowledgedPackets === index * 81, "SOAK_TIMELINE_COUNTS");
+    if (previousCounts) for (const key of Object.keys(s.counts)) check(c[key] >= previousCounts[key], "SOAK_TIMELINE_REGRESSION");
+    const wall = Date.parse(row.recordedAt); const monotonicDelta = row.observedMs - previousObserved;
+    check(positive(monotonicDelta) && row.observedMs <= s.observedMs && positive(row.roundMs) && row.roundMs <= monotonicDelta + 5
+      && Number.isFinite(wall) && wall > previousWall, "SOAK_TIMELINE_CLOCK_ORDER");
+    // A fixed tolerance over an entire multi-hour run confuses accumulated clock
+    // divergence with insufficient observation. Require both full durations and
+    // the original per-round trace; large individual clock jumps still fail.
+    const difference = Math.abs((wall - previousWall) - monotonicDelta);
+    check(difference < 5000, "SOAK_TIMELINE_CLOCK_STEP");
+    maxClockDifferencePerIntervalMs = Math.max(maxClockDifferencePerIntervalMs, difference);
+    previousObserved = row.observedMs; previousWall = wall; previousCounts = c;
+  }
+  const finalMono = s.observedMs - previousObserved; const finalWall = Date.parse(s.completedAt) - previousWall;
+  check(finalMono >= 0 && finalMono < 60_000 && finalWall >= 0 && finalWall < 60_000 && Math.abs(finalWall - finalMono) < 5000,
+    "SOAK_TIMELINE_FINAL_CLOCK");
+  check(isDeepStrictEqual(previousCounts, s.counts), "SOAK_TIMELINE_FINAL_COUNTS");
+  const wallMs = Date.parse(s.completedAt) - started; const differenceMs = wallMs - s.observedMs;
+  return { status: Math.abs(differenceMs) < 5000 ? "ALIGNED" : "DIVERGENT_BOTH_EXCEED_MINIMUM", wallMs, monotonicMs: s.observedMs,
+    conservativeMs: Math.min(wallMs, s.observedMs), wallMinusMonotonicMs: differenceMs, maxClockDifferencePerIntervalMs, verifiedRounds: rows.length - 1 };
+}
+
 /** Consistency gate for locally produced reports; not a signature or third-party attestation. */
-export function verifyRc2Evidence({ qualification: q, mixed300, mixed990, soak: s }, { current, archives }) {
+export function verifyRc2Evidence({ qualification: q, mixed300, mixed990, soak: s, soakProgress }, { current, archives }) {
   check(q?.version === 1 && q.status === "PASS", "QUALIFICATION_NOT_PASS");
   provenance(q, archives, current.workloadSha256);
   check(q.provenance.sourceSha256 === current.sourceSha256, "CURRENT_SOURCE_NOT_QUALIFIED");
@@ -89,7 +123,7 @@ export function verifyRc2Evidence({ qualification: q, mixed300, mixed990, soak: 
   provenance(s, archives, current.workloadSha256);
   check(s.qualifiesThreeHours === true && Number.isFinite(s.observedMs) && s.observedMs >= threeHours, "SOAK_TOO_SHORT");
   const elapsedWall = Date.parse(s.completedAt) - Date.parse(s.startedAt);
-  check(Number.isFinite(elapsedWall) && elapsedWall >= threeHours - 2000 && Math.abs(elapsedWall - s.observedMs) < 5000, "SOAK_CLOCK_INCONSISTENT");
+  check(Number.isFinite(elapsedWall) && elapsedWall >= threeHours, "SOAK_CLOCK_INCONSISTENT");
   check(Number.isFinite(s.configuration?.durationMs) && s.configuration.durationMs >= threeHours && s.configuration.durationMs <= s.observedMs && s.configuration.devices === 30
     && s.configuration.restartEvery === 20 && s.configuration.intervalMs === 30_000, "SOAK_PROFILE_MISMATCH");
   const c = s.counts;
@@ -111,9 +145,12 @@ export function verifyRc2Evidence({ qualification: q, mixed300, mixed990, soak: 
     check(s.endpoints?.[route]?.statuses?.[status] === expected, "SOAK_ENDPOINT_COUNTS");
   }
   for (const route of ["GET /health", "GET /api/areas"]) check(s.endpoints?.[route]?.statuses?.[200] >= c.heartbeats, "SOAK_HEARTBEAT_EVIDENCE_MISSING");
+  const clocks = soakChronology(s, soakProgress);
   return { status: "PASS", scope: "LOCAL_SOFTWARE_RC2", tests: q.tests.tests, mixedDevices: [300, 990], observedMs: s.observedMs,
+    clocks,
     soakRounds: c.rounds, backendRestarts: c.restarts, acknowledgedPackets: s.acknowledgedPackets,
     sourceSha256: current.sourceSha256, workloadSha256: current.workloadSha256,
     physicalAndroid: "PENDING", originalTimeoutCause: "NOT_ESTABLISHED",
-    limitations: ["Consistency checks of local reports, not authenticated third-party attestation", "PASS is not guaranteed capacity or production emergency certification", "Read the separate failed contention profiles before setting operational limits"] };
+    limitations: ["Consistency checks of local reports, not authenticated third-party attestation", "PASS is not guaranteed capacity or production emergency certification", "Read the separate failed contention profiles before setting operational limits",
+      ...(clocks.status === "ALIGNED" ? [] : ["UTC and monotonic clocks diverged; both exceed three hours and each recorded interval was checked. Clock divergence cause is not established."])] };
 }

@@ -22,8 +22,15 @@ function fixture() {
   soak.audits = [20, 40, 40].map((round, index) => ({ label: index === 2 ? "FINAL" : "AFTER_SIGKILL", round, acknowledgedPacketsVerified: round * 81, integrity: "ok", foreignKeyViolations: 0 }));
   for (const [route, status, value] of [["POST /api/packets", 202, 3402], ["POST /api/mobile/receipts", 202, 2160], ["POST /api/operator/checkins", 201, 120],
     ["POST /api/operator/notices", 201, 120], ["GET /api/operator/session", 401, 2], ["GET /health", 200, 42], ["GET /api/areas", 200, 42]] as const) soak.endpoints[route] = { statuses: { [status]: value }, failures: 0 };
-  const evidence = { qualification, mixed300, mixed990, soak };
-  const archives = Object.fromEntries(Object.values(evidence).map(report => [report.provenance.baseCommit, { sourceSha256: report.provenance.sourceSha256, workloadSha256: "synthetic-workload" }]));
+  const soakProgress: any[] = [{ type: "STARTED", startedAt: soak.startedAt, recordedAt: soak.startedAt, durationMs: soak.configuration.durationMs, devices: 30 }];
+  for (let round = 1; round <= 40; round++) {
+    const restarts = Math.floor(round / 20); const observedMs = round * 270_000;
+    soakProgress.push({ type: "ROUND", phase: "OBSERVING", recordedAt: new Date(Date.parse(soak.startedAt) + observedMs).toISOString(), observedMs, roundMs: 270_000,
+      acknowledgedPackets: round * 81, counts: { ...soak.counts, rounds: round, commands: round * 3, notices: round * 3, receiptAcknowledgements: round * 54,
+        restarts, duplicates: restarts * 81, packetAcknowledgements: round * 81 + restarts * 81, heartbeats: round + restarts } });
+  }
+  const evidence = { qualification, mixed300, mixed990, soak, soakProgress };
+  const archives = Object.fromEntries([qualification, mixed300, mixed990, soak].map(report => [report.provenance.baseCommit, { sourceSha256: report.provenance.sourceSha256, workloadSha256: "synthetic-workload" }]));
   return { evidence, context: { current: { sourceSha256: qualification.provenance.sourceSha256, workloadSha256: "synthetic-workload" }, archives } };
 }
 function rejects(change: (f: ReturnType<typeof fixture>) => void, code: string) {
@@ -68,6 +75,41 @@ test("RC2 gate verifies soak audit, receipt, replay and endpoint counts independ
   rejects(f => { f.evidence.soak.endpoints["POST /api/packets"].failures = 1; }, "SOAK_ENDPOINT_FAILURE");
   rejects(f => { f.evidence.soak.endpoints["POST /api/packets"].statuses[202]--; }, "SOAK_ENDPOINT_COUNTS");
 });
+test("RC2 gate requires the complete original soak chronology", () => {
+  rejects(f => { f.evidence.soakProgress = []; }, "SOAK_TIMELINE_INCOMPLETE");
+  rejects(f => { f.evidence.soakProgress.splice(3, 1); }, "SOAK_TIMELINE_INCOMPLETE");
+  rejects(f => { f.evidence.soakProgress[0].startedAt = "wrong"; }, "SOAK_TIMELINE_START");
+  rejects(f => { f.evidence.soakProgress[3].counts.rounds = 2; }, "SOAK_TIMELINE_SEQUENCE");
+});
+test("RC2 gate checks intermediate timeline counts and rejects final disagreement", () => {
+  rejects(f => { f.evidence.soakProgress[10].counts.duplicates++; }, "SOAK_TIMELINE_COUNTS");
+  rejects(f => { f.evidence.soakProgress[20].counts.rateLimited = -1; }, "SOAK_TIMELINE_COUNTS");
+  rejects(f => { f.evidence.soakProgress[40].counts.heartbeats++; }, "SOAK_TIMELINE_FINAL_COUNTS");
+});
+test("RC2 gate rejects reversed, oversized or discontinuous timeline intervals", () => {
+  rejects(f => { f.evidence.soakProgress[2].observedMs = 1; }, "SOAK_TIMELINE_CLOCK_ORDER");
+  rejects(f => { f.evidence.soakProgress[2].roundMs *= 2; }, "SOAK_TIMELINE_CLOCK_ORDER");
+  rejects(f => { f.evidence.soakProgress[2].recordedAt = f.evidence.soakProgress[1].recordedAt; }, "SOAK_TIMELINE_CLOCK_ORDER");
+  rejects(f => { f.evidence.soakProgress[2].recordedAt = new Date(Date.parse(f.evidence.soakProgress[2].recordedAt) + 10_000).toISOString(); }, "SOAK_TIMELINE_CLOCK_STEP");
+});
+test("RC2 gate records gradual clock divergence without hiding it or shortening either duration", () => {
+  const f = fixture();
+  for (const [index, row] of f.evidence.soakProgress.entries()) row.recordedAt = new Date(Date.parse(row.recordedAt) + index * 1500).toISOString();
+  f.evidence.soak.completedAt = "2026-10-05T03:01:00.000Z";
+  const result = verifyRc2Evidence(f.evidence, f.context);
+  assert.equal(result.status, "PASS"); assert.equal(result.clocks.status, "DIVERGENT_BOTH_EXCEED_MINIMUM");
+  assert.equal(result.clocks.conservativeMs, 10_800_000); assert.equal(result.clocks.wallMinusMonotonicMs, 60_000);
+  assert.equal(result.clocks.verifiedRounds, 40); assert.equal(result.clocks.maxClockDifferencePerIntervalMs, 1500);
+  assert.match(result.limitations.at(-1)!, /cause is not established/);
+});
+test("RC2 gate still rejects an insufficient duration on either clock", () => {
+  rejects(f => { f.evidence.soak.completedAt = "2026-10-05T02:59:59.999Z"; }, "SOAK_CLOCK_INCONSISTENT");
+  rejects(f => { f.evidence.soak.observedMs = 10_799_999; }, "SOAK_TOO_SHORT");
+});
+test("RC2 gate rejects a stale or contradictory final timestamp after the last round", () => {
+  rejects(f => { f.evidence.soak.completedAt = "2026-10-05T03:02:00.000Z"; }, "SOAK_TIMELINE_FINAL_CLOCK");
+  rejects(f => { f.evidence.soak.observedMs += 65_000; }, "SOAK_TIMELINE_FINAL_CLOCK");
+});
 test("archived workload hashing excludes only browser presentation files and detects protocol changes", () => {
   const root = mkdtempSync("/tmp/coluvi-release-source-");
   const git = (args: string[]) => execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
@@ -87,6 +129,6 @@ test("archived workload hashing excludes only browser presentation files and det
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 test("release CLI refuses UbuntuPreview before reading reports", () => {
-  const result = spawnSync(process.execPath, ["scripts/verify-coluvi-rc2.mjs", "missing", "missing", "missing", "missing"], { cwd: repository, encoding: "utf8", env: { ...process.env, WSL_DISTRO_NAME: "UbuntuPreview" } });
+  const result = spawnSync(process.execPath, ["scripts/verify-coluvi-rc2.mjs", "missing", "missing", "missing", "missing", "missing"], { cwd: repository, encoding: "utf8", env: { ...process.env, WSL_DISTRO_NAME: "UbuntuPreview" } });
   assert.equal(result.status, 1); assert.equal(JSON.parse(result.stderr).reason, "USE_UBUNTU_WSL");
 });
