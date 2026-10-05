@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { createServer } from "node:net";
 import { spawn, spawnSync } from "node:child_process";
 import { get as httpsGet } from "node:https";
+import { createServer as createHttpServer } from "node:http";
 import { DatabaseSync } from "node:sqlite";
 import { createDeviceIdentity } from "../src/protocol/identity.ts";
 import { createColuviConfiguration } from "../src/commands/config.ts";
@@ -14,6 +15,7 @@ import { createBrowserIdentity } from "../src/mobile-client/crypto.js";
 import { createCheckinCommand } from "../src/commands/authority.ts";
 import { createCheckinResponse } from "../src/mobile-client/commands.js";
 import { backupPilot, diagnosePilot, restorePilot, preparePilotStart } from "../src/operations/pilot.js";
+import { preflightPilot } from "../src/operations/preflight.js";
 
 async function fixture(origin = "http://127.0.0.1:9876") {
   const root = mkdtempSync("/tmp/coluvi-operations-"); const pilot = join(root, "pilot"); mkdirSync(pilot, { mode: 0o700 });
@@ -98,6 +100,10 @@ test("foreground pilot launcher starts, diagnoses, stops its child and refuses a
       child!.once("exit", () => { clearTimeout(timer); reject(new Error("Pilot exited before ready")); }); child!.once("error", reject);
     });
     assert.equal((await fetch(origin + "/health")).status, 200);
+    const preflight = await preflightPilot(pilot, { probe: true });
+    assert.equal(preflight.checks.find(check => check.id === "server")?.status, "PASS");
+    assert.equal(preflight.checks.find(check => check.id === "phoneOrigin")?.status, "FAIL");
+    assert.equal(preflight.physicalConnectivityVerified, false);
     await assert.rejects(preparePilotStart(pilot), /unavailable/);
     assert.equal((await fetch(origin + "/health")).status, 200);
     const diagnosed = await cli(["diagnose", pilot]); assert.equal(diagnosed.code, 0); assert.equal(JSON.parse(diagnosed.stdout).database.status, "CHECKED");
@@ -147,6 +153,54 @@ test("HTTPS launcher verifies matching certificate/key/origin and serves only wi
     });
     const status = await new Promise<number | undefined>((resolve, reject) => { const request = httpsGet(origin + "/health", { ca: readFileSync(join(tls, "ca-cert.pem")) }, response => { response.resume(); resolve(response.statusCode); }); request.once("error", reject); });
     assert.equal(status, 200);
+    const checked = await preflightPilot(pilot, { ...options, caCert: join(tls, "ca-cert.pem"), probe: true });
+    assert.equal(checked.status, "PENDING_PHYSICAL_TESTS");
+    for (const id of ["runtime", "configuration", "certificate", "privateKey", "server", "servedCertificate"]) assert.equal(checked.checks.find(check => check.id === id)?.status, "PASS", id);
+    assert.equal(checked.checks.find(check => check.id === "android")?.status, "PENDING");
+    const untrusted = await preflightPilot(pilot, { ...options, probe: true });
+    assert.equal(untrusted.checks.find(check => check.id === "server")?.code, "SERVER_TLS_REJECTED");
+    const mismatch = await preflightPilot(pilot, { ...options, tlsKey: join(tls, "ca-key.pem") });
+    assert.equal(mismatch.checks.find(check => check.id === "privateKey")?.status, "FAIL");
+    const expiredNow = Date.now;
+    try {
+      Date.now = () => expiredNow() + 8 * 24 * 60 * 60_000;
+      const expired = await preflightPilot(pilot, options);
+      assert.equal(expired.checks.find(check => check.id === "certificate")?.status, "FAIL");
+    } finally { Date.now = expiredNow; }
+    for (const file of [options.tlsKey, join(tls, "ca-key.pem")]) assert.equal(JSON.stringify(checked).includes(readFileSync(file, "utf8")), false);
     await assert.rejects(fetch(origin + "/health")); // No global TLS bypass or CA installation.
   } finally { await stop(child); rmSync(root, { recursive: true, force: true }); }
+});
+
+test("preflight is opt-in, bounded, rejects redirects and never includes server errors or secrets", { timeout: 15_000 }, async () => {
+  let mode = "ok"; let requests = 0;
+  const server = createHttpServer((request, response) => {
+    requests++;
+    if (mode === "stall") return;
+    if (mode === "redirect") { response.writeHead(302, { location: "http://127.0.0.1:1/private" }); response.end("secret-server-error"); return; }
+    if (mode === "large") { response.end("secret-server-error".repeat(1000)); return; }
+    response.setHeader("content-type", "application/json");
+    response.end(JSON.stringify(mode === "invalid" ? { secret: "secret-server-error" } : { status: "ok", protocolVersion: "0.1", storage: "sqlite", https: false }));
+  });
+  await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
+  const { root, pilot, material } = await fixture(`http://127.0.0.1:${(server.address() as { port: number }).port}`);
+  const original = readFileSync(join(pilot, "operator-config.json"));
+  try {
+    const offline = await preflightPilot(pilot);
+    assert.equal(requests, 0); assert.equal(offline.checks.find(check => check.id === "server")?.status, "PENDING");
+    for (const [scenario, code] of [["ok", "SERVER_HEALTHY_FROM_UBUNTU"], ["redirect", "HEALTH_HTTP_STATUS"], ["large", "HEALTH_RESPONSE_TOO_LARGE"], ["invalid", "HEALTH_CONTRACT_MISMATCH"], ["stall", "SERVER_TIMEOUT"]]) {
+      mode = scenario;
+      const result = await preflightPilot(pilot, { probe: true, timeoutMs: 250 });
+      assert.equal(result.checks.find(check => check.id === "server")?.code, code);
+      for (const secret of ["secret-server-error", material.operatorPassword, material.enrollmentCode, material.configuration.privateKeyPem]) assert.equal(JSON.stringify(result).includes(secret), false);
+    }
+    assert.equal(requests, 5, "redirect was not followed");
+    assert.deepEqual(readFileSync(join(pilot, "operator-config.json")), original);
+    assert.equal(existsSync(join(pilot, "pilot.sqlite")), false);
+    await assert.rejects(preflightPilot(pilot, { probe: true, timeoutMs: 60_000 }));
+    const bad = await cli(["preflight", pilot, "--probe", "--probe"]); assert.equal(bad.code, 1);
+    const missing = await preflightPilot(join(root, "missing"), { probe: true });
+    assert.equal(missing.checks.find(check => check.id === "server")?.code, "NETWORK_NOT_PROBED_INVALID_CONFIGURATION");
+    assert.equal(requests, 5);
+  } finally { server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); rmSync(root, { recursive: true, force: true }); }
 });

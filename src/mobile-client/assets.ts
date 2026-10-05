@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 const files = new Map<string, { file: string; contentType: string }>([
   ["/mobile/", { file: "index.html", contentType: "text/html; charset=utf-8" }],
   ["/mobile/app.js", { file: "app.js", contentType: "text/javascript; charset=utf-8" }],
+  ["/mobile/diagnostics.js", { file: "diagnostics.js", contentType: "text/javascript; charset=utf-8" }],
   ["/mobile/core.js", { file: "core.js", contentType: "text/javascript; charset=utf-8" }],
   ["/mobile/commands.js", { file: "commands.js", contentType: "text/javascript; charset=utf-8" }],
   ["/mobile/notices.js", { file: "notices.js", contentType: "text/javascript; charset=utf-8" }],

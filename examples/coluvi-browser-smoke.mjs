@@ -151,7 +151,7 @@ try {
   })()`);
   await mobile.send("Page.navigate", { url: origin + "/mobile/" });
   await mobile.until("Boolean(document.querySelector('#identity-status')?.textContent)", "mobile startup");
-  await mobile.until("Boolean(navigator.serviceWorker.controller)", "worker v10 control");
+  await mobile.until("Boolean(navigator.serviceWorker.controller)", "worker v11 control");
   const migration = await mobile.evaluate(`(async () => {
     const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase();
     try { return { preservedIdentity: (await db.getSetting('identity')).anonymousDeviceId === ${JSON.stringify(originalId)}, preservedReport: (await db.list()).some(item => item.envelope.report.shortMessage === 'SIMULACRO anterior a migración'), missingIsUndefined: (await db.getSetting('missing')) === undefined }; }
@@ -278,6 +278,37 @@ try {
   const needsState = `(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { const record = (await db.listCommands())[0]; const item = record.needsEventId ? await db.get(record.needsEventId) : undefined; return { count: record.needsHistory?.length, state: item?.state, categories: item?.envelope.report.extensions.coluvi.categories }; } finally { db.close(); } })()`;
   await mobile.until(`(${needsState}).then(value => value.count === 1 && value.state === 'QUEUED')`, "independent offline needs custody");
   assert.equal((await mobile.evaluate(responseState)).state, "QUEUED");
+  const inspectDiagnosticUi = async () => {
+    await mobile.evaluate("document.querySelector('#diagnostics-panel').open = true");
+    await mobile.until("document.querySelector('#diagnostics-export')?.disabled === false", "local diagnostics ready");
+    await mobile.evaluate("document.querySelector('#diagnostics-refresh').click()");
+    await mobile.until("document.querySelector('#diagnostics-export')?.disabled === false && document.querySelectorAll('#diagnostics-values dt').length === 16", "explicit diagnostic probe finished");
+    return mobile.evaluate(`(async () => {
+      const create = URL.createObjectURL; const click = HTMLAnchorElement.prototype.click; let exported;
+      URL.createObjectURL = function(blob) { exported = blob; return create.call(URL, blob); };
+      HTMLAnchorElement.prototype.click = function() {};
+      try {
+        document.querySelector('#diagnostics-export').click();
+        if (!exported) throw new Error('Diagnostic export missing');
+        const text = await exported.text(); const report = JSON.parse(text);
+        const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase();
+        try {
+          const identity = await db.getSetting('identity'); const enrollment = await db.getSetting('coluviEnrollment');
+          const ids = (await db.list()).map(item => item.eventId);
+          return { server: report.server.status, saved: report.outbox.total, pending: report.outbox.awaitingConfirmation,
+            confirmed: report.outbox.states.SYNCED, readable: report.storage.database, shell: report.offlineShellControlled,
+            privateValuesExcluded: [identity.anonymousDeviceId, identity.publicKey, enrollment?.token, ...ids].filter(Boolean).every(value => !text.includes(value)),
+            localOnlyExport: report.kind === 'COLUVI_CLIENT_DIAGNOSTIC', rows: document.querySelectorAll('#diagnostics-values dd').length };
+        } finally { db.close(); }
+      } finally { URL.createObjectURL = create; HTMLAnchorElement.prototype.click = click; }
+    })()`);
+  };
+  const diagnosticOffline = await inspectDiagnosticUi();
+  assert.equal(diagnosticOffline.server, "UNREACHABLE_OR_TLS_ERROR");
+  // Includes the already-confirmed general report retained by the v1 migration.
+  assert.equal(diagnosticOffline.saved, 3); assert.equal(diagnosticOffline.pending, 2); assert.equal(diagnosticOffline.confirmed, 1);
+  assert.equal(diagnosticOffline.readable, "READABLE"); assert.equal(diagnosticOffline.shell, true);
+  assert.equal(diagnosticOffline.privateValuesExcluded, true); assert.equal(diagnosticOffline.localOnlyExport, true);
   // Close the actual client window, then open a new offline one with the same profile.
   await fetch(`${debugOrigin}/json/close/${mobile.targetId}`);
   mobile.socket.close();
@@ -286,6 +317,7 @@ try {
   await mobile.send("Page.navigate", { url: origin + "/mobile/" });
   await mobile.until("Boolean(document.querySelector('[data-needs-form]')) && Boolean(document.querySelector('[data-checkin-status=SAFE]')) && !document.querySelector('[data-checkin-status=NEEDS_HELP]')", "reopened answered prompt with update option");
   await mobile.until("Boolean(document.querySelector('.notice-item'))", "notice survives closing and reopening the window");
+  await mobile.until(`(${responseState}).then(value => value.count === 1 && value.state === 'QUEUED')`, "offline automatic retry returns to queued after reopen");
   const queued = await mobile.evaluate(responseState); assert.equal(queued.count, 1); assert.equal(queued.state, "QUEUED");
   assert.deepEqual((await mobile.evaluate(needsState)).categories, ["WATER", "TRANSPORT"]);
   await startServer(); await setOffline(false);
@@ -293,6 +325,10 @@ try {
   await mobile.until(`(${responseState}).then(value => value.count === 1 && value.state === 'SYNCED')`, "correlated backend custody");
   assert.equal((await mobile.evaluate(responseState)).evidence, "BACKEND");
   await mobile.until(`(${needsState}).then(value => value.state === 'SYNCED')`, "needs backend custody");
+  const diagnosticOnline = await inspectDiagnosticUi();
+  assert.equal(diagnosticOnline.server, "REACHABLE"); assert.equal(diagnosticOnline.saved, 3); assert.equal(diagnosticOnline.pending, 0); assert.equal(diagnosticOnline.confirmed, 3);
+  assert.equal(diagnosticOnline.privateValuesExcluded, true);
+  const deviceDiagnosticEvidence = { offline: diagnosticOffline, reconnected: diagnosticOnline };
   await mobile.evaluate("document.querySelector('#pilot-refresh').click()");
   await mobile.until(`(async () => { const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase(); try { return (await db.listReceipts()).length === 4 && (await db.listReceipts()).every(row => row.state === 'SYNCED'); } finally { db.close(); } })()`, "check-in and notice receipt recovery");
   await operator.send("Page.bringToFront");
@@ -372,7 +408,7 @@ try {
   assert.equal(legacy.queuedMarker.state, "QUEUED"); assert.equal(legacy.syncedMarker.state, "SYNCED");
   const accessibility = await regression("examples/accessibility-smoke.mjs", [String(new URL(debugOrigin).port), origin + "/mobile/", "127.0.0.1"]);
   assert.equal(accessibility.success, true);
-  console.log(JSON.stringify({ scenario: "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico", integratedMapEvidence, migration, migrationV2, indexedDbConcurrency, enrolledThroughUi: true, issuedThroughUi: true, noticeIssuedThroughUi: true, noticeEvidence, needsEvidence, updateEvidence, revocationEvidence, revocationPreservedHistory: retained, noticeSurvivedOfflineReopen: true, noticeTextNotHtml: true, expiredNoticeLabeled: true, backendStoppedWhileOffline: true, repeatedPollPreservesPromptDom: true, offlineQueued: queued.state, survivedWindowCloseAndReopen: true, reconnectedState: (await mobile.evaluate(responseState)).state, backendEvidence: "BACKEND", privateEvidence, duplicatePreserved: true, cacheSafe, publicPrivacy, logoutCleared: true, constrained360px: true, unnamedOperatorControls: 0, legacyOfflineRegression: true, mobileAccessibilityRegression: accessibility.success, diagnostics }, null, 2));
+  console.log(JSON.stringify({ scenario: "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico", deviceDiagnosticEvidence, integratedMapEvidence, migration, migrationV2, indexedDbConcurrency, enrolledThroughUi: true, issuedThroughUi: true, noticeIssuedThroughUi: true, noticeEvidence, needsEvidence, updateEvidence, revocationEvidence, revocationPreservedHistory: retained, noticeSurvivedOfflineReopen: true, noticeTextNotHtml: true, expiredNoticeLabeled: true, backendStoppedWhileOffline: true, repeatedPollPreservesPromptDom: true, offlineQueued: queued.state, survivedWindowCloseAndReopen: true, reconnectedState: (await mobile.evaluate(responseState)).state, backendEvidence: "BACKEND", privateEvidence, duplicatePreserved: true, cacheSafe, publicPrivacy, logoutCleared: true, constrained360px: true, unnamedOperatorControls: 0, legacyOfflineRegression: true, mobileAccessibilityRegression: accessibility.success, diagnostics }, null, 2));
 } finally {
   for (const connection of connections) connection.socket.close();
   await stop(browser); await stop(server);

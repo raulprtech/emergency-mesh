@@ -64,6 +64,11 @@ try {
   assert.equal(integrated.integratedMapEvidence.sameBackendAndOrigin, true);
   assert.equal(integrated.integratedMapEvidence.offlineSnapshotDuringPrivateResponse, true);
   assert.equal(integrated.reconnectedState, "SYNCED"); assert.equal(integrated.publicPrivacy, true); assert.deepEqual(integrated.diagnostics, []);
+  assert.equal(integrated.deviceDiagnosticEvidence.offline.pending, 2);
+  assert.equal(integrated.deviceDiagnosticEvidence.offline.privateValuesExcluded, true);
+  assert.equal(integrated.deviceDiagnosticEvidence.reconnected.pending, 0);
+  assert.equal(integrated.deviceDiagnosticEvidence.reconnected.server, "REACHABLE");
+  assert.equal(integrated.deviceDiagnosticEvidence.reconnected.privateValuesExcluded, true);
   const map = JSON.parse(await run("map-browser", ["examples/public-map-browser-smoke.mjs"], 3 * 60_000));
   assert.equal(map.status, "PASS"); assert.equal(map.offlineAfterAbruptStop, true); assert.equal(map.expiredSnapshotRejected, true);
   const load = JSON.parse(await run("load-300", ["examples/coluvi-load.mjs", "300", "24", "20261004"], 21 * 60_000));

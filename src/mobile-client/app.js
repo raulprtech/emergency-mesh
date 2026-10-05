@@ -6,6 +6,7 @@ import { formatMessage, getCatalog, normalizeLocale } from "./i18n.js";
 import { currentEnrollment, enrollPilot, markCheckinShown, pollInbox, respondToCheckin, updateCheckinStatus, enrichCheckinNeeds, synchronizeReceipts, pollNotices, markNoticeShown } from "./inbox.js";
 import { verifyCommandForDevice, CHECKIN_NEEDS } from "./commands.js";
 import { verifyNoticeForDevice } from "./notices.js";
+import { collectDiagnostics, diagnosticRows } from "./diagnostics.js";
 
 window.addEventListener("CLIENT_DATABASE_BLOCKED", () => {
   document.getElementById("pilot-status").textContent = getCatalog(navigator.language).databaseBlocked;
@@ -23,6 +24,8 @@ let shownObserver;
 let inboxRenderedKey;
 let noticeObserver;
 let noticesRenderedKey;
+let lastDiagnostic;
+let diagnosticsBusy = false;
 
 async function newIdentity() {
   try { return await createBrowserIdentity(); }
@@ -62,7 +65,34 @@ function applyLocale() {
   if (action) byId("composer-title").textContent = catalog.actions[action];
   networkStatus();
   locationStatus();
+  if (lastDiagnostic) renderDiagnostics();
 }
+
+function renderDiagnostics() {
+  const list = byId("diagnostics-values"); list.replaceChildren();
+  for (const [label, value] of diagnosticRows(lastDiagnostic, catalog, locale)) {
+    const term = document.createElement("dt"); term.textContent = label;
+    const detail = document.createElement("dd"); detail.textContent = String(value); list.append(term, detail);
+  }
+}
+async function refreshDiagnostics(probe = false) {
+  if (diagnosticsBusy) return;
+  diagnosticsBusy = true; byId("diagnostics-refresh").disabled = true; byId("diagnostics-export").disabled = true;
+  byId("diagnostics-status").textContent = catalog.diagnosticsChecking;
+  try {
+    lastDiagnostic = await collectDiagnostics(db, { probe }); renderDiagnostics();
+    byId("diagnostics-status").textContent = catalog.diagnosticsUpdated;
+  } catch { lastDiagnostic = undefined; byId("diagnostics-values").replaceChildren(); byId("diagnostics-status").textContent = catalog.diagnosticsFailed; }
+  finally { diagnosticsBusy = false; byId("diagnostics-refresh").disabled = false; byId("diagnostics-export").disabled = !lastDiagnostic; }
+}
+byId("diagnostics-panel").addEventListener("toggle", () => { if (byId("diagnostics-panel").open) void refreshDiagnostics(); });
+byId("diagnostics-refresh").addEventListener("click", () => { void refreshDiagnostics(true); });
+byId("diagnostics-export").addEventListener("click", () => {
+  if (!lastDiagnostic || diagnosticsBusy) return;
+  const url = URL.createObjectURL(new Blob([JSON.stringify(lastDiagnostic, null, 2) + "\n"], { type: "application/json" }));
+  const link = document.createElement("a"); link.href = url; link.download = "coluvi-device-diagnostic.json";
+  document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 10_000);
+});
 
 function configureForm(action, trigger) {
   composerTrigger = trigger;
@@ -198,7 +228,7 @@ async function requirePrivateSafeWorker() {
     const timer = setTimeout(() => { channel.port1.close(); reject(new Error(catalog.pilotWorkerUpdate)); }, 3_000);
     channel.port1.onmessage = (event) => {
       clearTimeout(timer); channel.port1.close();
-      event.data?.cache === "emergency-mesh-mobile-v10" && event.data?.privateApiCache === false ? resolve() : reject(new Error(catalog.pilotWorkerUpdate));
+      event.data?.cache === "emergency-mesh-mobile-v11" && event.data?.privateApiCache === false ? resolve() : reject(new Error(catalog.pilotWorkerUpdate));
     };
     worker.postMessage({ type: "COLUVI_CACHE_VERSION" }, [channel.port2]);
   });

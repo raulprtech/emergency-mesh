@@ -2,6 +2,19 @@ export const SUPPORTED_LOCALES = ["es", "en"];
 
 const catalogs = {
   es: {
+    diagnosticsTitle: "Diagnóstico del dispositivo", diagnosticsHelp: "Comprobación local. La red disponible no demuestra acceso al centro. La confirmación no significa que haya ayuda en camino.",
+    diagnosticsRefresh: "Actualizar y comprobar servidor", diagnosticsExport: "Descargar diagnóstico sin identificadores",
+    diagnosticsPrivacy: "El archivo incluye fechas y cantidades, no reportes, ubicaciones, identidades ni credenciales. Revísalo antes de compartirlo. No borres los datos de la aplicación para intentar reparar un fallo.",
+    diagnosticsChecking: "Comprobando…", diagnosticsUpdated: "Instantánea actualizada; no cambia automáticamente.", diagnosticsFailed: "No se pudo completar el diagnóstico. No borres los datos locales.",
+    diagnostics: {
+      generated: "Fecha de la comprobación", network: "Indicación de red del navegador", server: "Acceso al servidor", secure: "Contexto seguro", offlineShell: "Aplicación controlada por service worker",
+      database: "Almacenamiento local", saved: "Reportes guardados localmente", pending: "Reportes pendientes de confirmación", confirmed: "Reportes confirmados por backend",
+      expired: "Reportes expirados sin confirmación final", retry: "Reportes en espera de reintento", failed: "Reportes con último intento fallido", receipts: "Acuses de recepción/presentación pendientes",
+      lastConfirmation: "Última confirmación de reporte guardada en este dispositivo", storage: "Espacio aproximado usado / cuota del sitio", persistence: "Persistencia concedida por el navegador",
+      unknown: "No disponible", yes: "Sí", no: "No", readable: "Se puede leer; no garantiza próximas escrituras", unreadable: "No se pudo leer; no significa que esté vacío",
+      ONLINE_HINT: "El navegador indica red; no prueba acceso al centro", OFFLINE_HINT: "El navegador indica desconexión", UNKNOWN: "No disponible",
+      NOT_PROBED: "No comprobado", REACHABLE: "Servidor accesible en esta comprobación; no acredita al emisor", UNEXPECTED_RESPONSE: "Respuesta inesperada", UNREACHABLE_OR_TLS_ERROR: "No se pudo acceder; revisa red, servidor y confianza del certificado",
+    },
     skipToContent: "Saltar al contenido principal",
     question: "¿Qué necesitas comunicar?",
     checkingNetwork: "Comprobando red…",
@@ -77,6 +90,19 @@ const catalogs = {
     },
   },
   en: {
+    diagnosticsTitle: "Device diagnostics", diagnosticsHelp: "Local check. Network availability does not prove access to the command center. Confirmation does not mean help is on the way.",
+    diagnosticsRefresh: "Refresh and check server", diagnosticsExport: "Download diagnostic without identifiers",
+    diagnosticsPrivacy: "The file includes dates and counts, not reports, locations, identities or credentials. Review it before sharing. Do not clear app data to try to repair a failure.",
+    diagnosticsChecking: "Checking…", diagnosticsUpdated: "Snapshot updated; it does not refresh automatically.", diagnosticsFailed: "Could not complete diagnostics. Do not clear local data.",
+    diagnostics: {
+      generated: "Check time", network: "Browser network hint", server: "Server access", secure: "Secure context", offlineShell: "App controlled by service worker",
+      database: "Local storage", saved: "Locally saved reports", pending: "Reports awaiting confirmation", confirmed: "Reports confirmed by backend",
+      expired: "Reports expired without final confirmation", retry: "Reports waiting for retry", failed: "Reports with a failed last attempt", receipts: "Pending received/shown receipts",
+      lastConfirmation: "Latest report confirmation saved on this device", storage: "Approximate site usage / quota", persistence: "Persistence granted by browser",
+      unknown: "Unavailable", yes: "Yes", no: "No", readable: "Readable; future writes are not guaranteed", unreadable: "Could not read; this does not mean empty",
+      ONLINE_HINT: "Browser indicates network; command center access is not proven", OFFLINE_HINT: "Browser indicates offline", UNKNOWN: "Unavailable",
+      NOT_PROBED: "Not checked", REACHABLE: "Server reachable during this check; issuer identity not authenticated", UNEXPECTED_RESPONSE: "Unexpected response", UNREACHABLE_OR_TLS_ERROR: "Could not connect; check network, server and certificate trust",
+    },
     skipToContent: "Skip to main content",
     question: "What do you need to communicate?",
     checkingNetwork: "Checking network…",

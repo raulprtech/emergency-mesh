@@ -106,6 +106,17 @@
       <div id="outbox-list" aria-live="polite"></div>
       <button id="rotate-identity" class="quiet" data-i18n="rotateIdentity">Rotar identidad pseudónima</button>
     </section>
+    <section class="panel" aria-labelledby="diagnostics-title">
+      <details id="diagnostics-panel">
+        <summary id="diagnostics-title" data-i18n="diagnosticsTitle">Diagnóstico del dispositivo</summary>
+        <p class="muted" data-i18n="diagnosticsHelp">Comprobación local. La red disponible no demuestra acceso al centro. La confirmación no significa que haya ayuda en camino.</p>
+        <button id="diagnostics-refresh" class="outline" data-i18n="diagnosticsRefresh">Actualizar y comprobar servidor</button>
+        <button id="diagnostics-export" class="outline" data-i18n="diagnosticsExport" disabled>Descargar diagnóstico sin identificadores</button>
+        <p id="diagnostics-status" role="status"></p>
+        <dl id="diagnostics-values"></dl>
+        <p class="muted" data-i18n="diagnosticsPrivacy">El archivo incluye fechas y cantidades, no reportes, ubicaciones, identidades ni credenciales. Revísalo antes de compartirlo. No borres los datos de la aplicación para intentar reparar un fallo.</p>
+      </details>
+    </section>
   </main>
   <script type="module" src="/mobile/app.js"></script>
 </body>

@@ -27,6 +27,26 @@ node scripts/coluvi-pilot.mjs start .data/mi-piloto-https \
 
 Esas rutas son ejemplos, no material creado por este bloque. El certificado debe corresponder al origen configurado, a la clave y a la fecha actual. El comando no instala una CA, no desactiva TLS y no prueba la confianza del teléfono. Abrir acceso LAN exige completar por separado [Phone pilot](PHONE_PILOT.md). No se incluye arranque automático después de reiniciar Windows o WSL.
 
+## Comprobar preparación sin cambiar el piloto
+
+`preflight` añade comprobaciones para preparar la sesión con los teléfonos. Sin `--probe` no consulta la red. Las rutas siguientes son ejemplos y deben corresponder a material existente:
+
+```bash
+node scripts/coluvi-pilot.mjs preflight .data/mi-piloto-https \
+  --probe \
+  --tls-cert .data/mi-tls/server-cert.pem \
+  --tls-key .data/mi-tls/server-key.pem \
+  --ca-cert .data/mi-tls/ca-cert.pem
+```
+
+El informe usa `PASS`, `FAIL` y `PENDING` por comprobación. Verifica configuración y confianza, integridad de la base si existe, autoridad activa, HTTPS, vigencia y nombre del certificado, correspondencia de la clave y, opcionalmente, `/health` desde Ubuntu. Compara también el certificado servido con el inspeccionado. La CA indicada se utiliza solo para esa conexión: no se instala y no se desactiva la validación TLS. La consulta tiene un límite de tres segundos, no sigue redirecciones y limita el cuerpo a 4096 bytes. Los errores se convierten en códigos fijos, no se exportan mensajes del servidor.
+
+Un fallo produce salida 1. Sin fallos el resultado global sigue siendo `PENDING_PHYSICAL_TESTS`, con salida 0: aún deben comprobarse Wi-Fi, confianza del certificado, instalación y envío desde ambos Samsung. Un origen HTTP loopback puede servir para desarrollo, pero falla la preparación Android. La comprobación de salud no autentica la autoridad de mensajes. Si faltan archivos TLS o no se pidió consultar la red, las comprobaciones correspondientes quedan pendientes. Un respaldo restaurado siempre requiere revisar posibles revocaciones posteriores a la instantánea.
+
+En la PWA, «Diagnóstico del dispositivo» muestra una instantánea de reportes guardados, pendientes, confirmados y expirados; reintentos, acuses pendientes, última confirmación local y almacenamiento aproximado cuando el navegador lo permite. Abrir la sección no realiza una consulta de red. «Actualizar y comprobar servidor» la solicita expresamente, sin credenciales ni caché. Que el navegador indique red no demuestra que el servidor responda; poder leer la base no garantiza nuevas escrituras. La cuota corresponde al sitio completo.
+
+La descarga contiene fechas y conteos, no mensajes, ubicaciones, identificadores, claves ni tokens. Se genera localmente y no se envía a ningún servicio. Revisa el archivo antes de compartirlo. Si el almacenamiento no se puede leer se informa como no disponible, nunca como cola vacía. No borres los datos de la aplicación para intentar solucionar un fallo: podrías perder mensajes pendientes.
+
 ## Administrar participantes
 
 Entra al centro de mando como operador. «Participantes del piloto» permite filtrar por zona autorizada y estado, y recorrer páginas de diez dispositivos. Muestra la fecha de inscripción y si la credencial está vigente, caducada, ausente o revocada; no revela claves ni tokens. Los conteos se refieren a las zonas consultadas y la paginación al filtro seleccionado.
