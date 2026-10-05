@@ -60,7 +60,11 @@ El informe final identifica el commit base, si había cambios locales y una huel
 
 La calificación acredita el recorrido de software probado. No sustituye el piloto físico en Samsung ni certifica el sistema para emergencias reales.
 
-## Calificación conservada del commit publicado
+## Evidencia actual de RC2
+
+La [calificación final de software de RC2](coluvi-qualification-20261005-rc2-final.json) aprobó 225 pruebas y ocho etapas sobre `54c4c03`, con árbol limpio. Los [perfiles mixtos, la comparación concurrente y la puerta de entrega](COLUVI_RC2.md) se documentan por separado: aprobar una carga de 990 no garantiza repetirla mientras se ejecuta otra batería pesada. El periodo de tres horas sigue pendiente de resultado y no se reemplaza por el ensayo breve incluido en la calificación.
+
+## Antecedentes de RC1
 
 La [calificación de la versión candidata](coluvi-qualification-20261004-release.json) registra PASS para el código `878a37c3d18957f39f06d71bf897eaa21ed8c0e7`: 204 pruebas y las cuatro etapas aprobadas en 223,30 segundos. Añade evidencia de documento nuevo tras cada recarga del mapa y de la PWA, y una consulta retenida que comprueba que el panel deshabilita los botones de emisión mientras está ocupado. El [CI de ese código](https://github.com/raulprtech/emergency-mesh/actions/runs/37241725818) también aprobó. La huella del informe permite comprobar que una revisión posterior de documentación no alteró el código probado.
 

@@ -4,6 +4,8 @@ Esta guía prepara la primera prueba física con el S26 Ultra y el A54. La compu
 
 Usa solo datos de simulacro. SYNCED significa que un backend confirmó almacenamiento, no atención ni ayuda despachada. El mapa público no muestra las respuestas privadas del piloto.
 
+La instalación todavía se identifica como «Emergency Mesh» y puede mostrar «Emergency» como nombre corto. Es la PWA de este prototipo de Coluvi, no otra aplicación que debas descargar. Durante la sesión no ejecutes en el centro de mando calificaciones completas, simulaciones masivas ni ensayos de carga: la combinación con 990 actores produjo timeouts reproducibles. Las pruebas automatizadas se realizan antes o después del piloto, con sus propios datos temporales.
+
 ## Antes de conectar los teléfonos
 
 Registra fecha, versión de Coluvi, modelos, versiones de Android y navegador. Comprueba la IP actual visible desde el Wi-Fi, el acceso a WSL2 y la vigencia del certificado. No reutilices las direcciones antiguas del chat ni un certificado anterior sin verificarlos. Un cambio de IP puede exigir certificado y configuración nuevos; no se deben sobrescribir claves o bases existentes.
@@ -53,7 +55,7 @@ Abre `/command-center/` en la computadora e inicia sesión. Confirma que aparece
 | 11 | Detén solo el servidor de esta sesión y arráncalo con la misma base | Historial conservado; operador debe volver a iniciar sesión; teléfonos mantienen inscripción | Pendiente |
 | 12 | Emite otra solicitud y deja un teléfono sin responder hasta acabar el plazo inicial | UNKNOWN significa ausencia de respuesta, nunca víctima o peligro confirmado | Pendiente |
 
-Para el paso 5 no basta con activar modo avión: comprueba que Wi-Fi no permanezca encendido. No borres almacenamiento ni reinstales la PWA entre los pasos; eso invalidaría la prueba de conservación. No cierres una solicitud antes de que se hayan sincronizado los mensajes que quieres comprobar. Las operaciones fuera de su vigencia deben rechazarse, no forzarse.
+Para el paso 5 no basta con activar modo avión: comprueba que Wi-Fi no permanezca encendido. No borres almacenamiento ni reinstales la PWA entre los pasos; eso invalidaría la prueba de conservación. Elige plazos suficientemente largos para sincronizar los mensajes que quieres comprobar antes de que caduque la solicitud. Las operaciones fuera de su vigencia deben rechazarse, no forzarse.
 
 El mapa público y el panel privado tienen propósitos diferentes. Los check-ins, necesidades vinculadas y avisos de esta sesión no deben cambiar el agregado público. La cartografía puede verse aunque no existan grupos publicados. La política pública por defecto exige al menos tres reportes generales en la misma celda y periodo; no se reducirá el umbral ni se añadirán ubicaciones reales para lograr una captura más vistosa.
 

@@ -2,6 +2,8 @@
 
 This pilot uses the existing PWA as the simulated user's application and one Ubuntu WSL2 process as the receiving command-center backend. It validates report creation, offline custody, synchronization, durable backend receipt, and public aggregation. It is not an emergency service or a responder dispatch system.
 
+This guide covers the general-report receiver and LAN/TLS boundary. For the bidirectional Coluvi exercise with operator login, enrollment, notices and check-ins, use the [two-Samsung session guide](COLUVI_SAMSUNG_TEST_SESSION.md) and its separate private configuration. Starting only the general receiver below does not enable those operator features.
+
 ## Topology
 
 ```text
