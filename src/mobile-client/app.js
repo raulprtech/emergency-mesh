@@ -142,8 +142,8 @@ byId("get-location").addEventListener("click", () => {
 async function scheduleBackgroundSync() {
   if (!("serviceWorker" in navigator)) return false;
   try {
-    const registration = serviceWorkerRegistration ?? await navigator.serviceWorker.ready;
-    if (!("sync" in registration)) return false;
+    const registration = serviceWorkerRegistration ?? await navigator.serviceWorker.getRegistration("/mobile/");
+    if (!registration || !("sync" in registration)) return false;
     await registration.sync.register(OUTBOX_SYNC_TAG);
     return true;
   } catch { return false; }
@@ -151,7 +151,10 @@ async function scheduleBackgroundSync() {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const submit = form.querySelector('[type="submit"]'); if (submit.disabled) return;
+  submit.disabled = true; let stored = false;
   byId("form-error").textContent = "";
+  byId("client-problem").textContent = "";
   const input = {
     action: byId("action").value,
     shortMessage: byId("short-message").value,
@@ -166,10 +169,13 @@ form.addEventListener("submit", async (event) => {
     if (errors.length) throw new Error(errors.join("; "));
     const item = await createOutboxItem(input, identity);
     await db.put(item);
-    await scheduleBackgroundSync();
+    stored = true; void scheduleBackgroundSync();
     form.reset(); closeComposer(); pendingLocation = undefined; await render();
     if (navigator.onLine) await sync();
-  } catch (error) { byId("form-error").textContent = error instanceof Error ? error.message : catalog.createFailed; }
+  } catch (error) {
+    if (stored) byId("client-problem").textContent = catalog.savedButRefreshFailed;
+    else byId("form-error").textContent = error?.name === "QuotaExceededError" ? catalog.storageSaveFailed : error instanceof Error ? error.message : catalog.createFailed;
+  } finally { submit.disabled = false; }
 });
 
 async function render() {
@@ -195,11 +201,17 @@ async function render() {
 
 async function sync() {
   byId("sync").disabled = true;
+  let failed = false;
   try {
     const results = await synchronizeOutboxExclusively(db);
-    if (results.some((item) => item.state === "QUEUED")) await scheduleBackgroundSync();
+    if (results.some((item) => item.state === "QUEUED")) void scheduleBackgroundSync();
   }
-  finally { byId("sync").disabled = false; await render(); }
+  catch { failed = true; byId("client-problem").textContent = catalog.storageUpdateFailed; }
+  finally {
+    byId("sync").disabled = false;
+    try { await render(); } catch { failed = true; byId("client-problem").textContent = catalog.storageUpdateFailed; }
+    if (!failed && [catalog.storageUpdateFailed, catalog.savedButRefreshFailed].includes(byId("client-problem").textContent)) byId("client-problem").textContent = "";
+  }
 }
 byId("sync").addEventListener("click", sync);
 byId("rotate-identity").addEventListener("click", async () => {
@@ -299,13 +311,18 @@ async function renderInbox() {
         button.setAttribute("aria-label", `${button.textContent} · ${command.incidentRef}`);
         button.addEventListener("click", async () => {
           actions.querySelectorAll("button").forEach((item) => { item.disabled = true; });
+          let stored = false;
           try {
             if (record.responseEventId) await updateCheckinStatus(db, identity, record.commandId, status, record.responseEventId);
             else await respondToCheckin(db, identity, record.commandId, status);
-            await scheduleBackgroundSync(); await render();
+            stored = true; void scheduleBackgroundSync(); await render();
             [...list.children].find((item) => item.dataset.commandId === record.commandId)?.focus();
             if (navigator.onLine) { await sync(); await refreshPilot(); }
-          } catch { byId("pilot-status").textContent = catalog.pilotResponseFailed; actions.querySelectorAll("button").forEach((item) => { item.disabled = false; }); }
+          } catch {
+            if (stored) byId("client-problem").textContent = catalog.savedButRefreshFailed;
+            else byId("pilot-status").textContent = catalog.pilotResponseFailed;
+            actions.querySelectorAll("button").forEach((item) => { item.disabled = false; });
+          }
         });
         actions.append(button);
       }
@@ -351,11 +368,16 @@ function checkinNeedsForm(record, saved, draft) {
     event.preventDefault(); if (!form.reportValidity()) return;
     const categories = [...form.querySelectorAll("input[name=category]:checked")].map(input => input.value);
     fields.disabled = true;
+    let stored = false;
     try {
       await enrichCheckinNeeds(db, identity, record.commandId, { categories, peopleAffected: people.value === "" ? null : Number(people.value) }, record.responseEventId, record.needsEventId ?? null);
-      await scheduleBackgroundSync(); await render();
+      stored = true; void scheduleBackgroundSync(); await render();
       if (navigator.onLine) { await sync(); await refreshPilot(); }
-    } catch { byId("pilot-status").textContent = catalog.pilotNeedsFailed; fields.disabled = false; }
+    } catch {
+      if (stored) byId("client-problem").textContent = catalog.savedButRefreshFailed;
+      else byId("pilot-status").textContent = catalog.pilotNeedsFailed;
+      fields.disabled = false;
+    }
   });
   section.append(form); return section;
 }

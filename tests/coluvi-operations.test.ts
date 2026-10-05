@@ -154,8 +154,10 @@ test("HTTPS launcher verifies matching certificate/key/origin and serves only wi
     const status = await new Promise<number | undefined>((resolve, reject) => { const request = httpsGet(origin + "/health", { ca: readFileSync(join(tls, "ca-cert.pem")) }, response => { response.resume(); resolve(response.statusCode); }); request.once("error", reject); });
     assert.equal(status, 200);
     const checked = await preflightPilot(pilot, { ...options, caCert: join(tls, "ca-cert.pem"), probe: true });
-    assert.equal(checked.status, "PENDING_PHYSICAL_TESTS");
-    for (const id of ["runtime", "configuration", "certificate", "privateKey", "server", "servedCertificate"]) assert.equal(checked.checks.find(check => check.id === id)?.status, "PASS", id);
+    const ubuntuWsl = process.platform === "linux" && process.env.WSL_DISTRO_NAME === "Ubuntu";
+    assert.equal(checked.status, ubuntuWsl ? "PENDING_PHYSICAL_TESTS" : "FAIL");
+    assert.equal(checked.checks.find(check => check.id === "runtime")?.status, ubuntuWsl ? "PASS" : "FAIL");
+    for (const id of ["configuration", "certificate", "privateKey", "server", "servedCertificate"]) assert.equal(checked.checks.find(check => check.id === id)?.status, "PASS", id);
     assert.equal(checked.checks.find(check => check.id === "android")?.status, "PENDING");
     const untrusted = await preflightPilot(pilot, { ...options, probe: true });
     assert.equal(untrusted.checks.find(check => check.id === "server")?.code, "SERVER_TLS_REJECTED");

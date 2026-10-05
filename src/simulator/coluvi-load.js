@@ -43,14 +43,15 @@ async function stop(child, signal = "SIGTERM") {
   const timer = setTimeout(() => child.kill("SIGKILL"), 5_000);
   try { await exited; } finally { clearTimeout(timer); }
 }
-async function start(port, config, database) {
-  const child = spawn(process.execPath, ["src/server.ts"], { cwd: repository, stdio: ["ignore", "pipe", "pipe"], env: {
+async function start(port, config, database, recordMetrics) {
+  const child = spawn(process.execPath, [recordMetrics ? "examples/instrumented-server.mjs" : "src/server.ts"], { cwd: repository, stdio: recordMetrics ? ["ignore", "pipe", "pipe", "ipc"] : ["ignore", "pipe", "pipe"], env: {
     ...process.env, PORT: String(port), EMERGENCY_MESH_HOST: "127.0.0.1", EMERGENCY_MESH_DATABASE_PATH: database,
     EMERGENCY_MESH_COLUVI_CONFIG_PATH: config, EMERGENCY_MESH_TLS_CERT_PATH: "", EMERGENCY_MESH_TLS_KEY_PATH: "",
     EMERGENCY_MESH_ENABLE_DEBUG_EVENTS: "0", EMERGENCY_MESH_INGEST_WINDOW_SECONDS: "60",
     EMERGENCY_MESH_INGEST_GLOBAL_REQUESTS: "600", EMERGENCY_MESH_INGEST_IDENTITY_REQUESTS: "60",
     EMERGENCY_MESH_INGEST_MAX_IDENTITIES: "10000",
   } });
+  if (recordMetrics) child.on("message", recordMetrics);
   let output = ""; child.stderr.on("data", chunk => { output = (output + chunk).slice(-4_000); });
   try {
     await new Promise((resolve, reject) => {
@@ -65,10 +66,11 @@ async function start(port, config, database) {
 }
 
 /** Actual local HTTP and SQLite timings; not a radio, handset, or enrollment benchmark. */
-export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20261004, progress = () => {} } = {}) {
+export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20261004, mixed = false, progress = () => {} } = {}) {
   if (!Number.isSafeInteger(devices) || devices < 30 || devices > 990 || devices % 30 !== 0) throw new Error("devices must be a multiple of 30 from 30 to 990");
   if (!Number.isSafeInteger(concurrency) || concurrency < 2 || concurrency > 64) throw new Error("concurrency must be from 2 to 64");
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error("seed must be uint32");
+  if (typeof mixed !== "boolean") throw new Error("mixed must be boolean");
   if (process.env.WSL_DISTRO_NAME === "UbuntuPreview" || process.platform === "win32") throw new Error("Use Ubuntu WSL, not UbuntuPreview or Windows");
   const began = performance.now(); const deadline = Date.now() + 20 * 60_000;
   const directory = mkdtempSync(join(tmpdir(), "coluvi-load-"));
@@ -77,13 +79,25 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
   const counters = { accepted: 0, duplicates: 0, rateLimited: 0, interruptedRequests: 0, maximumInFlight: 0 };
   const clients = []; const stages = [[], [], []]; let commands = []; let child;
   let resumeAt = 0; let inFlight = 0; let requestsAtKill = 0;
+  let plannedCrashInProgress = false;
+  const endpointSamples = new Map();
+  const mixedCounts = { successfulReads: 0, interruptedReadsAtPlannedCrash: 0, failedReads: 0, noticesIssued: 0 };
+  const serverMetrics = { samples: 0, cpuUserMs: 0, cpuSystemMs: 0, maxRssBytes: 0, maxHeapUsedBytes: 0, maxEventLoopDelayMs: 0, maxSampleGapMs: 0 };
+  const recordMetrics = mixed ? sample => {
+    if (sample?.type !== "COLUVI_FIXTURE_METRICS" || ![sample.elapsedMs, sample.cpuUserMs, sample.cpuSystemMs, sample.rssBytes, sample.heapUsedBytes, sample.eventLoopMaxMs].every(value => Number.isFinite(value) && value >= 0)) return;
+    serverMetrics.samples++; serverMetrics.cpuUserMs += sample.cpuUserMs; serverMetrics.cpuSystemMs += sample.cpuSystemMs;
+    serverMetrics.maxRssBytes = Math.max(serverMetrics.maxRssBytes, sample.rssBytes); serverMetrics.maxHeapUsedBytes = Math.max(serverMetrics.maxHeapUsedBytes, sample.heapUsedBytes);
+    serverMetrics.maxEventLoopDelayMs = Math.max(serverMetrics.maxEventLoopDelayMs, sample.eventLoopMaxMs); serverMetrics.maxSampleGapMs = Math.max(serverMetrics.maxSampleGapMs, sample.elapsedMs);
+  } : undefined;
+  const measurements = () => ({ server: serverMetrics, mixedWorkload: { enabled: mixed, concurrentReaders: mixed ? 6 : 0, readerPauseMs: 100, ...mixedCounts },
+    endpoints: Object.fromEntries([...endpointSamples].map(([key, value]) => [key, { requests: value.requests, errors: value.errors, httpStatuses: value.statuses, responseHeadersMs: statistics(value.times) }])) });
   const random = new SeededRandom(seed);
   const shuffle = items => { for (let i = items.length - 1; i > 0; i--) { const j = Math.floor(random.next() * (i + 1)); [items[i], items[j]] = [items[j], items[i]]; } return items; };
   const checkDeadline = () => { if (Date.now() >= deadline) throw new Error("Load scenario exceeded twenty minutes"); };
   try {
     const port = await freePort(); const endpoint = `http://127.0.0.1:${port}`;
     const issuer = fixtureIdentity(seed, "issuer");
-    const material = await createColuviConfiguration(issuer, endpoint, zones);
+    const material = await createColuviConfiguration(issuer, endpoint, zones, mixed ? ["CHECKIN_REQUEST", "OPERATIONAL_NOTICE"] : ["CHECKIN_REQUEST"]);
     writeFileSync(configPath, JSON.stringify(material.configuration), { mode: 0o600, flag: "wx" });
     const store = new ColuviStore(databasePath, [material.configuration.authority]);
     try {
@@ -115,14 +129,61 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
     const all = stages.flat(); const setupMs = performance.now() - began;
     const fetchLocal = async (path, init = {}) => {
       const started = performance.now();
-      try { return await fetch(endpoint + path, { ...init, signal: AbortSignal.timeout(10_000) }); }
+      const route = path.startsWith("/api/operator/checkins/") ? "/api/operator/checkins/:id" : path.split("?")[0];
+      const key = `${init.method ?? "GET"} ${route}`;
+      if (!endpointSamples.has(key)) endpointSamples.set(key, { requests: 0, times: [], errors: {}, statuses: {} });
+      const metrics = endpointSamples.get(key); metrics.requests++;
+      try {
+        const response = await fetch(endpoint + path, { ...init, signal: AbortSignal.timeout(10_000) });
+        metrics.times.push(performance.now() - started); metrics.statuses[response.status] = (metrics.statuses[response.status] ?? 0) + 1;
+        return response;
+      }
       catch (error) {
+        const kind = error.name === "TimeoutError" ? "TIMEOUT" : "CONNECTION_ERROR"; metrics.errors[kind] = (metrics.errors[kind] ?? 0) + 1;
         throw new Error(`Local ${init.method ?? "GET"} ${path} failed after ${Math.round(performance.now() - started)} ms (${error.name}); observed ACKs=${acknowledged.size}, inFlight=${inFlight}`, { cause: error });
       }
     };
     async function login() {
       const response = await fetchLocal("/api/operator/login", { method: "POST", headers: { "content-type": "application/json", origin: endpoint }, body: JSON.stringify({ password: material.operatorPassword }) });
       assert.equal(response.status, 200); await response.json(); return response.headers.get("set-cookie").split(";")[0];
+    }
+    async function issueMixedNotices(cookie) {
+      if (!mixed) return;
+      const session = await fetchLocal("/api/operator/session", { headers: { cookie } }); const { csrf } = await session.json();
+      for (const zoneId of zones) {
+        const response = await fetchLocal("/api/operator/notices", { method: "POST", headers: { cookie, origin: endpoint, "x-coluvi-csrf": csrf, "content-type": "application/json" },
+          body: JSON.stringify({ incidentRef: "SIMULACRO-load", zoneId, simulation: true, sourceLabel: "Fixture local", title: "Aviso de carga ficticia",
+            message: "SIMULACRO sin instrucciones reales", level: "INFORMATION", validMs: 60 * 60_000 }) });
+        assert.equal(response.status, 201); assert.equal((await response.json()).counts.requested, devices / 3); mixedCounts.noticesIssued++;
+      }
+    }
+    async function withMixedReaders(work, cookie) {
+      if (!mixed) return work();
+      let stopping = false; let failure; plannedCrashInProgress = false;
+      const readers = Array.from({ length: 6 }, async (_, lane) => {
+        let iteration = lane;
+        while (!stopping && !failure) {
+          const client = clients[iteration++ % clients.length];
+          const path = ["/health", "/api/areas", "/api/operator/checkins", "/api/operator/notices", "/api/mobile/inbox", "/api/mobile/notices"][lane];
+          try {
+            const response = await fetchLocal(path, { headers: lane < 2 ? {} : lane < 4 ? { cookie } : { authorization: `Bearer ${client.token}` } });
+            assert.equal(response.status, 200); const data = await response.json();
+            if (lane === 0) assert.equal(data.status, "ok");
+            if (lane === 1) assert.deepEqual(data.areas, []);
+            if (lane === 2) assert.equal(data.checkins.length, 3);
+            if (lane === 3) assert.equal(data.notices.length, 3);
+            if (lane === 4) assert.equal(data.commands.length, 1);
+            if (lane === 5) assert.equal(data.notices.length, 1);
+            mixedCounts.successfulReads++;
+          } catch (error) {
+            if (plannedCrashInProgress) { mixedCounts.interruptedReadsAtPlannedCrash++; return; }
+            mixedCounts.failedReads++; failure = error; return;
+          }
+          await delay(100);
+        }
+      });
+      try { const result = await work(); if (failure) throw failure; return result; }
+      finally { stopping = true; await Promise.all(readers); if (failure) throw failure; }
     }
     async function checkCredentials() {
       for (const client of clients.slice(0, 3)) {
@@ -203,7 +264,7 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
             counters[data.status === "ACCEPTED" ? "accepted" : "duplicates"]++;
             timings.push(performance.now() - sent); acknowledged.set(item.eventId, item.envelope.report);
             if (killAfter && !halted && acknowledged.size >= killAfter) {
-              requestsAtKill = inFlight; halted = true; killPromise = stop(child, "SIGKILL");
+              requestsAtKill = inFlight; halted = true; plannedCrashInProgress = true; killPromise = stop(child, "SIGKILL");
             }
             if ((counters.accepted + counters.duplicates) % 100 === 0) progress(`Validated ${counters.accepted + counters.duplicates} HTTP acknowledgements`);
             break;
@@ -240,30 +301,31 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
       }
       return result;
     }
-    child = await start(port, configPath, databasePath); let cookie = await login(); await checkCredentials();
+    child = await start(port, configPath, databasePath, recordMetrics); let cookie = await login(); await checkCredentials(); await issueMixedNotices(cookie);
     await rejectInvalidPackets();
     progress(`Delivering ${all.length} unique signed packets, updates before their predecessors`);
-    await deliver(stages[0], { killAfter: Math.min(12, concurrency) }); auditDurability("during-concurrent-updates");
-    child = await start(port, configPath, databasePath);
+    await withMixedReaders(() => deliver(stages[0], { killAfter: Math.min(12, concurrency) }), cookie); auditDurability("during-concurrent-updates");
+    child = await start(port, configPath, databasePath, recordMetrics);
     const staleSession = await fetchLocal("/api/operator/session", { headers: { cookie } }); assert.equal(staleSession.status, 401); await staleSession.text();
     await checkCredentials(); cookie = await login();
     for (const [index, stage] of stages.entries()) {
       progress(`Delivery stage ${index + 1}/3: ${["updates", "needs", "predecessors"][index]}`);
-      await deliver(stage.filter(item => !acknowledged.has(item.eventId)));
+      await withMixedReaders(() => deliver(stage.filter(item => !acknowledged.has(item.eventId))), cookie);
       if (index < 2) { progress(`Checking every recipient page after stage ${index + 1}`); await checkMissingPredecessors(cookie, index === 1); }
     }
     assert.equal(acknowledged.size, all.length);
     const before = await projection(cookie);
     await stop(child, "SIGKILL"); assert.equal(child.signalCode, "SIGKILL"); auditDurability("after-all-confirmations");
-    child = await start(port, configPath, databasePath); resumeAt = 0; cookie = await login(); await checkCredentials();
-    const replayStarted = performance.now(); await deliver(all, { replay: true });
+    child = await start(port, configPath, databasePath, recordMetrics); resumeAt = 0; cookie = await login(); await checkCredentials();
+    const replayStarted = performance.now(); await withMixedReaders(() => deliver(all, { replay: true }), cookie);
     const replayMs = performance.now() - replayStarted;
     assert.deepEqual(await projection(cookie), before, "Full replay must not change counts or immutable histories");
     const publicResponse = await fetchLocal("/api/areas"); assert.equal(publicResponse.status, 200); assert.deepEqual((await publicResponse.json()).areas, []);
     return { version: 1, recordedAt: new Date().toISOString(), evidence: "LOCAL_HTTP_SQLITE_ONLY", scenario: "SIMULACRO fictitious flood load and crash recovery",
       harnessSha256: createHash("sha256").update(readFileSync(fileURLToPath(import.meta.url))).digest("hex"),
       environment: { node: process.version, platform: process.platform, distro: process.env.WSL_DISTRO_NAME ?? null },
-      configuration: { devices, zones: 3, concurrency, seed, admissionLimits: limits, enrollment: "trusted fixture provisioning, not HTTP enrollment", silentDevices: devices / 10 },
+      configuration: { devices, zones: 3, concurrency, seed, mixed, admissionLimits: limits, enrollment: "trusted fixture provisioning, not HTTP enrollment", silentDevices: devices / 10 },
+      measurements: measurements(),
       counts: { uniqueSignedPackets: all.length, stateEvents: stages[0].length + stages[2].length, needsEvents: stages[1].length,
         requested: devices, responded: devices * .9, safe: devices * .4, needsHelp: devices * .5, pending: devices * .1, activeWater: devices * .5, activeTransport: devices * .5 },
       http: { ...counters, requestsOutstandingAtKill: requestsAtKill, fullReplayDuplicates: all.length }, crashes,
@@ -273,6 +335,10 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
       timing: { wallMs: performance.now() - began, setupMs, replayMs, successfulRequestMs: statistics(timings) },
       limitations: ["Synthetic Node clients, not simultaneous PWA instances or physical Android phones", "Loopback HTTP; no LAN, Internet, TLS, radio, range or battery measurement",
         "SIGKILL of backend process, not host power loss or disk failure", "Client ledger remains in parent memory; not proof of client crash recovery",
-        "Successful request timings exclude queue and Retry-After waiting; wall time includes them", "Seed fixes fixture identities and scheduling shuffle, not OS timing or the crash commit boundary", "No operational notices or HTTP enrollment throughput measured"] };
+        "Successful request timings exclude queue and Retry-After waiting; wall time includes them", "Seed fixes fixture identities and scheduling shuffle, not OS timing or the crash commit boundary",
+        mixed ? "Notice publication and inbox reads measured; no human presentation or receipt throughput claim" : "No operational notices throughput measured", "HTTP enrollment throughput not measured"] };
+  } catch (error) {
+    error.loadEvidence = { status: "FAIL", devices, concurrency, seed, mixed, acknowledgedPackets: acknowledged.size, elapsedMs: performance.now() - began, measurements: measurements(), crashes };
+    throw error;
   } finally { await stop(child); rmSync(directory, { recursive: true, force: true }); }
 }

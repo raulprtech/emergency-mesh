@@ -2,6 +2,9 @@ export const SUPPORTED_LOCALES = ["es", "en"];
 
 const catalogs = {
   es: {
+    storageSaveFailed: "No se guardó el reporte: el almacenamiento no está disponible o está lleno. No cierres este formulario ni borres los datos de Coluvi; revisa espacio y diagnóstico antes de reintentar.",
+    savedButRefreshFailed: "El guardado local terminó, pero no se pudo actualizar la vista. No vuelvas a crear el mismo reporte ni borres los datos; consulta el diagnóstico y los reportes guardados al recuperar el acceso.",
+    storageUpdateFailed: "No se pudo actualizar el almacenamiento o la vista. El envío no queda confirmado en este dispositivo. No borres los datos; revisa el diagnóstico antes de reintentar.",
     diagnosticsTitle: "Diagnóstico del dispositivo", diagnosticsHelp: "Comprobación local. La red disponible no demuestra acceso al centro. La confirmación no significa que haya ayuda en camino.",
     diagnosticsRefresh: "Actualizar y comprobar servidor", diagnosticsExport: "Descargar diagnóstico sin identificadores",
     diagnosticsPrivacy: "El archivo incluye fechas y cantidades, no reportes, ubicaciones, identidades ni credenciales. Revísalo antes de compartirlo. No borres los datos de la aplicación para intentar reparar un fallo.",
@@ -90,6 +93,9 @@ const catalogs = {
     },
   },
   en: {
+    storageSaveFailed: "The report was not saved: storage is unavailable or full. Do not close this form or clear Coluvi data; check storage and diagnostics before retrying.",
+    savedButRefreshFailed: "Local saving completed, but the view could not be updated. Do not create the same report again or clear app data; check diagnostics and saved reports once access recovers.",
+    storageUpdateFailed: "Storage or the view could not be updated. Delivery is not confirmed on this device. Do not clear app data; check diagnostics before retrying.",
     diagnosticsTitle: "Device diagnostics", diagnosticsHelp: "Local check. Network availability does not prove access to the command center. Confirmation does not mean help is on the way.",
     diagnosticsRefresh: "Refresh and check server", diagnosticsExport: "Download diagnostic without identifiers",
     diagnosticsPrivacy: "The file includes dates and counts, not reports, locations, identities or credentials. Review it before sharing. Do not clear app data to try to repair a failure.",

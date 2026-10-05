@@ -9,8 +9,8 @@ Este bloque ejecuta el plan de diez horas autorizado después de la RC1. El obje
 | Preparación guiada del piloto | 1 h | Configuración, base, certificado y conexión opcional con resultados separados; sin secretos, cambios de red ni falsas afirmaciones de acceso Android | Preflight implementado; pruebas HTTP, HTTPS y fallos aprobadas |
 | Diagnóstico de la PWA | 2 h | Estados de cola, última confirmación, almacenamiento cuando esté disponible, consulta de servidor y exportación sin reportes ni identificadores; comprobación en navegador offline y conectado | Implementado; pruebas unitarias y Chromium integrado aprobados: tres reportes guardados, dos pendientes durante el corte y tres confirmados al reconectar; exportación sin valores privados verificada |
 | Simulacros repetibles | 2 h | Escenarios ficticios con cortes intermitentes, llegada tardía, cambios, avisos vencidos y no respuesta; cronología y comparación entre esperado y observado | Seis escenarios implementados y verificados, incluidos cambios fuera de orden; ejecutor con directorio exclusivo, informe, cronología, semilla, procedencia y cancelación |
-| Carga mixta | 2 h | Reproducción instrumentada del límite observado con 990 dispositivos; mapa, avisos y respuestas concurrentes; causa y corrección verificadas o límite reproducible documentado | Pendiente |
-| Continuidad del cliente | 1,5 h | Cierre abrupto del navegador, actualización con cola pendiente y fallos de almacenamiento; no afirmar guardado cuando falla una escritura | Pendiente |
+| Carga mixta | 2 h | Reproducción instrumentada del límite observado con 990 dispositivos; mapa, avisos y respuestas concurrentes; causa y corrección verificadas o límite reproducible documentado | Perfil instrumentado implementado y verificado con 30 dispositivos; mediciones de 300 y 990 pendientes |
+| Continuidad del cliente | 1,5 h | Cierre abrupto del navegador, actualización con cola pendiente y fallos de almacenamiento; no afirmar guardado cuando falla una escritura | Verificada en Chromium con archivos RC1 reales, SIGKILL del navegador, reapertura sin servidor, actualización v10 a v11 y fallos inyectados de IndexedDB |
 | Calificación y entrega | 1,5 h | Suite, navegador, reproducción limpia, documentación reconciliada, paquete de ensayo físico y versión identificada en GitHub | Pendiente |
 
 Además se requiere una ejecución sostenida de al menos tres horas de tiempo real sobre una versión fija, con datos desechables y resultados persistidos. Aún no ha comenzado. No se sustituirá por tiempo virtual ni por sumar varias ejecuciones breves. Su duración puede solaparse con tareas ligeras; se registrará la competencia por recursos al interpretar resultados.
@@ -38,6 +38,26 @@ El destino debe ser nuevo. `rehearsal.json` contiene seis escenarios, semilla, c
 Los actores usan firmas y almacenes SQLite reales con tiempo virtual. Se comprueban dos cortes con cola persistida, respuesta tardía que cambia UNKNOWN, enriquecimiento de ayuda seguido de SAFE, vencimiento de avisos, destinatarios que no responden y entrega del sucesor antes del antecedente. Cada escenario conserva historial tras reabrir los almacenes y comprueba deduplicación. Los acuses SHOWN los crea el actor simulado: no demuestran que una persona haya leído el aviso. La prueba de presentación real en navegador es independiente.
 
 Las cuatro pruebas de `tests/coluvi-rehearsal.test.ts` verifican escenarios, repetición, parámetros, cancelación y rechazo de destinos existentes o UbuntuPreview. La primera ejecución CLI aprobó los seis escenarios, con `sourceUnchanged: true`, en `/tmp/coluvi-rc2-rehearsal-20261004-01/rehearsal.json`. Su tiempo virtual no cuenta para las tres horas sostenidas que siguen pendientes.
+
+## Continuidad y recuperación del cliente
+
+`examples/mobile-continuity-smoke.mjs` sirve los archivos reales de la etiqueta RC1 desde Git, guarda un reporte, detiene el acceso al servidor y termina el grupo de procesos de Chromium mediante SIGKILL. Abre después el mismo perfil sin servidor y comprueba que el paquete firmado permanece idéntico. Tras restaurar el acceso, actualiza el service worker de v10 a v11 y carga los archivos nuevos sin perder la cola. Requiere la etiqueta RC1 disponible localmente; las copias limpias deben incluir las etiquetas.
+
+La prueba inyecta `QuotaExceededError` y abortos de transacciones IndexedDB. Comprueba que se conserve el borrador, que el reporte anterior permanezca intacto y que no aparezca un reporte falsamente guardado. También inyecta un fallo de lectura después de confirmar el guardado: la interfaz distingue ese caso de un fallo al guardar. Finalmente impide persistir un acuse de backend; el siguiente envío recibe una respuesta de duplicado, guarda su confirmación y mantiene exactamente dos reportes únicos en el servidor. Al recuperarse desaparece el aviso de error obsoleto.
+
+Se corrigió además la sincronización de reportes que podía esperar indefinidamente una respuesta: el límite por petición es de diez segundos e incluye la lectura del cuerpo. Las pruebas con HTTP real que no entrega cabeceras o deja el cuerpo incompleto conservan el paquete sin inventar confirmación. Los fallos inyectados no equivalen a llenar un disco físico, y el cierre del navegador no equivale a cortar energía a la computadora. El actor de continuidad usa sincronización manual y desactiva background sync para controlar los puntos de fallo; su funcionamiento ordinario se verifica por separado.
+
+La suite completa después de estos cambios aprobó 215 pruebas en 78,2 segundos, sin fallos, cancelaciones ni omisiones. El recorrido de continuidad en Chromium aprobó también; todavía faltan la carga grande y la ejecución sostenida para cerrar RC2.
+
+## Carga mixta instrumentada
+
+```bash
+node examples/coluvi-mixed-load.mjs /tmp/coluvi-carga-mixta-nueva 300 24 20261005
+```
+
+Este perfil conserva las firmas, límites de admisión, confirmaciones correlacionadas, entrega fuera de orden, dos cortes SIGKILL y reenvío completo de la carga anterior. Añade seis lectores concurrentes de salud, mapa, panel, avisos y bandejas móviles, con una pausa de 100 ms entre consultas por lector. Emite tres avisos por la API del operador y comprueba que permanezcan disponibles tras reiniciar. No afirma que alguien los haya leído ni mide inscripción HTTP masiva.
+
+El informe separa peticiones y errores por endpoint, latencia hasta cabeceras, tiempos completos de envíos aceptados y esperas por admisión. El proceso de servidor instrumentado envía CPU, memoria y retraso del bucle de eventos solo a su padre por IPC, sin exponer otro endpoint público. El destino es exclusivo y el informe identifica el código mediante commit, estado del árbol y SHA-256. Un fallo conserva un informe fallido con los contadores disponibles; no acredita capacidad. El ensayo inicial de 30 dispositivos aprobó, pero no reemplaza la medición de 990.
 
 ## Restricciones operativas
 

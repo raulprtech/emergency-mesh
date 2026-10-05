@@ -17,3 +17,12 @@ test("load fixture rejects unbounded or unbalanced profiles before creating reso
     await assert.rejects(runColuviLoad(options));
   }
 });
+
+test("mixed HTTP workload verifies notice delivery and dashboard reads while ingest and crash recovery run", { timeout: 120_000 }, async () => {
+  const result = await runColuviLoad({ devices: 30, concurrency: 8, mixed: true });
+  assert.equal(result.measurements.mixedWorkload.noticesIssued, 3);
+  assert.ok(result.measurements.mixedWorkload.successfulReads >= 6);
+  assert.equal(result.measurements.mixedWorkload.failedReads, 0);
+  for (const route of ["GET /api/areas", "GET /api/operator/checkins", "GET /api/operator/notices", "GET /api/mobile/notices"]) assert.ok(result.measurements.endpoints[route].httpStatuses[200] > 0);
+  assert.equal(result.crashes[1].acknowledgedVerified, 81); assert.equal(result.http.fullReplayDuplicates, 81);
+});

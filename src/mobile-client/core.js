@@ -20,6 +20,7 @@ const transitions = {
 };
 
 export const MAX_BACKEND_RETRY_AFTER_MS = 60 * 60_000;
+export const OUTBOX_REQUEST_TIMEOUT_MS = 10_000;
 
 export const DELIVERY_LABELS = {
   CREATED: "Creado localmente",
@@ -121,7 +122,9 @@ export function validBackendEvidence(evidence, item, outcomeStatus, now = Date.n
     && evidence.status === (outcomeStatus === "DUPLICATE" ? "DUPLICATE" : "STORED"));
 }
 
-export async function synchronizeOutbox(store, fetcher = globalThis.fetch, endpoint = "/api/packets", now = Date.now()) {
+export async function synchronizeOutbox(store, fetcher = globalThis.fetch, endpoint = "/api/packets", now = Date.now(), options = {}) {
+  const timeoutMs = options.requestTimeoutMs ?? OUTBOX_REQUEST_TIMEOUT_MS;
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 30_000) throw new Error("Invalid outbox request timeout");
   const results = [];
   for (const current of await store.list()) {
     if (current.state === "SYNCED" || current.state === "EXPIRED") continue;
@@ -135,8 +138,10 @@ export async function synchronizeOutbox(store, fetcher = globalThis.fetch, endpo
     item = transitionDelivery(item, "FORWARDED", now);
     item.attempts += 1;
     await store.put(item);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetcher(endpoint, { method: "POST", headers: { "content-type": "application/cbor" }, body: canonicalCbor(item.envelope) });
+      const response = await fetcher(endpoint, { method: "POST", headers: { "content-type": "application/cbor" }, body: canonicalCbor(item.envelope), signal: controller.signal });
       const outcome = await response.json().catch(() => ({}));
       if (!response.ok) {
         const bodyRetryAfter = Number(outcome.retryAfterMs);
@@ -156,10 +161,10 @@ export async function synchronizeOutbox(store, fetcher = globalThis.fetch, endpo
       item.nextAttemptAt = undefined;
     } catch (error) {
       item = transitionDelivery(item, "QUEUED", now);
-      item.lastError = error instanceof Error ? error.message : "Error de sincronización";
+      item.lastError = controller.signal.aborted ? "Request timed out; delivery remains unconfirmed" : error instanceof Error ? error.message : "Error de sincronización";
       const retryAfterMs = error && typeof error === "object" ? error.retryAfterMs : undefined;
       item.nextAttemptAt = Number.isSafeInteger(retryAfterMs) && retryAfterMs > 0 ? Math.min(now + retryAfterMs, item.envelope.expiresAt) : undefined;
-    }
+    } finally { clearTimeout(timer); }
     await store.put(item);
     results.push(item);
   }
