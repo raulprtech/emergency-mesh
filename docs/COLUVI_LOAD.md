@@ -45,7 +45,7 @@ El [perfil de 600 dispositivos](coluvi-load-600-20261004.json), con semilla 2026
 - Se utiliza HTTP loopback. No se miden LAN, Internet, TLS, BLE, LoRa, alcance o batería.
 - SIGKILL del backend no equivale a cortar la energía del equipo ni a fallar el disco.
 - El registro del cliente permanece en la memoria del proceso padre. La recuperación de IndexedDB y ventanas PWA se verifica por separado en Chromium.
-- La carga no incluye avisos operativos. Su emisión, presentación y recibos sí forman parte del recorrido integrado de navegador.
+- El perfil base no incluye avisos operativos. El nuevo [perfil mixto de RC2](COLUVI_RC2.md) añade emisión y lecturas de avisos, junto con métricas por endpoint y del proceso. La presentación y los recibos se verifican también en el recorrido integrado de navegador.
 
 ## Calificación completa con un comando
 
@@ -54,7 +54,7 @@ COLUVI_CHROMIUM_PATH=/ruta/al/chromium \
   node scripts/qualify-coluvi.mjs /tmp/coluvi-calificacion-nueva
 ```
 
-El comando exige Ubuntu WSL y un Chromium ya instalado. Crea exclusivamente una carpeta nueva y ejecuta, en orden, la suite completa con concurrencia de dos archivos, el recorrido integrado mapa–PWA–panel, la prueba específica del mapa offline y la carga de 300 dispositivos. Cada etapa conserva stdout y stderr en archivos privados. Un fallo detiene la calificación y genera `qualification-failed.json`; solo después de aprobar todas las etapas se crea `qualification.json` con estado PASS.
+El comando exige Ubuntu WSL y un Chromium ya instalado. Crea exclusivamente una carpeta nueva y ejecuta, en orden, la suite completa con concurrencia de dos archivos, seis simulacros con cronología, el recorrido integrado mapa–PWA–panel, la continuidad del cliente desde RC1, la prueba específica del mapa offline, un ensayo sostenido breve y la carga base de 300 dispositivos. Cada etapa conserva stdout y stderr en archivos privados. Un fallo detiene la calificación y genera `qualification-failed.json`; solo después de aprobar todas las etapas se crea `qualification.json` con estado PASS. El ensayo breve no sustituye el criterio independiente de tres horas reales de RC2; tampoco sustituye sus perfiles de carga mixta.
 
 El informe final identifica el commit base, si había cambios locales y una huella del contenido de `src`, `tests`, `scripts`, `examples` y `package.json`. Si esos archivos cambian durante la ejecución, no se emite PASS. La huella no cubre documentación ni convierte un árbol con cambios locales en un commit publicado. Los límites de cada etapa y las señales de cancelación afectan solo al grupo de procesos creado por esa etapa.
 

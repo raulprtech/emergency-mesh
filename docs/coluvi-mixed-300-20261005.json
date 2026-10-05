@@ -1,0 +1,300 @@
+{
+  "version": 1,
+  "recordedAt": "2026-10-05T03:08:05.292Z",
+  "evidence": "LOCAL_HTTP_SQLITE_ONLY",
+  "scenario": "SIMULACRO fictitious flood load and crash recovery",
+  "harnessSha256": "d44d28b565cae87d742ad7f604b6da084171ce1a13d8f5b51afbb89075697abc",
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "linux",
+    "distro": "Ubuntu"
+  },
+  "configuration": {
+    "devices": 300,
+    "zones": 3,
+    "concurrency": 24,
+    "seed": 20261005,
+    "mixed": true,
+    "admissionLimits": {
+      "windowMs": 60000,
+      "globalRequests": 600,
+      "identityRequests": 60,
+      "trackedIdentities": 10000
+    },
+    "privateApiLimits": {
+      "globalRequests": 600,
+      "perSourceRequests": 120,
+      "windowMs": 60000
+    },
+    "enrollment": "trusted fixture provisioning, not HTTP enrollment",
+    "silentDevices": 30
+  },
+  "measurements": {
+    "server": {
+      "samples": 131,
+      "cpuUserMs": 6281.6709999999985,
+      "cpuSystemMs": 791.197,
+      "maxRssBytes": 131416064,
+      "maxHeapUsedBytes": 20572328,
+      "maxEventLoopDelayMs": 816.840703,
+      "maxSampleGapMs": 1164.6871219999998
+    },
+    "mixedWorkload": {
+      "enabled": true,
+      "concurrentReaders": 6,
+      "readerPauseMs": 100,
+      "successfulReads": 2523,
+      "interruptedReadsAtPlannedCrash": 6,
+      "failedReads": 0,
+      "noticesIssued": 3,
+      "privateApiRateLimited": 5
+    },
+    "endpoints": {
+      "POST /api/operator/login": {
+        "requests": 3,
+        "errors": {},
+        "httpStatuses": {
+          "200": 3
+        },
+        "responseHeadersMs": {
+          "samples": 3,
+          "p50": 96.57452100000228,
+          "p95": 109.84144299999934,
+          "maximum": 109.84144299999934
+        }
+      },
+      "GET /api/mobile/inbox": {
+        "requests": 71,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 68,
+          "429": 2
+        },
+        "responseHeadersMs": {
+          "samples": 70,
+          "p50": 23.782259999992675,
+          "p95": 254.06734599999982,
+          "maximum": 883.5070340000002
+        }
+      },
+      "GET /api/operator/session": {
+        "requests": 2,
+        "errors": {},
+        "httpStatuses": {
+          "200": 1,
+          "401": 1
+        },
+        "responseHeadersMs": {
+          "samples": 2,
+          "p50": 2.448867000000064,
+          "p95": 6.519510999999511,
+          "maximum": 6.519510999999511
+        }
+      },
+      "POST /api/operator/notices": {
+        "requests": 3,
+        "errors": {},
+        "httpStatuses": {
+          "201": 3
+        },
+        "responseHeadersMs": {
+          "samples": 3,
+          "p50": 12.82853999999952,
+          "p95": 17.62467199999992,
+          "maximum": 17.62467199999992
+        }
+      },
+      "POST /api/packets": {
+        "requests": 1693,
+        "errors": {
+          "CONNECTION_ERROR": 23
+        },
+        "httpStatuses": {
+          "202": 1620,
+          "400": 2,
+          "429": 48
+        },
+        "responseHeadersMs": {
+          "samples": 1670,
+          "p50": 59.293525000000955,
+          "p95": 408.785296,
+          "maximum": 2337.020573
+        }
+      },
+      "GET /health": {
+        "requests": 1145,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 1144
+        },
+        "responseHeadersMs": {
+          "samples": 1144,
+          "p50": 2.167699999990873,
+          "p95": 22.974751999994623,
+          "maximum": 905.4857340000017
+        }
+      },
+      "GET /api/areas": {
+        "requests": 1144,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 1143
+        },
+        "responseHeadersMs": {
+          "samples": 1143,
+          "p50": 2.2483980000033625,
+          "p95": 17.915494999993825,
+          "maximum": 890.4803670000001
+        }
+      },
+      "GET /api/operator/checkins": {
+        "requests": 62,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 61
+        },
+        "responseHeadersMs": {
+          "samples": 61,
+          "p50": 26.964506999996956,
+          "p95": 221.24664699999994,
+          "maximum": 921.2330259999999
+        }
+      },
+      "GET /api/operator/notices": {
+        "requests": 61,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 59,
+          "429": 1
+        },
+        "responseHeadersMs": {
+          "samples": 60,
+          "p50": 27.006288999997196,
+          "p95": 268.8049350000001,
+          "maximum": 900.020994999999
+        }
+      },
+      "GET /api/mobile/notices": {
+        "requests": 61,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 58,
+          "429": 2
+        },
+        "responseHeadersMs": {
+          "samples": 60,
+          "p50": 25.60995600000024,
+          "p95": 236.21000900000035,
+          "maximum": 1547.3142749999988
+        }
+      },
+      "GET /api/operator/checkins/:id": {
+        "requests": 12,
+        "errors": {},
+        "httpStatuses": {
+          "200": 12
+        },
+        "responseHeadersMs": {
+          "samples": 12,
+          "p50": 14.288817000000563,
+          "p95": 21.608317000005627,
+          "maximum": 21.608317000005627
+        }
+      }
+    }
+  },
+  "counts": {
+    "uniqueSignedPackets": 810,
+    "stateEvents": 540,
+    "needsEvents": 270,
+    "requested": 300,
+    "responded": 270,
+    "safe": 120,
+    "needsHelp": 150,
+    "pending": 30,
+    "activeWater": 150,
+    "activeTransport": 150
+  },
+  "http": {
+    "accepted": 810,
+    "duplicates": 810,
+    "rateLimited": 48,
+    "interruptedRequests": 23,
+    "maximumInFlight": 24,
+    "requestsOutstandingAtKill": 23,
+    "fullReplayDuplicates": 810
+  },
+  "crashes": [
+    {
+      "label": "during-concurrent-updates",
+      "signal": "SIGKILL",
+      "acknowledgedVerified": 12,
+      "persisted": 12,
+      "committedWithoutObservedAck": 0,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "after-all-confirmations",
+      "signal": "SIGKILL",
+      "acknowledgedVerified": 810,
+      "persisted": 810,
+      "committedWithoutObservedAck": 0,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    }
+  ],
+  "checks": {
+    "allAcknowledgedReportsDurable": true,
+    "immutableHistoryAfterReplay": true,
+    "allRecipientPagesVerified": true,
+    "missingPredecessorsExplicitBeforeArrival": true,
+    "independentlyArrivingNeedsVerified": true,
+    "invalidPacketsRejectedWithoutAck": 2,
+    "privateReportsExcludedFromPublicMap": true,
+    "sampledCredentialsSurviveRestarts": 3,
+    "operatorSessionInvalidated": true
+  },
+  "timing": {
+    "wallMs": 136827.73476599998,
+    "setupMs": 4216.125376,
+    "replayMs": 63861.259487,
+    "successfulRequestMs": {
+      "samples": 1620,
+      "p50": 60.15718899999956,
+      "p95": 415.5544719999998,
+      "maximum": 2337.1790610000007
+    }
+  },
+  "limitations": [
+    "Synthetic Node clients, not simultaneous PWA instances or physical Android phones",
+    "Loopback HTTP; no LAN, Internet, TLS, radio, range or battery measurement",
+    "SIGKILL of backend process, not host power loss or disk failure",
+    "Client ledger remains in parent memory; not proof of client crash recovery",
+    "Successful request timings exclude queue and Retry-After waiting; wall time includes them",
+    "Seed fixes fixture identities and scheduling shuffle, not OS timing or the crash commit boundary",
+    "Notice publication and inbox reads measured; no human presentation or receipt throughput claim",
+    "HTTP enrollment throughput not measured"
+  ],
+  "status": "PASS",
+  "provenance": {
+    "baseCommit": "c7f6ce9864e84435153e7639d503192256ea82d4",
+    "dirtyWorktree": false,
+    "sourceSha256": "57e66eb28871611f5dfb2c64397713e30567aa8faa612c23319fd9141ee1b185",
+    "sourceFiles": 171
+  },
+  "startedAt": "2026-10-05T03:05:48.466Z",
+  "sourceUnchanged": true
+}

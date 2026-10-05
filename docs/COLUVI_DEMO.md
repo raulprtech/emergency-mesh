@@ -52,7 +52,7 @@ Cada evento declara un estado completo y puede recibirse antes que su antecedent
 
 El panel cuenta una vez por dispositivo y categoría. Las cantidades de personas son declaraciones por reporte: no se suman entre dispositivos porque no se ha demostrado que se refieran a personas diferentes. Los datos operativos nunca se incorporan al mapa público.
 
-SQLite añade `coluvi_needs` sin reemplazar tablas anteriores. Hay un máximo de 100 estados y 100 detalles por dispositivo y solicitud. IndexedDB sigue en v3 con campos aditivos e historial local: las transacciones comprueban inscripción, antecedente esperado y escritura conjunta de bandeja y outbox. Dos escritores sobre el mismo antecedente producen un único ganador; el otro debe revisar el estado vigente. El worker v10 conserva el aislamiento de caché privada.
+SQLite añade `coluvi_needs` sin reemplazar tablas anteriores. Hay un máximo de 100 estados y 100 detalles por dispositivo y solicitud. IndexedDB sigue en v3 con campos aditivos e historial local: las transacciones comprueban inscripción, antecedente esperado y escritura conjunta de bandeja y outbox. Dos escritores sobre el mismo antecedente producen un único ganador; el otro debe revisar el estado vigente. El worker v11 conserva el aislamiento de caché privada; RC2 verifica la actualización desde el v10 de RC1 con un reporte pendiente.
 
 ## Verificación automatizada
 
