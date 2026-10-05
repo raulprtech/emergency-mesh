@@ -17,6 +17,8 @@
     "scenario:coluvi": "node examples/coluvi-drill.ts",
     "rehearse:coluvi": "node scripts/rehearse-coluvi.mjs",
     "load:coluvi": "node examples/coluvi-load.mjs",
+    "load:mixed": "node examples/coluvi-mixed-load.mjs",
+    "soak:coluvi": "node scripts/soak-coluvi.mjs",
     "qualify:coluvi": "node scripts/qualify-coluvi.mjs",
     "start": "node src/server.ts",
     "test": "node --test tests/*.test.ts",

@@ -79,12 +79,16 @@ try {
   assert.equal(continuity.failedLocalAckRetriedAsDuplicate, true); assert.deepEqual(continuity.diagnostics, []);
   const map = JSON.parse(await run("map-browser", ["examples/public-map-browser-smoke.mjs"], 3 * 60_000));
   assert.equal(map.status, "PASS"); assert.equal(map.offlineAfterAbruptStop, true); assert.equal(map.expiredSnapshotRejected, true);
+  await run("soak-smoke", ["scripts/soak-coluvi.mjs", join(destination, "soak-smoke"), "5", "5"], 3 * 60_000);
+  const soakSmoke = JSON.parse(readFileSync(join(destination, "soak-smoke", "soak.json"), "utf8"));
+  assert.equal(soakSmoke.status, "PASS"); assert.equal(soakSmoke.sourceUnchanged, true);
+  assert.equal(soakSmoke.qualifiesThreeHours, false); assert.ok(soakSmoke.counts.rounds > 0);
   const load = JSON.parse(await run("load-300", ["examples/coluvi-load.mjs", "300", "24", "20261004"], 21 * 60_000));
   assert.equal(load.counts.uniqueSignedPackets, 810); assert.equal(load.crashes[1].acknowledgedVerified, 810);
   assert.equal(sourceHash(), provenance.sourceSha256, "Source changed during qualification; results cannot qualify the current tree");
   const report = { version: 1, status: "PASS", startedAt, completedAt: new Date().toISOString(), wallMs: performance.now() - started,
     provenance, environment: { node: process.version, distro: process.env.WSL_DISTRO_NAME }, steps, tests: testSummary,
-    integrated, map, load, rehearsal, continuity, limitations: ["Software qualification in Ubuntu WSL and loopback Chromium, not physical Android/LAN/radio validation", "Not a production certification or guarantee of emergency assistance"] };
+    integrated, map, load, rehearsal, continuity, soakSmoke, limitations: ["Software qualification in Ubuntu WSL and loopback Chromium, not physical Android/LAN/radio validation", "Short soak is not the separate three-hour real-time acceptance run", "Not a production certification or guarantee of emergency assistance"] };
   save("qualification.json", JSON.stringify(report, null, 2) + "\n");
   process.stdout.write(JSON.stringify({ status: report.status, report: join(destination, "qualification.json"), tests: testSummary.tests, devices: load.configuration.devices }, null, 2) + "\n");
 } catch (error) {

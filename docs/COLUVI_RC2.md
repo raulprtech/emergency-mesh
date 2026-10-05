@@ -59,6 +59,22 @@ Este perfil conserva las firmas, límites de admisión, confirmaciones correlaci
 
 El informe separa peticiones y errores por endpoint, latencia hasta cabeceras, tiempos completos de envíos aceptados y esperas por admisión. El proceso de servidor instrumentado envía CPU, memoria y retraso del bucle de eventos solo a su padre por IPC, sin exponer otro endpoint público. El destino es exclusivo y el informe identifica el código mediante commit, estado del árbol y SHA-256. Un fallo conserva un informe fallido con los contadores disponibles; no acredita capacidad. El ensayo inicial de 30 dispositivos aprobó, pero no reemplaza la medición de 990.
 
+El primer perfil mixto de 300 dispositivos, sobre una copia limpia del commit `2623d1b`, terminó como fallo tras 69,2 segundos: había observado 810 confirmaciones únicas, pero una lectura de avisos recibió 429. El máximo de retraso del bucle de eventos observado fue 351,3 ms; ese resultado no reproduce el timeout de diez segundos de la RC1. La API privada tiene límites independientes de la ingestión: 600 solicitudes globales y 120 por dirección de origen por minuto. Los lectores del fixture compartían una dirección y trataban 429 como fallo inmediato. Se corrigió el actor para respetar `Retry-After` compartido entre esas consultas, sin aumentar presupuestos ni timeouts del servidor. El informe fallido permanece en `/tmp/coluvi-rc2-mixed-300-20261005-01/mixed-load-failed.json` y no debe presentarse como una ejecución completa aprobada.
+
+## Ensayo sostenido con tiempo real
+
+```bash
+node scripts/soak-coluvi.mjs /tmp/coluvi-observacion-nueva 10800 30
+```
+
+El comando crea una observación de al menos 10800 segundos reales, con treinta dispositivos ficticios en tres zonas. Emite solicitudes y avisos por HTTP, recibe acuses firmados de recepción, intercala estados y necesidades, verifica proyecciones y consulta salud y mapa. Alterna entregas ordenadas y fuera de orden. Cada veinte rondas termina el backend temporal con SIGKILL entre rondas, verifica todos los reportes confirmados en SQLite y reenvía la ronda más reciente como duplicados después de arrancar otra vez. No equivale a matar el cliente ni a cortar energía física.
+
+`progress.jsonl` guarda las rondas completadas, tiempo observado, conteos, tamaño de base y métricas del servidor. `soak.json` solo se escribe al completar el periodo y la auditoría final con el código sin cambios; `qualifiesThreeHours` diferencia explícitamente un ensayo corto de la observación requerida. Una interrupción o fallo produce `soak-failed.json`, nunca un aprobado. La duración solicitada es mínima: se completa la ronda en curso y se respetan esperas de admisión antes de cerrar. No se cuentan ventanas virtuales del simulador.
+
+Las pruebas cortas verifican reinicios, conservación byte a byte de reportes firmados, deduplicación, avisos y rechazo de parámetros o cancelación. La inscripción inicial se provisiona directamente en la base de prueba; no mide inscripción masiva. Los acuses son RECEIVED, no SHOWN ni atención humana. Los límites por origen se conservan, por lo que las esperas del cliente forman parte del tiempo observado. La ejecución de tres horas aún está pendiente de inicio y resultado.
+
+El ensayo previo del comando, solicitado con mínimo de cinco segundos y treinta dispositivos, completó su primera ronda en aproximadamente 61 segundos al respetar el límite de API privada. Confirmó 81 paquetes y terminó como PASS con `qualifiesThreeHours: false`. Su informe está en `/tmp/coluvi-rc2-soak-preflight-20261005-01/soak.json`. La calificación incluye este ensayo breve, pero exige tratar por separado el informe de tres horas.
+
 ## Restricciones operativas
 
 Todo se ejecuta en Ubuntu WSL2, nunca UbuntuPreview. Los ensayos usan directorios y procesos temporales propios. No se reemplazan datos del piloto, claves, certificados ni servicios ajenos. No se modifica el firewall ni se instala confianza TLS global. No se contratan servicios, crean cuentas, publican despliegues ni presentan solicitudes.

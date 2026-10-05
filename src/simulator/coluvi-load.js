@@ -80,8 +80,9 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
   const clients = []; const stages = [[], [], []]; let commands = []; let child;
   let resumeAt = 0; let inFlight = 0; let requestsAtKill = 0;
   let plannedCrashInProgress = false;
+  let privateApiResumeAt = 0;
   const endpointSamples = new Map();
-  const mixedCounts = { successfulReads: 0, interruptedReadsAtPlannedCrash: 0, failedReads: 0, noticesIssued: 0 };
+  const mixedCounts = { successfulReads: 0, interruptedReadsAtPlannedCrash: 0, failedReads: 0, noticesIssued: 0, privateApiRateLimited: 0 };
   const serverMetrics = { samples: 0, cpuUserMs: 0, cpuSystemMs: 0, maxRssBytes: 0, maxHeapUsedBytes: 0, maxEventLoopDelayMs: 0, maxSampleGapMs: 0 };
   const recordMetrics = mixed ? sample => {
     if (sample?.type !== "COLUVI_FIXTURE_METRICS" || ![sample.elapsedMs, sample.cpuUserMs, sample.cpuSystemMs, sample.rssBytes, sample.heapUsedBytes, sample.eventLoopMaxMs].every(value => Number.isFinite(value) && value >= 0)) return;
@@ -128,6 +129,8 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
     for (const stage of stages) { shuffle(stage); for (const item of stage) item.bytes = canonicalCbor(item.envelope); }
     const all = stages.flat(); const setupMs = performance.now() - began;
     const fetchLocal = async (path, init = {}) => {
+      const privateApi = path.startsWith("/api/operator/") || path.startsWith("/api/mobile/");
+      if (mixed && privateApi) while (Date.now() < privateApiResumeAt) { checkDeadline(); await delay(Math.min(1000, privateApiResumeAt - Date.now())); }
       const started = performance.now();
       const route = path.startsWith("/api/operator/checkins/") ? "/api/operator/checkins/:id" : path.split("?")[0];
       const key = `${init.method ?? "GET"} ${route}`;
@@ -136,6 +139,15 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
       try {
         const response = await fetch(endpoint + path, { ...init, signal: AbortSignal.timeout(10_000) });
         metrics.times.push(performance.now() - started); metrics.statuses[response.status] = (metrics.statuses[response.status] ?? 0) + 1;
+        if (mixed && privateApi && response.status === 429) {
+          const data = await response.json(); assert.equal(data.evidence, undefined);
+          const retryMs = Number(response.headers.get("retry-after")) * 1000;
+          assert.ok(Number.isSafeInteger(retryMs) && retryMs > 0 && retryMs <= 61_000);
+          mixedCounts.privateApiRateLimited++;
+          if (Date.now() >= privateApiResumeAt) progress(`Private API per-source budget reached; honoring Retry-After (${retryMs / 1000} s)`);
+          privateApiResumeAt = Math.max(privateApiResumeAt, Date.now() + retryMs);
+          return fetchLocal(path, init);
+        }
         return response;
       }
       catch (error) {
@@ -305,7 +317,7 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
     await rejectInvalidPackets();
     progress(`Delivering ${all.length} unique signed packets, updates before their predecessors`);
     await withMixedReaders(() => deliver(stages[0], { killAfter: Math.min(12, concurrency) }), cookie); auditDurability("during-concurrent-updates");
-    child = await start(port, configPath, databasePath, recordMetrics);
+    child = await start(port, configPath, databasePath, recordMetrics); privateApiResumeAt = 0;
     const staleSession = await fetchLocal("/api/operator/session", { headers: { cookie } }); assert.equal(staleSession.status, 401); await staleSession.text();
     await checkCredentials(); cookie = await login();
     for (const [index, stage] of stages.entries()) {
@@ -316,7 +328,7 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
     assert.equal(acknowledged.size, all.length);
     const before = await projection(cookie);
     await stop(child, "SIGKILL"); assert.equal(child.signalCode, "SIGKILL"); auditDurability("after-all-confirmations");
-    child = await start(port, configPath, databasePath, recordMetrics); resumeAt = 0; cookie = await login(); await checkCredentials();
+    child = await start(port, configPath, databasePath, recordMetrics); resumeAt = 0; privateApiResumeAt = 0; cookie = await login(); await checkCredentials();
     const replayStarted = performance.now(); await withMixedReaders(() => deliver(all, { replay: true }), cookie);
     const replayMs = performance.now() - replayStarted;
     assert.deepEqual(await projection(cookie), before, "Full replay must not change counts or immutable histories");
@@ -324,7 +336,7 @@ export async function runColuviLoad({ devices = 300, concurrency = 24, seed = 20
     return { version: 1, recordedAt: new Date().toISOString(), evidence: "LOCAL_HTTP_SQLITE_ONLY", scenario: "SIMULACRO fictitious flood load and crash recovery",
       harnessSha256: createHash("sha256").update(readFileSync(fileURLToPath(import.meta.url))).digest("hex"),
       environment: { node: process.version, platform: process.platform, distro: process.env.WSL_DISTRO_NAME ?? null },
-      configuration: { devices, zones: 3, concurrency, seed, mixed, admissionLimits: limits, enrollment: "trusted fixture provisioning, not HTTP enrollment", silentDevices: devices / 10 },
+      configuration: { devices, zones: 3, concurrency, seed, mixed, admissionLimits: limits, privateApiLimits: { globalRequests: 600, perSourceRequests: 120, windowMs: 60_000 }, enrollment: "trusted fixture provisioning, not HTTP enrollment", silentDevices: devices / 10 },
       measurements: measurements(),
       counts: { uniqueSignedPackets: all.length, stateEvents: stages[0].length + stages[2].length, needsEvents: stages[1].length,
         requested: devices, responded: devices * .9, safe: devices * .4, needsHelp: devices * .5, pending: devices * .1, activeWater: devices * .5, activeTransport: devices * .5 },
