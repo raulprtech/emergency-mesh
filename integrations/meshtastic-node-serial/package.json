@@ -1,0 +1,19 @@
+{
+  "name": "@emergency-mesh/meshtastic-node-serial-bench",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "description": "Provisional two-radio bench harness isolated from the Apache-2.0 Emergency Mesh core",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "contract": "node contract.mjs",
+    "bench": "node bench.mjs"
+  },
+  "dependencies": {
+    "@meshtastic/core": "2.6.7",
+    "@meshtastic/transport-node-serial": "0.0.2"
+  }
+}

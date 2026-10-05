@@ -1,0 +1,2944 @@
+{
+  "version": 1,
+  "status": "PASS",
+  "evidence": "ADDITIONAL_VIRTUAL_REHEARSAL_SEEDS",
+  "runs": [
+    {
+      "version": 1,
+      "kind": "COLUVI_REHEARSAL",
+      "status": "PASS",
+      "seed": 0,
+      "evidence": "VIRTUAL_TIME_REAL_SQLITE",
+      "scenarios": [
+        {
+          "scenario": "INTERMITTENT",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "FIRST_OUTAGE",
+              "virtualMs": 2000,
+              "connectionAvailable": false,
+              "expected": {
+                "responded": 0,
+                "queued": 2
+              },
+              "observed": {
+                "responded": 0,
+                "queued": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_WITH_PENDING",
+              "virtualMs": 7000,
+              "connectionAvailable": false,
+              "expected": {
+                "responded": 0,
+                "queued": 2
+              },
+              "observed": {
+                "responded": 0,
+                "queued": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 7000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "HELP_ENRICHED",
+              "virtualMs": 8000,
+              "connectionAvailable": true,
+              "expected": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "observed": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SECOND_OUTAGE",
+              "virtualMs": 9000,
+              "connectionAvailable": false,
+              "expected": {
+                "queued": 1,
+                "needsHelp": 1
+              },
+              "observed": {
+                "queued": 1,
+                "needsHelp": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SAFE_UPDATE_RECOVERED",
+              "virtualMs": 14000,
+              "connectionAvailable": true,
+              "expected": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "observed": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 4,
+          "duplicateChecks": 4,
+          "restarts": 3,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 2,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 3,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "LATE_RESPONSE",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "UNKNOWN_BEFORE_LATE_RESPONSE",
+              "virtualMs": 21000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 0,
+                "unknown": 3
+              },
+              "observed": {
+                "responded": 0,
+                "unknown": 3
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 25000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 2
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 2,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 2,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 2,
+          "duplicateChecks": 2,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 1,
+            "needsHelp": 1,
+            "pending": 0,
+            "unknown": 1,
+            "late": 2,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 2,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "STATE_CHANGES",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 2000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "HELP_ENRICHED",
+              "virtualMs": 3000,
+              "connectionAvailable": true,
+              "expected": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "observed": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SAFE_UPDATE_RECOVERED",
+              "virtualMs": 4000,
+              "connectionAvailable": true,
+              "expected": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "observed": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 4,
+          "duplicateChecks": 4,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 2,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 3,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "EXPIRED_NOTICE",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 2000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 2,
+          "duplicateChecks": 2,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 1,
+            "needsHelp": 1,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 2,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "NO_RESPONSE",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NO_RESPONSE_AFTER_PROMPT",
+              "virtualMs": 21000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 0,
+                "unknown": 3,
+                "needsHelp": 0
+              },
+              "observed": {
+                "responded": 0,
+                "unknown": 3,
+                "needsHelp": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 3
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 3
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "safe": 0,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 3,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 0,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "safe": 0,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 3,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 0,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 3,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 3,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 0,
+          "duplicateChecks": 0,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 0,
+            "safe": 0,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 3,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 0,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "REORDERED_UPDATES",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SUCCESSOR_BEFORE_PREDECESSOR",
+              "virtualMs": 3000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 1,
+                "safe": 1,
+                "missingLinks": 1,
+                "queued": 2
+              },
+              "observed": {
+                "responded": 1,
+                "safe": 1,
+                "missingLinks": 1,
+                "queued": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 3000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 3,
+          "duplicateChecks": 3,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 2,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 3,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        }
+      ],
+      "limitations": [
+        "Scenario actors, not users or browsers",
+        "Virtual time, not a sustained real-time test",
+        "No HTTP, TLS, Android, radio or battery validation",
+        "Known fixture keys are for simulation only",
+        "UNKNOWN means no response, not danger"
+      ],
+      "sourceUnchanged": true,
+      "startedAt": "2026-10-05T03:48:16.413Z",
+      "completedAt": "2026-10-05T03:48:27.735Z",
+      "wallMs": 11320.913655999999,
+      "provenance": {
+        "baseCommit": "0eb4f761b105c33cbc8d9a49f2da82c5085d6981",
+        "dirtyWorktree": false,
+        "sourceSha256": "27b30fd3f4c028e3f5baa451541440355dbc66a2ff301cc5fdae1b79dd99f7e9"
+      },
+      "environment": {
+        "node": "v24.18.0",
+        "distribution": "Ubuntu"
+      }
+    },
+    {
+      "version": 1,
+      "kind": "COLUVI_REHEARSAL",
+      "status": "PASS",
+      "seed": 4294967295,
+      "evidence": "VIRTUAL_TIME_REAL_SQLITE",
+      "scenarios": [
+        {
+          "scenario": "INTERMITTENT",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "FIRST_OUTAGE",
+              "virtualMs": 2000,
+              "connectionAvailable": false,
+              "expected": {
+                "responded": 0,
+                "queued": 2
+              },
+              "observed": {
+                "responded": 0,
+                "queued": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_WITH_PENDING",
+              "virtualMs": 7000,
+              "connectionAvailable": false,
+              "expected": {
+                "responded": 0,
+                "queued": 2
+              },
+              "observed": {
+                "responded": 0,
+                "queued": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 7000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "HELP_ENRICHED",
+              "virtualMs": 8000,
+              "connectionAvailable": true,
+              "expected": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "observed": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SECOND_OUTAGE",
+              "virtualMs": 9000,
+              "connectionAvailable": false,
+              "expected": {
+                "queued": 1,
+                "needsHelp": 1
+              },
+              "observed": {
+                "queued": 1,
+                "needsHelp": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SAFE_UPDATE_RECOVERED",
+              "virtualMs": 14000,
+              "connectionAvailable": true,
+              "expected": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "observed": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 4,
+          "duplicateChecks": 4,
+          "restarts": 3,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 2,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 3,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "LATE_RESPONSE",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "UNKNOWN_BEFORE_LATE_RESPONSE",
+              "virtualMs": 21000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 0,
+                "unknown": 3
+              },
+              "observed": {
+                "responded": 0,
+                "unknown": 3
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 25000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 2
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 2,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 2,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 2,
+          "duplicateChecks": 2,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 1,
+            "needsHelp": 1,
+            "pending": 0,
+            "unknown": 1,
+            "late": 2,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 2,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "STATE_CHANGES",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 2000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "HELP_ENRICHED",
+              "virtualMs": 3000,
+              "connectionAvailable": true,
+              "expected": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "observed": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SAFE_UPDATE_RECOVERED",
+              "virtualMs": 4000,
+              "connectionAvailable": true,
+              "expected": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "observed": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 4,
+          "duplicateChecks": 4,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 2,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 3,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "EXPIRED_NOTICE",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 2000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 2,
+          "duplicateChecks": 2,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 1,
+            "needsHelp": 1,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 2,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "NO_RESPONSE",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NO_RESPONSE_AFTER_PROMPT",
+              "virtualMs": 21000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 0,
+                "unknown": 3,
+                "needsHelp": 0
+              },
+              "observed": {
+                "responded": 0,
+                "unknown": 3,
+                "needsHelp": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 3
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 3
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "safe": 0,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 3,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 0,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "safe": 0,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 3,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 0,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 3,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 3,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 0,
+          "duplicateChecks": 0,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 0,
+            "safe": 0,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 3,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 0,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "REORDERED_UPDATES",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SUCCESSOR_BEFORE_PREDECESSOR",
+              "virtualMs": 3000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 1,
+                "safe": 1,
+                "missingLinks": 1,
+                "queued": 2
+              },
+              "observed": {
+                "responded": 1,
+                "safe": 1,
+                "missingLinks": 1,
+                "queued": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 3000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 3,
+          "duplicateChecks": 3,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 2,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 3,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        }
+      ],
+      "limitations": [
+        "Scenario actors, not users or browsers",
+        "Virtual time, not a sustained real-time test",
+        "No HTTP, TLS, Android, radio or battery validation",
+        "Known fixture keys are for simulation only",
+        "UNKNOWN means no response, not danger"
+      ],
+      "sourceUnchanged": true,
+      "startedAt": "2026-10-05T03:48:27.857Z",
+      "completedAt": "2026-10-05T03:48:33.314Z",
+      "wallMs": 5456.041368,
+      "provenance": {
+        "baseCommit": "0eb4f761b105c33cbc8d9a49f2da82c5085d6981",
+        "dirtyWorktree": false,
+        "sourceSha256": "27b30fd3f4c028e3f5baa451541440355dbc66a2ff301cc5fdae1b79dd99f7e9"
+      },
+      "environment": {
+        "node": "v24.18.0",
+        "distribution": "Ubuntu"
+      }
+    },
+    {
+      "version": 1,
+      "kind": "COLUVI_REHEARSAL",
+      "status": "PASS",
+      "seed": 305419896,
+      "evidence": "VIRTUAL_TIME_REAL_SQLITE",
+      "scenarios": [
+        {
+          "scenario": "INTERMITTENT",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "FIRST_OUTAGE",
+              "virtualMs": 2000,
+              "connectionAvailable": false,
+              "expected": {
+                "responded": 0,
+                "queued": 2
+              },
+              "observed": {
+                "responded": 0,
+                "queued": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_WITH_PENDING",
+              "virtualMs": 7000,
+              "connectionAvailable": false,
+              "expected": {
+                "responded": 0,
+                "queued": 2
+              },
+              "observed": {
+                "responded": 0,
+                "queued": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 7000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "HELP_ENRICHED",
+              "virtualMs": 8000,
+              "connectionAvailable": true,
+              "expected": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "observed": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SECOND_OUTAGE",
+              "virtualMs": 9000,
+              "connectionAvailable": false,
+              "expected": {
+                "queued": 1,
+                "needsHelp": 1
+              },
+              "observed": {
+                "queued": 1,
+                "needsHelp": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SAFE_UPDATE_RECOVERED",
+              "virtualMs": 14000,
+              "connectionAvailable": true,
+              "expected": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "observed": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 4,
+          "duplicateChecks": 4,
+          "restarts": 3,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 2,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 3,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "LATE_RESPONSE",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "UNKNOWN_BEFORE_LATE_RESPONSE",
+              "virtualMs": 21000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 0,
+                "unknown": 3
+              },
+              "observed": {
+                "responded": 0,
+                "unknown": 3
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 25000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 2
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 2,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 2,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 2,
+          "duplicateChecks": 2,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 1,
+            "needsHelp": 1,
+            "pending": 0,
+            "unknown": 1,
+            "late": 2,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 2,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "STATE_CHANGES",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 2000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "HELP_ENRICHED",
+              "virtualMs": 3000,
+              "connectionAvailable": true,
+              "expected": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "observed": {
+                "water": 1,
+                "needsHelp": 1,
+                "responded": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SAFE_UPDATE_RECOVERED",
+              "virtualMs": 4000,
+              "connectionAvailable": true,
+              "expected": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "observed": {
+                "safe": 2,
+                "needsHelp": 0,
+                "water": 0,
+                "histories": 3,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 4,
+          "duplicateChecks": 4,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 2,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 3,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "EXPIRED_NOTICE",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 2000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 1,
+                "needsHelp": 1,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 2,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 2,
+          "duplicateChecks": 2,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 1,
+            "needsHelp": 1,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 2,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "NO_RESPONSE",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NO_RESPONSE_AFTER_PROMPT",
+              "virtualMs": 21000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 0,
+                "unknown": 3,
+                "needsHelp": 0
+              },
+              "observed": {
+                "responded": 0,
+                "unknown": 3,
+                "needsHelp": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 3
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 3
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "safe": 0,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 3,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 0,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "safe": 0,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 3,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 0,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 3,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 3,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 0,
+          "duplicateChecks": 0,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 0,
+            "safe": 0,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 3,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 0,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        },
+        {
+          "scenario": "REORDERED_UPDATES",
+          "status": "PASS",
+          "timeline": [
+            {
+              "phase": "ISSUED",
+              "virtualMs": 0,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 0,
+                "pending": 3,
+                "noticeAvailable": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "SUCCESSOR_BEFORE_PREDECESSOR",
+              "virtualMs": 3000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 1,
+                "safe": 1,
+                "missingLinks": 1,
+                "queued": 2
+              },
+              "observed": {
+                "responded": 1,
+                "safe": 1,
+                "missingLinks": 1,
+                "queued": 2
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "INITIAL_DELIVERY",
+              "virtualMs": 3000,
+              "connectionAvailable": true,
+              "expected": {
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "observed": {
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "queued": 0,
+                "missingLinks": 0,
+                "late": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "NOTICE_EXPIRED",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "observed": {
+                "noticeAvailable": 0,
+                "unknown": 1
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "RESTART_PRESERVES_PROJECTION",
+              "virtualMs": 31000,
+              "connectionAvailable": true,
+              "expected": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "observed": {
+                "requested": 3,
+                "responded": 2,
+                "safe": 2,
+                "needsHelp": 0,
+                "pending": 0,
+                "unknown": 1,
+                "late": 0,
+                "water": 0,
+                "queued": 0,
+                "noticeAvailable": 0,
+                "histories": 3,
+                "missingLinks": 0
+              },
+              "status": "PASS"
+            },
+            {
+              "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+              "virtualMs": 61000,
+              "connectionAvailable": true,
+              "expected": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "observed": {
+                "pending": 0,
+                "unknown": 1,
+                "queued": 0
+              },
+              "status": "PASS"
+            }
+          ],
+          "acceptedPackets": 3,
+          "duplicateChecks": 3,
+          "restarts": 1,
+          "final": {
+            "requested": 3,
+            "responded": 2,
+            "safe": 2,
+            "needsHelp": 0,
+            "pending": 0,
+            "unknown": 1,
+            "late": 0,
+            "water": 0,
+            "queued": 0,
+            "noticeAvailable": 0,
+            "histories": 3,
+            "missingLinks": 0
+          },
+          "noticeCounts": {
+            "requested": 3,
+            "received": 2,
+            "shown": 2
+          },
+          "simulationOnly": true
+        }
+      ],
+      "limitations": [
+        "Scenario actors, not users or browsers",
+        "Virtual time, not a sustained real-time test",
+        "No HTTP, TLS, Android, radio or battery validation",
+        "Known fixture keys are for simulation only",
+        "UNKNOWN means no response, not danger"
+      ],
+      "sourceUnchanged": true,
+      "startedAt": "2026-10-05T03:48:33.444Z",
+      "completedAt": "2026-10-05T03:48:38.514Z",
+      "wallMs": 5068.891239,
+      "provenance": {
+        "baseCommit": "0eb4f761b105c33cbc8d9a49f2da82c5085d6981",
+        "dirtyWorktree": false,
+        "sourceSha256": "27b30fd3f4c028e3f5baa451541440355dbc66a2ff301cc5fdae1b79dd99f7e9"
+      },
+      "environment": {
+        "node": "v24.18.0",
+        "distribution": "Ubuntu"
+      }
+    }
+  ]
+}

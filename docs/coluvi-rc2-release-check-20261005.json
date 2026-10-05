@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "status": "PASS",
+  "scope": "LOCAL_SOFTWARE_RC2",
+  "tests": 231,
+  "mixedDevices": [
+    300,
+    990
+  ],
+  "observedMs": 10855935.782396,
+  "clocks": {
+    "status": "DIVERGENT_BOTH_EXCEED_MINIMUM",
+    "wallMs": 10911947,
+    "monotonicMs": 10855935.782396,
+    "conservativeMs": 10855935.782396,
+    "wallMinusMonotonicMs": 56011.21760400012,
+    "maxClockDifferencePerIntervalMs": 2436.659536000341,
+    "verifiedRounds": 167
+  },
+  "soakRounds": 167,
+  "backendRestarts": 8,
+  "acknowledgedPackets": 13527,
+  "sourceSha256": "8d8707233e0305818693282e5aba958b7e0abae6bef7f89379d67296e4917f00",
+  "workloadSha256": "825b892955f440c96e80978391bf2c8a4a221177261a7fb171d673bfac275dd9",
+  "physicalAndroid": "PENDING",
+  "originalTimeoutCause": "NOT_ESTABLISHED",
+  "limitations": [
+    "Consistency checks of local reports, not authenticated third-party attestation",
+    "PASS is not guaranteed capacity or production emergency certification",
+    "Read the separate failed contention profiles before setting operational limits",
+    "UTC and monotonic clocks diverged; both exceed three hours and each recorded interval was checked. Clock divergence cause is not established."
+  ],
+  "checkedAt": "2026-10-05T06:20:09.547Z",
+  "headCommit": "5bb4ebebce1489c915f6620d2a858fc98ca9d470",
+  "evidence": {
+    "qualification": {
+      "sha256": "e70298282c00d648c7cb04fb5066ef0aee3211e2ebae7e42021f075fc7ee609d",
+      "baseCommit": "5bb4ebebce1489c915f6620d2a858fc98ca9d470"
+    },
+    "mixed300": {
+      "sha256": "0b01cd6982ebe0926f8a7ce23a94ae4b35a948020d38e730c0d4490cbada9012",
+      "baseCommit": "c7f6ce9864e84435153e7639d503192256ea82d4"
+    },
+    "mixed990": {
+      "sha256": "c07b1dc2a2bf0f0cb1b0fb9de7dfc65f6b48d86d421301e9d2c6f5f0d55e71a4",
+      "baseCommit": "c7f6ce9864e84435153e7639d503192256ea82d4"
+    },
+    "soak": {
+      "sha256": "b256e49f778be87570bfbf06d380050f28f7ff7ebc0989b02bc38902358ded17",
+      "baseCommit": "c7f6ce9864e84435153e7639d503192256ea82d4"
+    },
+    "soakProgress": {
+      "sha256": "d3dab7b43812f5dae2c59b1786f0e36dc7e57f8515273e9660a9079fdb8c09e2"
+    }
+  }
+}

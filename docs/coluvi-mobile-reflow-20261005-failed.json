@@ -1,0 +1,775 @@
+{
+  "version": 1,
+  "status": "FAIL",
+  "startedAt": "2026-10-05T03:25:17.751Z",
+  "completedAt": "2026-10-05T03:25:22.447Z",
+  "provenance": {
+    "baseCommit": "fc6ee3cb1dd706a6700d7f0a84e247465c5a31c7",
+    "dirtyWorktree": true,
+    "sourceSha256": "fc133466ba7f3e5b223267a34e7e671369a2c194b70ef600b36af6b5d6761cbb",
+    "sourceFiles": 172
+  },
+  "cases": [
+    {
+      "width": 320,
+      "textScale": 1,
+      "language": "es",
+      "layout": {
+        "width": 320,
+        "horizontalOverflow": false,
+        "overflow": [],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "es",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "textScale": 1,
+      "language": "en",
+      "layout": {
+        "width": 320,
+        "horizontalOverflow": false,
+        "overflow": [],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "en",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "PASS"
+    },
+    {
+      "width": 320,
+      "textScale": 2,
+      "language": "es",
+      "layout": {
+        "width": 546,
+        "horizontalOverflow": true,
+        "overflow": [
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 360,
+            "right": 380,
+            "left": 20
+          },
+          {
+            "tag": "H1",
+            "id": "",
+            "width": 360,
+            "right": 380,
+            "left": 20
+          },
+          {
+            "tag": "BUTTON",
+            "id": "close-composer",
+            "width": 117,
+            "right": 403,
+            "left": 287
+          },
+          {
+            "tag": "FIELDSET",
+            "id": "needs-field",
+            "width": 314,
+            "right": 356,
+            "left": 42
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 262,
+            "right": 330,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 262,
+            "right": 330,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 262,
+            "right": 330,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 262,
+            "right": 330,
+            "left": 68
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "width": 234,
+            "right": 330,
+            "left": 96
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 262,
+            "right": 330,
+            "left": 68
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "width": 236,
+            "right": 330,
+            "left": 94
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 262,
+            "right": 330,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 262,
+            "right": 330,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 262,
+            "right": 330,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 262,
+            "right": 330,
+            "left": 68
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "width": 226,
+            "right": 322,
+            "left": 96
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 318,
+            "right": 358,
+            "left": 40
+          },
+          {
+            "tag": "TEXTAREA",
+            "id": "short-message",
+            "width": 318,
+            "right": 358,
+            "left": 40
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 318,
+            "right": 358,
+            "left": 40
+          },
+          {
+            "tag": "BUTTON",
+            "id": "get-location",
+            "width": 318,
+            "right": 358,
+            "left": 40
+          },
+          {
+            "tag": "SMALL",
+            "id": "",
+            "width": 318,
+            "right": 358,
+            "left": 40
+          },
+          {
+            "tag": "DIV",
+            "id": "form-error",
+            "width": 318,
+            "right": 358,
+            "left": 40
+          },
+          {
+            "tag": "BUTTON",
+            "id": "",
+            "width": 318,
+            "right": 358,
+            "left": 40
+          },
+          {
+            "tag": "H2",
+            "id": "inbox-title",
+            "width": 298,
+            "right": 338,
+            "left": 40
+          },
+          {
+            "tag": "BUTTON",
+            "id": "pilot-refresh",
+            "width": 196,
+            "right": 546,
+            "left": 350
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 287,
+            "right": 327,
+            "left": 40
+          },
+          {
+            "tag": "H2",
+            "id": "outbox-title",
+            "width": 287,
+            "right": 327,
+            "left": 40
+          },
+          {
+            "tag": "BUTTON",
+            "id": "sync",
+            "width": 200,
+            "right": 539,
+            "left": 339
+          }
+        ],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "es",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "FAIL",
+      "problems": [
+        "HORIZONTAL_OVERFLOW"
+      ]
+    },
+    {
+      "width": 320,
+      "textScale": 2,
+      "language": "en",
+      "layout": {
+        "width": 494,
+        "horizontalOverflow": true,
+        "overflow": [
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 456,
+            "right": 476,
+            "left": 20
+          },
+          {
+            "tag": "H1",
+            "id": "",
+            "width": 456,
+            "right": 476,
+            "left": 20
+          },
+          {
+            "tag": "BUTTON",
+            "id": "close-composer",
+            "width": 103,
+            "right": 420,
+            "left": 317
+          },
+          {
+            "tag": "FIELDSET",
+            "id": "needs-field",
+            "width": 332,
+            "right": 374,
+            "left": 42
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 280,
+            "right": 348,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 280,
+            "right": 348,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 280,
+            "right": 348,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 280,
+            "right": 348,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 280,
+            "right": 348,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 280,
+            "right": 348,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 280,
+            "right": 348,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 280,
+            "right": 348,
+            "left": 68
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 280,
+            "right": 348,
+            "left": 68
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "width": 252,
+            "right": 348,
+            "left": 96
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "TEXTAREA",
+            "id": "short-message",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "BUTTON",
+            "id": "get-location",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "SMALL",
+            "id": "",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "DIV",
+            "id": "form-error",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "BUTTON",
+            "id": "",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "BUTTON",
+            "id": "pilot-refresh",
+            "width": 164,
+            "right": 467,
+            "left": 303
+          },
+          {
+            "tag": "BUTTON",
+            "id": "sync",
+            "width": 217,
+            "right": 468,
+            "left": 251
+          }
+        ],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "en",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "FAIL",
+      "problems": [
+        "HORIZONTAL_OVERFLOW"
+      ]
+    },
+    {
+      "width": 360,
+      "textScale": 1,
+      "language": "es",
+      "layout": {
+        "width": 360,
+        "horizontalOverflow": false,
+        "overflow": [],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "es",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "textScale": 1,
+      "language": "en",
+      "layout": {
+        "width": 360,
+        "horizontalOverflow": false,
+        "overflow": [],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "en",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "PASS"
+    },
+    {
+      "width": 360,
+      "textScale": 2,
+      "language": "es",
+      "layout": {
+        "width": 546,
+        "horizontalOverflow": true,
+        "overflow": [
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 360,
+            "right": 380,
+            "left": 20
+          },
+          {
+            "tag": "H1",
+            "id": "",
+            "width": 360,
+            "right": 380,
+            "left": 20
+          },
+          {
+            "tag": "BUTTON",
+            "id": "close-composer",
+            "width": 117,
+            "right": 403,
+            "left": 287
+          },
+          {
+            "tag": "BUTTON",
+            "id": "pilot-refresh",
+            "width": 196,
+            "right": 546,
+            "left": 350
+          },
+          {
+            "tag": "BUTTON",
+            "id": "sync",
+            "width": 200,
+            "right": 539,
+            "left": 339
+          }
+        ],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "es",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "FAIL",
+      "problems": [
+        "HORIZONTAL_OVERFLOW"
+      ]
+    },
+    {
+      "width": 360,
+      "textScale": 2,
+      "language": "en",
+      "layout": {
+        "width": 495,
+        "horizontalOverflow": true,
+        "overflow": [
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 456,
+            "right": 476,
+            "left": 20
+          },
+          {
+            "tag": "H1",
+            "id": "",
+            "width": 456,
+            "right": 476,
+            "left": 20
+          },
+          {
+            "tag": "BUTTON",
+            "id": "close-composer",
+            "width": 103,
+            "right": 420,
+            "left": 317
+          },
+          {
+            "tag": "FIELDSET",
+            "id": "needs-field",
+            "width": 332,
+            "right": 374,
+            "left": 42
+          },
+          {
+            "tag": "LABEL",
+            "id": "",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "TEXTAREA",
+            "id": "short-message",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "BUTTON",
+            "id": "get-location",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "SMALL",
+            "id": "",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "DIV",
+            "id": "form-error",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "BUTTON",
+            "id": "",
+            "width": 336,
+            "right": 376,
+            "left": 40
+          },
+          {
+            "tag": "BUTTON",
+            "id": "pilot-refresh",
+            "width": 164,
+            "right": 467,
+            "left": 303
+          },
+          {
+            "tag": "BUTTON",
+            "id": "sync",
+            "width": 217,
+            "right": 468,
+            "left": 251
+          }
+        ],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "en",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "FAIL",
+      "problems": [
+        "HORIZONTAL_OVERFLOW"
+      ]
+    },
+    {
+      "width": 412,
+      "textScale": 1,
+      "language": "es",
+      "layout": {
+        "width": 412,
+        "horizontalOverflow": false,
+        "overflow": [],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "es",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "PASS"
+    },
+    {
+      "width": 412,
+      "textScale": 1,
+      "language": "en",
+      "layout": {
+        "width": 412,
+        "horizontalOverflow": false,
+        "overflow": [],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "en",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "PASS"
+    },
+    {
+      "width": 412,
+      "textScale": 2,
+      "language": "es",
+      "layout": {
+        "width": 546,
+        "horizontalOverflow": true,
+        "overflow": [
+          {
+            "tag": "BUTTON",
+            "id": "pilot-refresh",
+            "width": 196,
+            "right": 546,
+            "left": 350
+          },
+          {
+            "tag": "BUTTON",
+            "id": "sync",
+            "width": 200,
+            "right": 539,
+            "left": 339
+          }
+        ],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "es",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "FAIL",
+      "problems": [
+        "HORIZONTAL_OVERFLOW"
+      ]
+    },
+    {
+      "width": 412,
+      "textScale": 2,
+      "language": "en",
+      "layout": {
+        "width": 494,
+        "horizontalOverflow": true,
+        "overflow": [
+          {
+            "tag": "DIV",
+            "id": "",
+            "width": 456,
+            "right": 476,
+            "left": 20
+          },
+          {
+            "tag": "H1",
+            "id": "",
+            "width": 456,
+            "right": 476,
+            "left": 20
+          },
+          {
+            "tag": "BUTTON",
+            "id": "close-composer",
+            "width": 103,
+            "right": 420,
+            "left": 317
+          },
+          {
+            "tag": "BUTTON",
+            "id": "pilot-refresh",
+            "width": 164,
+            "right": 467,
+            "left": 303
+          },
+          {
+            "tag": "BUTTON",
+            "id": "sync",
+            "width": 217,
+            "right": 468,
+            "left": 251
+          }
+        ],
+        "undersized": [],
+        "composerFocused": true,
+        "diagnosticPairs": 16,
+        "language": "en",
+        "focusRestored": true
+      },
+      "unnamedInteractive": [],
+      "status": "FAIL",
+      "problems": [
+        "HORIZONTAL_OVERFLOW"
+      ]
+    }
+  ],
+  "message": "Small-screen checks failed; inspect case evidence"
+}

@@ -1,0 +1,308 @@
+{
+  "version": 1,
+  "status": "PASS",
+  "startedAt": "2026-10-04T22:53:39.903Z",
+  "completedAt": "2026-10-04T22:57:19.574Z",
+  "wallMs": 223296.83056600002,
+  "provenance": {
+    "baseCommit": "878a37c3d18957f39f06d71bf897eaa21ed8c0e7",
+    "dirtyWorktree": false,
+    "sourceSha256": "534f3f7824c6ded247ed260197236532eabbe08473d217b88eda2c43fc663411",
+    "sourceFiles": 157
+  },
+  "environment": {
+    "node": "v24.18.0",
+    "distro": "Ubuntu"
+  },
+  "steps": [
+    {
+      "name": "tests",
+      "code": 0,
+      "signal": null,
+      "wallMs": 73178.337927,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    },
+    {
+      "name": "integrated-browser",
+      "code": 0,
+      "signal": null,
+      "wallMs": 15989.796359999993,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    },
+    {
+      "name": "map-browser",
+      "code": 0,
+      "signal": null,
+      "wallMs": 3819.38751700001,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    },
+    {
+      "name": "load-300",
+      "code": 0,
+      "signal": null,
+      "wallMs": 130295.57520599998,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    }
+  ],
+  "tests": {
+    "tests": 204,
+    "pass": 204,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "integrated": {
+    "scenario": "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico",
+    "integratedMapEvidence": {
+      "sameBackendAndOrigin": true,
+      "ordinaryPublicReports": 6,
+      "publicGroups": 1,
+      "offlineSnapshotDuringPrivateResponse": true,
+      "privateUpdatesDoNotChangePublicCounts": true,
+      "reloadsRequireNewDocument": true,
+      "commandControlsBlockedDuringPolling": true
+    },
+    "migration": {
+      "preservedIdentity": true,
+      "preservedReport": true,
+      "missingIsUndefined": true
+    },
+    "migrationV2": {
+      "preservedCommand": true,
+      "preservedReceipt": true,
+      "emptyNotices": true,
+      "version": 3
+    },
+    "indexedDbConcurrency": {
+      "stateWinners": 1,
+      "needsWinners": 1,
+      "states": 2,
+      "needs": 1,
+      "outbox": 3,
+      "firstPreserved": true
+    },
+    "enrolledThroughUi": true,
+    "issuedThroughUi": true,
+    "noticeIssuedThroughUi": true,
+    "noticeEvidence": {
+      "requested": 1,
+      "received": 1,
+      "shown": 1
+    },
+    "needsEvidence": {
+      "counts": {
+        "WATER": 1,
+        "FOOD": 0,
+        "MEDICATION": 0,
+        "MEDICAL_CARE": 0,
+        "EXTRACTION": 0,
+        "SHELTER": 0,
+        "ENERGY": 0,
+        "TRANSPORT": 1,
+        "COMMUNICATION": 0
+      },
+      "current": {
+        "categories": [
+          "WATER",
+          "TRANSPORT"
+        ],
+        "peopleAffected": 3,
+        "eventId": "d5867c5e-35ca-489a-ac27-e55a823cf374"
+      },
+      "history": 1
+    },
+    "updateEvidence": {
+      "counts": {
+        "requested": 1,
+        "received": 1,
+        "shown": 1,
+        "responded": 1,
+        "safe": 1,
+        "needsHelp": 0,
+        "unknown": 0,
+        "pending": 0,
+        "late": 0
+      },
+      "needs": null,
+      "needsCounts": {
+        "WATER": 0,
+        "FOOD": 0,
+        "MEDICATION": 0,
+        "MEDICAL_CARE": 0,
+        "EXTRACTION": 0,
+        "SHELTER": 0,
+        "ENERGY": 0,
+        "TRANSPORT": 0,
+        "COMMUNICATION": 0
+      },
+      "history": 2,
+      "needsHistory": 1,
+      "link": "LINKED"
+    },
+    "revocationEvidence": {
+      "inboxStatus": 401,
+      "packetStatus": 400,
+      "noFalseEvidence": true
+    },
+    "revocationPreservedHistory": {
+      "requested": 1,
+      "history": 2
+    },
+    "noticeSurvivedOfflineReopen": true,
+    "noticeTextNotHtml": true,
+    "expiredNoticeLabeled": true,
+    "backendStoppedWhileOffline": true,
+    "repeatedPollPreservesPromptDom": true,
+    "offlineQueued": "QUEUED",
+    "survivedWindowCloseAndReopen": true,
+    "reconnectedState": "SYNCED",
+    "backendEvidence": "BACKEND",
+    "privateEvidence": {
+      "counts": {
+        "requested": 1,
+        "received": 1,
+        "shown": 1,
+        "responded": 1,
+        "safe": 0,
+        "needsHelp": 1,
+        "unknown": 0,
+        "pending": 0,
+        "late": 0
+      },
+      "histories": [
+        1
+      ]
+    },
+    "duplicatePreserved": true,
+    "cacheSafe": true,
+    "publicPrivacy": true,
+    "logoutCleared": true,
+    "constrained360px": true,
+    "unnamedOperatorControls": 0,
+    "legacyOfflineRegression": true,
+    "mobileAccessibilityRegression": true,
+    "diagnostics": []
+  },
+  "map": {
+    "status": "PASS",
+    "reports": 24,
+    "publicGroups": 4,
+    "mappedAreas": 3,
+    "basemapCountries": 177,
+    "offlineAfterAbruptStop": true,
+    "expiredSnapshotRejected": true,
+    "privateFieldsExcluded": true,
+    "cachedApiPaths": 0,
+    "mobileWidth": 360,
+    "unnamedControls": 0,
+    "screenshot": null
+  },
+  "load": {
+    "version": 1,
+    "recordedAt": "2026-10-04T22:57:19.496Z",
+    "evidence": "LOCAL_HTTP_SQLITE_ONLY",
+    "scenario": "SIMULACRO fictitious flood load and crash recovery",
+    "harnessSha256": "d595a230d331294a6d76cdd986f673bad9a29c56d40325b39851362240f48ab9",
+    "environment": {
+      "node": "v24.18.0",
+      "platform": "linux",
+      "distro": "Ubuntu"
+    },
+    "configuration": {
+      "devices": 300,
+      "zones": 3,
+      "concurrency": 24,
+      "seed": 20261004,
+      "admissionLimits": {
+        "windowMs": 60000,
+        "globalRequests": 600,
+        "identityRequests": 60,
+        "trackedIdentities": 10000
+      },
+      "enrollment": "trusted fixture provisioning, not HTTP enrollment",
+      "silentDevices": 30
+    },
+    "counts": {
+      "uniqueSignedPackets": 810,
+      "stateEvents": 540,
+      "needsEvents": 270,
+      "requested": 300,
+      "responded": 270,
+      "safe": 120,
+      "needsHelp": 150,
+      "pending": 30,
+      "activeWater": 150,
+      "activeTransport": 150
+    },
+    "http": {
+      "accepted": 809,
+      "duplicates": 811,
+      "rateLimited": 48,
+      "interruptedRequests": 23,
+      "maximumInFlight": 24,
+      "requestsOutstandingAtKill": 23,
+      "fullReplayDuplicates": 810
+    },
+    "crashes": [
+      {
+        "label": "during-concurrent-updates",
+        "signal": "SIGKILL",
+        "acknowledgedVerified": 12,
+        "persisted": 13,
+        "committedWithoutObservedAck": 1,
+        "integrity": "ok",
+        "foreignKeyViolations": 0
+      },
+      {
+        "label": "after-all-confirmations",
+        "signal": "SIGKILL",
+        "acknowledgedVerified": 810,
+        "persisted": 810,
+        "committedWithoutObservedAck": 0,
+        "integrity": "ok",
+        "foreignKeyViolations": 0
+      }
+    ],
+    "checks": {
+      "allAcknowledgedReportsDurable": true,
+      "immutableHistoryAfterReplay": true,
+      "allRecipientPagesVerified": true,
+      "missingPredecessorsExplicitBeforeArrival": true,
+      "independentlyArrivingNeedsVerified": true,
+      "invalidPacketsRejectedWithoutAck": 2,
+      "privateReportsExcludedFromPublicMap": true,
+      "sampledCredentialsSurviveRestarts": 3,
+      "operatorSessionInvalidated": true
+    },
+    "timing": {
+      "wallMs": 130093.892978,
+      "setupMs": 4278.970192,
+      "replayMs": 61568.13242299999,
+      "successfulRequestMs": {
+        "samples": 1620,
+        "p50": 75.39042399999744,
+        "p95": 247.46829400000024,
+        "maximum": 2000.282607
+      }
+    },
+    "limitations": [
+      "Synthetic Node clients, not simultaneous PWA instances or physical Android phones",
+      "Loopback HTTP; no LAN, Internet, TLS, radio, range or battery measurement",
+      "SIGKILL of backend process, not host power loss or disk failure",
+      "Client ledger remains in parent memory; not proof of client crash recovery",
+      "Successful request timings exclude queue and Retry-After waiting; wall time includes them",
+      "Seed fixes fixture identities and scheduling shuffle, not OS timing or the crash commit boundary",
+      "No operational notices or HTTP enrollment throughput measured"
+    ]
+  },
+  "limitations": [
+    "Software qualification in Ubuntu WSL and loopback Chromium, not physical Android/LAN/radio validation",
+    "Not a production certification or guarantee of emergency assistance"
+  ]
+}
+

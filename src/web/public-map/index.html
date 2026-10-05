@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Coluvi · Mapa público</title>
+  <link rel="icon" href="/mobile/icon.svg"><link rel="stylesheet" href="/map/styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Saltar al contenido</a>
+  <header><div><strong class="brand">COLUVI</strong> <span class="tag">SIMULACRO</span><p>Información comunitaria · vista pública</p></div><nav aria-label="Aplicaciones"><a href="/mobile/">Mi reporte</a><a href="/command-center/">Centro de mando</a></nav></header>
+  <main id="main">
+    <h1>Reportes por área</h1>
+    <p class="intro">Ubicaciones aproximadas y grupos de reportes. Los colores indican volumen de reportes publicados, no inundaciones, personas ni asistencia confirmada.</p>
+    <div class="connection"><p id="status" role="status">Cargando vista pública…</p><button id="refresh" type="button">Actualizar</button></div>
+    <p id="privacy" class="muted"></p>
+    <section aria-labelledby="filters-title" class="panel"><h2 id="filters-title">Explorar la información publicada</h2>
+      <div class="filters">
+        <label>Necesidad<select id="need"><option value="">Todas</option></select></label>
+        <label>Intervalo<select id="bucket"><option value="">Todos</option></select></label>
+        <label>Área<select id="zone"><option value="">Todas</option></select></label>
+      </div>
+      <p class="muted">Los filtros no consultan reportes personales. «No publicado» protege desgloses y no significa cero; esos grupos no aparecen al filtrar por una necesidad.</p>
+    </section>
+    <section class="panel map-panel" aria-labelledby="map-title">
+      <h2 id="map-title">Mapa geográfico</h2><p id="map-summary"></p>
+      <div class="map-controls" aria-label="Controles del mapa">
+        <button id="home" type="button">Península</button><button id="mexico" type="button">México</button><button id="fit" type="button">Ver reportes</button>
+        <button id="zoom-in" type="button" aria-label="Acercar mapa">+</button><button id="zoom-out" type="button" aria-label="Alejar mapa">−</button>
+        <button data-pan="north" type="button" aria-label="Mover mapa al norte">↑</button><button data-pan="west" type="button" aria-label="Mover mapa al oeste">←</button><button data-pan="east" type="button" aria-label="Mover mapa al este">→</button><button data-pan="south" type="button" aria-label="Mover mapa al sur">↓</button>
+      </div>
+      <svg id="map" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="svg-title svg-description">
+        <title id="svg-title">Mapa de grupos de reportes</title><desc id="svg-description">Áreas aproximadas sobre cartografía local. La misma información está disponible en la lista de áreas situada debajo.</desc>
+        <g id="land"></g><g id="drill-zones"></g><g id="cells"></g>
+      </svg>
+      <ul class="legend" aria-label="Leyenda"><li><span class="swatch volume-low"></span>1–9 reportes</li><li><span class="swatch volume-medium"></span>10–19 reportes</li><li><span class="swatch volume-high"></span>20 o más</li><li><span class="swatch fictional"></span>Zona ficticia de simulacro</li></ul>
+      <p id="map-selection" role="status"></p>
+      <p id="basemap-status" class="muted">Cartografía local de <a href="https://www.naturalearthdata.com/about/terms-of-use/" rel="noreferrer">Natural Earth</a>, dominio público. Vista general, no apta para navegación. Las zonas de simulacro no identifican refugios reales.</p>
+    </section>
+    <section aria-labelledby="list-title"><h2 id="list-title">Áreas e intervalos</h2><p id="list-summary"></p><div id="areas" class="area-grid"></div><button id="more" type="button" hidden>Mostrar más áreas</button></section>
+    <footer><p id="saved-status"></p><button id="clear-snapshot" type="button">Borrar vista guardada</button><p class="muted">Se guarda únicamente esta proyección pública, durante un máximo de 24 horas. Los check-ins, avisos y datos privados del centro de mando no forman parte del mapa. La primera carga requiere conexión al servidor.</p></footer>
+  </main>
+  <script type="module" src="/map/app.js"></script>
+</body>
+</html>

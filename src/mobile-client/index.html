@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#9e2a2b">
   <title>Emergency Mesh</title>
   <link rel="manifest" href="/mobile/manifest.webmanifest">
+  <link rel="icon" href="/mobile/icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/mobile/styles.css">
 </head>
 <body>
@@ -20,6 +21,7 @@
   </header>
 
   <main id="main-content">
+    <p id="client-problem" role="alert" class="error"></p>
     <section class="warning" aria-label="Aviso importante" data-i18n-aria-label="warningLabel">
       <span data-i18n="warningPrefix">Este sistema intenta transportar tu reporte.</span>
       <strong data-i18n="warningStrong">No garantiza entrega, atención ni que la ayuda esté en camino.</strong>
@@ -77,11 +79,44 @@
       </form>
     </section>
 
+    <section class="panel" aria-labelledby="inbox-title">
+      <div class="panel-heading"><h2 id="inbox-title" data-i18n="pilotInbox">Solicitudes del centro</h2><button id="pilot-refresh" class="outline" data-i18n="pilotRefresh">Consultar solicitudes</button></div>
+      <p data-i18n="pilotLimits" class="muted">SIMULACRO. Recibe solicitudes solo mientras esta aplicación esté abierta y tenga una ruta al centro.</p>
+      <p id="pilot-status" role="status"></p>
+      <div id="inbox-list" aria-live="polite"></div>
+      <h3 data-i18n="noticeInbox">Avisos de simulacro</h3>
+      <p data-i18n="noticeLimits" class="muted">La firma identifica al emisor autorizado del piloto, no certifica una autoridad oficial ni garantiza que el contenido sea verdadero.</p>
+      <div id="notices-list" aria-live="polite"></div>
+      <details id="pilot-setup">
+        <summary data-i18n="pilotSetup">Inscribirme en el piloto Coluvi</summary>
+        <p data-i18n="pilotTrustHelp">Importa únicamente mobile-trust.json y verifica la huella de la autoridad por otro canal. No importes la configuración privada ni la contraseña del operador.</p>
+        <form id="pilot-enrollment-form">
+          <label><span data-i18n="pilotTrustFile">Archivo público de confianza</span><input id="pilot-trust-file" type="file" accept="application/json,.json" required></label>
+          <label><span data-i18n="pilotFingerprint">Huella SHA-256 de la autoridad verificada</span><input id="pilot-fingerprint" autocomplete="off" autocapitalize="none" spellcheck="false" minlength="64" maxlength="64" required></label>
+          <label><span data-i18n="pilotZone">Zona ficticia de participación</span><input id="pilot-zone" autocomplete="off" maxlength="80" required></label>
+          <label><span data-i18n="pilotCode">Código de inscripción</span><input id="pilot-code" type="password" autocomplete="off" maxlength="512" required></label>
+          <label class="pilot-consent"><input id="pilot-consent" type="checkbox" required><span data-i18n="pilotConsent">Acepto participar en este simulacro con mi identidad pseudónima, sin GPS ni datos personales en el check-in.</span></label>
+          <button id="pilot-enroll" type="submit" class="submit" data-i18n="pilotEnroll">Verificar e inscribirme</button>
+        </form>
+      </details>
+    </section>
+
     <section class="outbox" aria-labelledby="outbox-title">
       <div class="panel-heading"><div><span class="eyebrow" data-i18n="device">Dispositivo</span><h2 id="outbox-title" data-i18n="savedReports">Reportes guardados</h2></div><button id="sync" class="outline" data-i18n="sync">Intentar sincronizar</button></div>
       <p id="identity-status" class="muted"></p>
       <div id="outbox-list" aria-live="polite"></div>
       <button id="rotate-identity" class="quiet" data-i18n="rotateIdentity">Rotar identidad pseudónima</button>
+    </section>
+    <section class="panel" aria-labelledby="diagnostics-title">
+      <details id="diagnostics-panel">
+        <summary id="diagnostics-title" data-i18n="diagnosticsTitle">Diagnóstico del dispositivo</summary>
+        <p class="muted" data-i18n="diagnosticsHelp">Comprobación local. La red disponible no demuestra acceso al centro. La confirmación no significa que haya ayuda en camino.</p>
+        <button id="diagnostics-refresh" class="outline" data-i18n="diagnosticsRefresh">Actualizar y comprobar servidor</button>
+        <button id="diagnostics-export" class="outline" data-i18n="diagnosticsExport" disabled>Descargar diagnóstico sin identificadores</button>
+        <p id="diagnostics-status" role="status"></p>
+        <dl id="diagnostics-values"></dl>
+        <p class="muted" data-i18n="diagnosticsPrivacy">El archivo incluye fechas y cantidades, no reportes, ubicaciones, identidades ni credenciales. Revísalo antes de compartirlo. No borres los datos de la aplicación para intentar reparar un fallo.</p>
+      </details>
     </section>
   </main>
   <script type="module" src="/mobile/app.js"></script>

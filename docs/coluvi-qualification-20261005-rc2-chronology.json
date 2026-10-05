@@ -1,0 +1,1931 @@
+{
+  "version": 1,
+  "status": "PASS",
+  "startedAt": "2026-10-05T06:14:43.824Z",
+  "completedAt": "2026-10-05T06:19:49.602Z",
+  "wallMs": 299355.121574,
+  "provenance": {
+    "baseCommit": "5bb4ebebce1489c915f6620d2a858fc98ca9d470",
+    "dirtyWorktree": false,
+    "sourceSha256": "8d8707233e0305818693282e5aba958b7e0abae6bef7f89379d67296e4917f00",
+    "sourceFiles": 176
+  },
+  "environment": {
+    "node": "v24.18.0",
+    "distro": "Ubuntu"
+  },
+  "steps": [
+    {
+      "name": "tests",
+      "code": 0,
+      "signal": null,
+      "wallMs": 79474.549143,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    },
+    {
+      "name": "rehearsal",
+      "code": 0,
+      "signal": null,
+      "wallMs": 3264.3693559999956,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    },
+    {
+      "name": "integrated-browser",
+      "code": 0,
+      "signal": null,
+      "wallMs": 17140.64457199999,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    },
+    {
+      "name": "client-continuity",
+      "code": 0,
+      "signal": null,
+      "wallMs": 4564.861804999993,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    },
+    {
+      "name": "mobile-readiness",
+      "code": 0,
+      "signal": null,
+      "wallMs": 4518.440342000002,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    },
+    {
+      "name": "map-browser",
+      "code": 0,
+      "signal": null,
+      "wallMs": 3628.212830999997,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    },
+    {
+      "name": "soak-smoke",
+      "code": 0,
+      "signal": null,
+      "wallMs": 62124.02394300001,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    },
+    {
+      "name": "load-300",
+      "code": 0,
+      "signal": null,
+      "wallMs": 124626.67566000001,
+      "timedOut": false,
+      "exceededOutputLimit": false
+    }
+  ],
+  "tests": {
+    "tests": 231,
+    "pass": 231,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "integrated": {
+    "scenario": "SIMULACRO ficticio · Chromium loopback, no Android ni mesh físico",
+    "deviceDiagnosticEvidence": {
+      "offline": {
+        "server": "UNREACHABLE_OR_TLS_ERROR",
+        "saved": 3,
+        "pending": 2,
+        "confirmed": 1,
+        "readable": "READABLE",
+        "shell": true,
+        "privateValuesExcluded": true,
+        "localOnlyExport": true,
+        "rows": 16
+      },
+      "reconnected": {
+        "server": "REACHABLE",
+        "saved": 3,
+        "pending": 0,
+        "confirmed": 3,
+        "readable": "READABLE",
+        "shell": true,
+        "privateValuesExcluded": true,
+        "localOnlyExport": true,
+        "rows": 16
+      }
+    },
+    "integratedMapEvidence": {
+      "sameBackendAndOrigin": true,
+      "ordinaryPublicReports": 6,
+      "publicGroups": 1,
+      "offlineSnapshotDuringPrivateResponse": true,
+      "privateUpdatesDoNotChangePublicCounts": true,
+      "reloadsRequireNewDocument": true,
+      "commandControlsBlockedDuringPolling": true
+    },
+    "migration": {
+      "preservedIdentity": true,
+      "preservedReport": true,
+      "missingIsUndefined": true
+    },
+    "migrationV2": {
+      "preservedCommand": true,
+      "preservedReceipt": true,
+      "emptyNotices": true,
+      "version": 3
+    },
+    "indexedDbConcurrency": {
+      "stateWinners": 1,
+      "needsWinners": 1,
+      "states": 2,
+      "needs": 1,
+      "outbox": 3,
+      "firstPreserved": true
+    },
+    "enrolledThroughUi": true,
+    "issuedThroughUi": true,
+    "noticeIssuedThroughUi": true,
+    "noticeEvidence": {
+      "requested": 1,
+      "received": 1,
+      "shown": 1
+    },
+    "needsEvidence": {
+      "counts": {
+        "WATER": 1,
+        "FOOD": 0,
+        "MEDICATION": 0,
+        "MEDICAL_CARE": 0,
+        "EXTRACTION": 0,
+        "SHELTER": 0,
+        "ENERGY": 0,
+        "TRANSPORT": 1,
+        "COMMUNICATION": 0
+      },
+      "current": {
+        "categories": [
+          "WATER",
+          "TRANSPORT"
+        ],
+        "peopleAffected": 3,
+        "eventId": "4972b1ea-b33e-4fbe-9235-6b9fddd3dafe"
+      },
+      "history": 1
+    },
+    "updateEvidence": {
+      "counts": {
+        "requested": 1,
+        "received": 1,
+        "shown": 1,
+        "responded": 1,
+        "safe": 1,
+        "needsHelp": 0,
+        "unknown": 0,
+        "pending": 0,
+        "late": 0
+      },
+      "needs": null,
+      "needsCounts": {
+        "WATER": 0,
+        "FOOD": 0,
+        "MEDICATION": 0,
+        "MEDICAL_CARE": 0,
+        "EXTRACTION": 0,
+        "SHELTER": 0,
+        "ENERGY": 0,
+        "TRANSPORT": 0,
+        "COMMUNICATION": 0
+      },
+      "history": 2,
+      "needsHistory": 1,
+      "link": "LINKED"
+    },
+    "revocationEvidence": {
+      "inboxStatus": 401,
+      "packetStatus": 400,
+      "noFalseEvidence": true
+    },
+    "revocationPreservedHistory": {
+      "requested": 1,
+      "history": 2
+    },
+    "noticeSurvivedOfflineReopen": true,
+    "noticeTextNotHtml": true,
+    "expiredNoticeLabeled": true,
+    "backendStoppedWhileOffline": true,
+    "repeatedPollPreservesPromptDom": true,
+    "offlineQueued": "QUEUED",
+    "survivedWindowCloseAndReopen": true,
+    "reconnectedState": "SYNCED",
+    "backendEvidence": "BACKEND",
+    "privateEvidence": {
+      "counts": {
+        "requested": 1,
+        "received": 1,
+        "shown": 1,
+        "responded": 1,
+        "safe": 0,
+        "needsHelp": 1,
+        "unknown": 0,
+        "pending": 0,
+        "late": 0
+      },
+      "histories": [
+        1
+      ]
+    },
+    "duplicatePreserved": true,
+    "cacheSafe": true,
+    "publicPrivacy": true,
+    "logoutCleared": true,
+    "constrained360px": true,
+    "unnamedOperatorControls": 0,
+    "legacyOfflineRegression": true,
+    "mobileAccessibilityRegression": true,
+    "diagnostics": []
+  },
+  "map": {
+    "status": "PASS",
+    "reports": 24,
+    "publicGroups": 4,
+    "mappedAreas": 3,
+    "basemapCountries": 177,
+    "offlineAfterAbruptStop": true,
+    "expiredSnapshotRejected": true,
+    "privateFieldsExcluded": true,
+    "cachedApiPaths": 0,
+    "mobileWidth": 360,
+    "unnamedControls": 0,
+    "screenshot": null
+  },
+  "load": {
+    "version": 1,
+    "recordedAt": "2026-10-05T06:19:49.535Z",
+    "evidence": "LOCAL_HTTP_SQLITE_ONLY",
+    "scenario": "SIMULACRO fictitious flood load and crash recovery",
+    "harnessSha256": "d44d28b565cae87d742ad7f604b6da084171ce1a13d8f5b51afbb89075697abc",
+    "environment": {
+      "node": "v24.18.0",
+      "platform": "linux",
+      "distro": "Ubuntu"
+    },
+    "configuration": {
+      "devices": 300,
+      "zones": 3,
+      "concurrency": 24,
+      "seed": 20261004,
+      "mixed": false,
+      "admissionLimits": {
+        "windowMs": 60000,
+        "globalRequests": 600,
+        "identityRequests": 60,
+        "trackedIdentities": 10000
+      },
+      "privateApiLimits": {
+        "globalRequests": 600,
+        "perSourceRequests": 120,
+        "windowMs": 60000
+      },
+      "enrollment": "trusted fixture provisioning, not HTTP enrollment",
+      "silentDevices": 30
+    },
+    "measurements": {
+      "server": {
+        "samples": 0,
+        "cpuUserMs": 0,
+        "cpuSystemMs": 0,
+        "maxRssBytes": 0,
+        "maxHeapUsedBytes": 0,
+        "maxEventLoopDelayMs": 0,
+        "maxSampleGapMs": 0
+      },
+      "mixedWorkload": {
+        "enabled": false,
+        "concurrentReaders": 0,
+        "readerPauseMs": 100,
+        "successfulReads": 0,
+        "interruptedReadsAtPlannedCrash": 0,
+        "failedReads": 0,
+        "noticesIssued": 0,
+        "privateApiRateLimited": 0
+      },
+      "endpoints": {
+        "POST /api/operator/login": {
+          "requests": 3,
+          "errors": {},
+          "httpStatuses": {
+            "200": 3
+          },
+          "responseHeadersMs": {
+            "samples": 3,
+            "p50": 97.31086099999993,
+            "p95": 100.33255400000053,
+            "maximum": 100.33255400000053
+          }
+        },
+        "GET /api/mobile/inbox": {
+          "requests": 9,
+          "errors": {},
+          "httpStatuses": {
+            "200": 9
+          },
+          "responseHeadersMs": {
+            "samples": 9,
+            "p50": 3.5661479999998846,
+            "p95": 5.69088099999999,
+            "maximum": 5.69088099999999
+          }
+        },
+        "POST /api/packets": {
+          "requests": 1693,
+          "errors": {
+            "CONNECTION_ERROR": 23
+          },
+          "httpStatuses": {
+            "202": 1620,
+            "400": 2,
+            "429": 48
+          },
+          "responseHeadersMs": {
+            "samples": 1670,
+            "p50": 54.1450219999997,
+            "p95": 174.46746799999983,
+            "maximum": 1608.5238319999999
+          }
+        },
+        "GET /api/operator/session": {
+          "requests": 1,
+          "errors": {},
+          "httpStatuses": {
+            "401": 1
+          },
+          "responseHeadersMs": {
+            "samples": 1,
+            "p50": 5.616700999999921,
+            "p95": 5.616700999999921,
+            "maximum": 5.616700999999921
+          }
+        },
+        "GET /api/operator/checkins/:id": {
+          "requests": 12,
+          "errors": {},
+          "httpStatuses": {
+            "200": 12
+          },
+          "responseHeadersMs": {
+            "samples": 12,
+            "p50": 15.256644000000051,
+            "p95": 18.952458999992814,
+            "maximum": 18.952458999992814
+          }
+        },
+        "GET /api/areas": {
+          "requests": 1,
+          "errors": {},
+          "httpStatuses": {
+            "200": 1
+          },
+          "responseHeadersMs": {
+            "samples": 1,
+            "p50": 2.645704000009573,
+            "p95": 2.645704000009573,
+            "maximum": 2.645704000009573
+          }
+        }
+      }
+    },
+    "counts": {
+      "uniqueSignedPackets": 810,
+      "stateEvents": 540,
+      "needsEvents": 270,
+      "requested": 300,
+      "responded": 270,
+      "safe": 120,
+      "needsHelp": 150,
+      "pending": 30,
+      "activeWater": 150,
+      "activeTransport": 150
+    },
+    "http": {
+      "accepted": 810,
+      "duplicates": 810,
+      "rateLimited": 48,
+      "interruptedRequests": 23,
+      "maximumInFlight": 24,
+      "requestsOutstandingAtKill": 23,
+      "fullReplayDuplicates": 810
+    },
+    "crashes": [
+      {
+        "label": "during-concurrent-updates",
+        "signal": "SIGKILL",
+        "acknowledgedVerified": 12,
+        "persisted": 12,
+        "committedWithoutObservedAck": 0,
+        "integrity": "ok",
+        "foreignKeyViolations": 0
+      },
+      {
+        "label": "after-all-confirmations",
+        "signal": "SIGKILL",
+        "acknowledgedVerified": 810,
+        "persisted": 810,
+        "committedWithoutObservedAck": 0,
+        "integrity": "ok",
+        "foreignKeyViolations": 0
+      }
+    ],
+    "checks": {
+      "allAcknowledgedReportsDurable": true,
+      "immutableHistoryAfterReplay": true,
+      "allRecipientPagesVerified": true,
+      "missingPredecessorsExplicitBeforeArrival": true,
+      "independentlyArrivingNeedsVerified": true,
+      "invalidPacketsRejectedWithoutAck": 2,
+      "privateReportsExcludedFromPublicMap": true,
+      "sampledCredentialsSurviveRestarts": 3,
+      "operatorSessionInvalidated": true
+    },
+    "timing": {
+      "wallMs": 124443.124238,
+      "setupMs": 3396.191718,
+      "replayMs": 59646.199986,
+      "successfulRequestMs": {
+        "samples": 1620,
+        "p50": 55.638545999994676,
+        "p95": 189.32757000000038,
+        "maximum": 1608.659041
+      }
+    },
+    "limitations": [
+      "Synthetic Node clients, not simultaneous PWA instances or physical Android phones",
+      "Loopback HTTP; no LAN, Internet, TLS, radio, range or battery measurement",
+      "SIGKILL of backend process, not host power loss or disk failure",
+      "Client ledger remains in parent memory; not proof of client crash recovery",
+      "Successful request timings exclude queue and Retry-After waiting; wall time includes them",
+      "Seed fixes fixture identities and scheduling shuffle, not OS timing or the crash commit boundary",
+      "No operational notices throughput measured",
+      "HTTP enrollment throughput not measured"
+    ]
+  },
+  "rehearsal": {
+    "version": 1,
+    "kind": "COLUVI_REHEARSAL",
+    "status": "PASS",
+    "seed": 20261004,
+    "evidence": "VIRTUAL_TIME_REAL_SQLITE",
+    "scenarios": [
+      {
+        "scenario": "INTERMITTENT",
+        "status": "PASS",
+        "timeline": [
+          {
+            "phase": "ISSUED",
+            "virtualMs": 0,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "FIRST_OUTAGE",
+            "virtualMs": 2000,
+            "connectionAvailable": false,
+            "expected": {
+              "responded": 0,
+              "queued": 2
+            },
+            "observed": {
+              "responded": 0,
+              "queued": 2
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "RESTART_WITH_PENDING",
+            "virtualMs": 7000,
+            "connectionAvailable": false,
+            "expected": {
+              "responded": 0,
+              "queued": 2
+            },
+            "observed": {
+              "responded": 0,
+              "queued": 2
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "INITIAL_DELIVERY",
+            "virtualMs": 7000,
+            "connectionAvailable": true,
+            "expected": {
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "queued": 0,
+              "missingLinks": 0,
+              "late": 0
+            },
+            "observed": {
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "queued": 0,
+              "missingLinks": 0,
+              "late": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "HELP_ENRICHED",
+            "virtualMs": 8000,
+            "connectionAvailable": true,
+            "expected": {
+              "water": 1,
+              "needsHelp": 1,
+              "responded": 2
+            },
+            "observed": {
+              "water": 1,
+              "needsHelp": 1,
+              "responded": 2
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "SECOND_OUTAGE",
+            "virtualMs": 9000,
+            "connectionAvailable": false,
+            "expected": {
+              "queued": 1,
+              "needsHelp": 1
+            },
+            "observed": {
+              "queued": 1,
+              "needsHelp": 1
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "SAFE_UPDATE_RECOVERED",
+            "virtualMs": 14000,
+            "connectionAvailable": true,
+            "expected": {
+              "safe": 2,
+              "needsHelp": 0,
+              "water": 0,
+              "histories": 3,
+              "queued": 0
+            },
+            "observed": {
+              "safe": 2,
+              "needsHelp": 0,
+              "water": 0,
+              "histories": 3,
+              "queued": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "NOTICE_EXPIRED",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "noticeAvailable": 0,
+              "unknown": 1
+            },
+            "observed": {
+              "noticeAvailable": 0,
+              "unknown": 1
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "RESTART_PRESERVES_PROJECTION",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 2,
+              "safe": 2,
+              "needsHelp": 0,
+              "pending": 0,
+              "unknown": 1,
+              "late": 0,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 3,
+              "missingLinks": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 2,
+              "safe": 2,
+              "needsHelp": 0,
+              "pending": 0,
+              "unknown": 1,
+              "late": 0,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 3,
+              "missingLinks": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+            "virtualMs": 61000,
+            "connectionAvailable": true,
+            "expected": {
+              "pending": 0,
+              "unknown": 1,
+              "queued": 0
+            },
+            "observed": {
+              "pending": 0,
+              "unknown": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          }
+        ],
+        "acceptedPackets": 4,
+        "duplicateChecks": 4,
+        "restarts": 3,
+        "final": {
+          "requested": 3,
+          "responded": 2,
+          "safe": 2,
+          "needsHelp": 0,
+          "pending": 0,
+          "unknown": 1,
+          "late": 0,
+          "water": 0,
+          "queued": 0,
+          "noticeAvailable": 0,
+          "histories": 3,
+          "missingLinks": 0
+        },
+        "noticeCounts": {
+          "requested": 3,
+          "received": 2,
+          "shown": 2
+        },
+        "simulationOnly": true
+      },
+      {
+        "scenario": "LATE_RESPONSE",
+        "status": "PASS",
+        "timeline": [
+          {
+            "phase": "ISSUED",
+            "virtualMs": 0,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "UNKNOWN_BEFORE_LATE_RESPONSE",
+            "virtualMs": 21000,
+            "connectionAvailable": true,
+            "expected": {
+              "responded": 0,
+              "unknown": 3
+            },
+            "observed": {
+              "responded": 0,
+              "unknown": 3
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "INITIAL_DELIVERY",
+            "virtualMs": 25000,
+            "connectionAvailable": true,
+            "expected": {
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "queued": 0,
+              "missingLinks": 0,
+              "late": 2
+            },
+            "observed": {
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "queued": 0,
+              "missingLinks": 0,
+              "late": 2
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "NOTICE_EXPIRED",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "noticeAvailable": 0,
+              "unknown": 1
+            },
+            "observed": {
+              "noticeAvailable": 0,
+              "unknown": 1
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "RESTART_PRESERVES_PROJECTION",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "pending": 0,
+              "unknown": 1,
+              "late": 2,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 2,
+              "missingLinks": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "pending": 0,
+              "unknown": 1,
+              "late": 2,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 2,
+              "missingLinks": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+            "virtualMs": 61000,
+            "connectionAvailable": true,
+            "expected": {
+              "pending": 0,
+              "unknown": 1,
+              "queued": 0
+            },
+            "observed": {
+              "pending": 0,
+              "unknown": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          }
+        ],
+        "acceptedPackets": 2,
+        "duplicateChecks": 2,
+        "restarts": 1,
+        "final": {
+          "requested": 3,
+          "responded": 2,
+          "safe": 1,
+          "needsHelp": 1,
+          "pending": 0,
+          "unknown": 1,
+          "late": 2,
+          "water": 0,
+          "queued": 0,
+          "noticeAvailable": 0,
+          "histories": 2,
+          "missingLinks": 0
+        },
+        "noticeCounts": {
+          "requested": 3,
+          "received": 2,
+          "shown": 2
+        },
+        "simulationOnly": true
+      },
+      {
+        "scenario": "STATE_CHANGES",
+        "status": "PASS",
+        "timeline": [
+          {
+            "phase": "ISSUED",
+            "virtualMs": 0,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "INITIAL_DELIVERY",
+            "virtualMs": 2000,
+            "connectionAvailable": true,
+            "expected": {
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "queued": 0,
+              "missingLinks": 0,
+              "late": 0
+            },
+            "observed": {
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "queued": 0,
+              "missingLinks": 0,
+              "late": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "HELP_ENRICHED",
+            "virtualMs": 3000,
+            "connectionAvailable": true,
+            "expected": {
+              "water": 1,
+              "needsHelp": 1,
+              "responded": 2
+            },
+            "observed": {
+              "water": 1,
+              "needsHelp": 1,
+              "responded": 2
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "SAFE_UPDATE_RECOVERED",
+            "virtualMs": 4000,
+            "connectionAvailable": true,
+            "expected": {
+              "safe": 2,
+              "needsHelp": 0,
+              "water": 0,
+              "histories": 3,
+              "queued": 0
+            },
+            "observed": {
+              "safe": 2,
+              "needsHelp": 0,
+              "water": 0,
+              "histories": 3,
+              "queued": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "NOTICE_EXPIRED",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "noticeAvailable": 0,
+              "unknown": 1
+            },
+            "observed": {
+              "noticeAvailable": 0,
+              "unknown": 1
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "RESTART_PRESERVES_PROJECTION",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 2,
+              "safe": 2,
+              "needsHelp": 0,
+              "pending": 0,
+              "unknown": 1,
+              "late": 0,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 3,
+              "missingLinks": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 2,
+              "safe": 2,
+              "needsHelp": 0,
+              "pending": 0,
+              "unknown": 1,
+              "late": 0,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 3,
+              "missingLinks": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+            "virtualMs": 61000,
+            "connectionAvailable": true,
+            "expected": {
+              "pending": 0,
+              "unknown": 1,
+              "queued": 0
+            },
+            "observed": {
+              "pending": 0,
+              "unknown": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          }
+        ],
+        "acceptedPackets": 4,
+        "duplicateChecks": 4,
+        "restarts": 1,
+        "final": {
+          "requested": 3,
+          "responded": 2,
+          "safe": 2,
+          "needsHelp": 0,
+          "pending": 0,
+          "unknown": 1,
+          "late": 0,
+          "water": 0,
+          "queued": 0,
+          "noticeAvailable": 0,
+          "histories": 3,
+          "missingLinks": 0
+        },
+        "noticeCounts": {
+          "requested": 3,
+          "received": 2,
+          "shown": 2
+        },
+        "simulationOnly": true
+      },
+      {
+        "scenario": "EXPIRED_NOTICE",
+        "status": "PASS",
+        "timeline": [
+          {
+            "phase": "ISSUED",
+            "virtualMs": 0,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "INITIAL_DELIVERY",
+            "virtualMs": 2000,
+            "connectionAvailable": true,
+            "expected": {
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "queued": 0,
+              "missingLinks": 0,
+              "late": 0
+            },
+            "observed": {
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "queued": 0,
+              "missingLinks": 0,
+              "late": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "NOTICE_EXPIRED",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "noticeAvailable": 0,
+              "unknown": 1
+            },
+            "observed": {
+              "noticeAvailable": 0,
+              "unknown": 1
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "RESTART_PRESERVES_PROJECTION",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "pending": 0,
+              "unknown": 1,
+              "late": 0,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 2,
+              "missingLinks": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 2,
+              "safe": 1,
+              "needsHelp": 1,
+              "pending": 0,
+              "unknown": 1,
+              "late": 0,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 2,
+              "missingLinks": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+            "virtualMs": 61000,
+            "connectionAvailable": true,
+            "expected": {
+              "pending": 0,
+              "unknown": 1,
+              "queued": 0
+            },
+            "observed": {
+              "pending": 0,
+              "unknown": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          }
+        ],
+        "acceptedPackets": 2,
+        "duplicateChecks": 2,
+        "restarts": 1,
+        "final": {
+          "requested": 3,
+          "responded": 2,
+          "safe": 1,
+          "needsHelp": 1,
+          "pending": 0,
+          "unknown": 1,
+          "late": 0,
+          "water": 0,
+          "queued": 0,
+          "noticeAvailable": 0,
+          "histories": 2,
+          "missingLinks": 0
+        },
+        "noticeCounts": {
+          "requested": 3,
+          "received": 2,
+          "shown": 2
+        },
+        "simulationOnly": true
+      },
+      {
+        "scenario": "NO_RESPONSE",
+        "status": "PASS",
+        "timeline": [
+          {
+            "phase": "ISSUED",
+            "virtualMs": 0,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "NO_RESPONSE_AFTER_PROMPT",
+            "virtualMs": 21000,
+            "connectionAvailable": true,
+            "expected": {
+              "responded": 0,
+              "unknown": 3,
+              "needsHelp": 0
+            },
+            "observed": {
+              "responded": 0,
+              "unknown": 3,
+              "needsHelp": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "NOTICE_EXPIRED",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "noticeAvailable": 0,
+              "unknown": 3
+            },
+            "observed": {
+              "noticeAvailable": 0,
+              "unknown": 3
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "RESTART_PRESERVES_PROJECTION",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 0,
+              "safe": 0,
+              "needsHelp": 0,
+              "pending": 0,
+              "unknown": 3,
+              "late": 0,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 0,
+              "missingLinks": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 0,
+              "safe": 0,
+              "needsHelp": 0,
+              "pending": 0,
+              "unknown": 3,
+              "late": 0,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 0,
+              "missingLinks": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+            "virtualMs": 61000,
+            "connectionAvailable": true,
+            "expected": {
+              "pending": 0,
+              "unknown": 3,
+              "queued": 0
+            },
+            "observed": {
+              "pending": 0,
+              "unknown": 3,
+              "queued": 0
+            },
+            "status": "PASS"
+          }
+        ],
+        "acceptedPackets": 0,
+        "duplicateChecks": 0,
+        "restarts": 1,
+        "final": {
+          "requested": 3,
+          "responded": 0,
+          "safe": 0,
+          "needsHelp": 0,
+          "pending": 0,
+          "unknown": 3,
+          "late": 0,
+          "water": 0,
+          "queued": 0,
+          "noticeAvailable": 0,
+          "histories": 0,
+          "missingLinks": 0
+        },
+        "noticeCounts": {
+          "requested": 3,
+          "received": 2,
+          "shown": 2
+        },
+        "simulationOnly": true
+      },
+      {
+        "scenario": "REORDERED_UPDATES",
+        "status": "PASS",
+        "timeline": [
+          {
+            "phase": "ISSUED",
+            "virtualMs": 0,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 0,
+              "pending": 3,
+              "noticeAvailable": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "SUCCESSOR_BEFORE_PREDECESSOR",
+            "virtualMs": 3000,
+            "connectionAvailable": true,
+            "expected": {
+              "responded": 1,
+              "safe": 1,
+              "missingLinks": 1,
+              "queued": 2
+            },
+            "observed": {
+              "responded": 1,
+              "safe": 1,
+              "missingLinks": 1,
+              "queued": 2
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "INITIAL_DELIVERY",
+            "virtualMs": 3000,
+            "connectionAvailable": true,
+            "expected": {
+              "responded": 2,
+              "safe": 2,
+              "needsHelp": 0,
+              "queued": 0,
+              "missingLinks": 0,
+              "late": 0
+            },
+            "observed": {
+              "responded": 2,
+              "safe": 2,
+              "needsHelp": 0,
+              "queued": 0,
+              "missingLinks": 0,
+              "late": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "NOTICE_EXPIRED",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "noticeAvailable": 0,
+              "unknown": 1
+            },
+            "observed": {
+              "noticeAvailable": 0,
+              "unknown": 1
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "RESTART_PRESERVES_PROJECTION",
+            "virtualMs": 31000,
+            "connectionAvailable": true,
+            "expected": {
+              "requested": 3,
+              "responded": 2,
+              "safe": 2,
+              "needsHelp": 0,
+              "pending": 0,
+              "unknown": 1,
+              "late": 0,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 3,
+              "missingLinks": 0
+            },
+            "observed": {
+              "requested": 3,
+              "responded": 2,
+              "safe": 2,
+              "needsHelp": 0,
+              "pending": 0,
+              "unknown": 1,
+              "late": 0,
+              "water": 0,
+              "queued": 0,
+              "noticeAvailable": 0,
+              "histories": 3,
+              "missingLinks": 0
+            },
+            "status": "PASS"
+          },
+          {
+            "phase": "CLOSED_WITHOUT_INVENTING_DANGER",
+            "virtualMs": 61000,
+            "connectionAvailable": true,
+            "expected": {
+              "pending": 0,
+              "unknown": 1,
+              "queued": 0
+            },
+            "observed": {
+              "pending": 0,
+              "unknown": 1,
+              "queued": 0
+            },
+            "status": "PASS"
+          }
+        ],
+        "acceptedPackets": 3,
+        "duplicateChecks": 3,
+        "restarts": 1,
+        "final": {
+          "requested": 3,
+          "responded": 2,
+          "safe": 2,
+          "needsHelp": 0,
+          "pending": 0,
+          "unknown": 1,
+          "late": 0,
+          "water": 0,
+          "queued": 0,
+          "noticeAvailable": 0,
+          "histories": 3,
+          "missingLinks": 0
+        },
+        "noticeCounts": {
+          "requested": 3,
+          "received": 2,
+          "shown": 2
+        },
+        "simulationOnly": true
+      }
+    ],
+    "limitations": [
+      "Scenario actors, not users or browsers",
+      "Virtual time, not a sustained real-time test",
+      "No HTTP, TLS, Android, radio or battery validation",
+      "Known fixture keys are for simulation only",
+      "UNKNOWN means no response, not danger"
+    ],
+    "sourceUnchanged": true,
+    "startedAt": "2026-10-05T06:16:04.802Z",
+    "completedAt": "2026-10-05T06:16:07.945Z",
+    "wallMs": 3142.602426,
+    "provenance": {
+      "baseCommit": "5bb4ebebce1489c915f6620d2a858fc98ca9d470",
+      "dirtyWorktree": false,
+      "sourceSha256": "8d8707233e0305818693282e5aba958b7e0abae6bef7f89379d67296e4917f00"
+    },
+    "environment": {
+      "node": "v24.18.0",
+      "distribution": "Ubuntu"
+    }
+  },
+  "continuity": {
+    "version": 1,
+    "status": "PASS",
+    "baselineCommit": "d6a6e1a1b80effa164ce4224e5bdc57902dda647",
+    "baselineTag": "coluvi-simulacro-20261004-rc1",
+    "evidence": "CHROMIUM_LOOPBACK_REAL_INDEXEDDB",
+    "browserKilledWithSIGKILL": true,
+    "reopenedWithoutServer": true,
+    "signedPacketUnchangedAfterCrash": true,
+    "workerUpgrade": "v10 to v12",
+    "actualRC1AssetsUsed": true,
+    "pendingPacketUnchangedAfterUpgrade": true,
+    "faultEvidence": [
+      {
+        "mode": "QUOTA",
+        "originalPreserved": true,
+        "noFalseSavedReport": true,
+        "draftPreserved": true
+      },
+      {
+        "mode": "ABORT",
+        "originalPreserved": true,
+        "noFalseSavedReport": true,
+        "draftPreserved": true
+      }
+    ],
+    "postCommitReadFailureDistinguished": true,
+    "failedLocalAckRetriedAsDuplicate": true,
+    "backendUniqueReports": 2,
+    "packetRequests": 3,
+    "diagnostics": [],
+    "limitations": [
+      "Injected browser API failures, not a physical full disk",
+      "Browser SIGKILL, not OS or power failure",
+      "Manual synchronization actor disables browser background sync",
+      "No Android or radio evidence"
+    ]
+  },
+  "readiness": {
+    "version": 1,
+    "status": "PASS",
+    "startedAt": "2026-10-05T06:16:30.424Z",
+    "completedAt": "2026-10-05T06:16:34.772Z",
+    "provenance": {
+      "baseCommit": "5bb4ebebce1489c915f6620d2a858fc98ca9d470",
+      "dirtyWorktree": false,
+      "sourceSha256": "8d8707233e0305818693282e5aba958b7e0abae6bef7f89379d67296e4917f00",
+      "sourceFiles": 176
+    },
+    "sourceUnchanged": true,
+    "cases": [
+      {
+        "width": 320,
+        "textScale": 1,
+        "language": "es",
+        "layout": {
+          "width": 320,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "es",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 320,
+        "textScale": 1,
+        "language": "en",
+        "layout": {
+          "width": 320,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "en",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 320,
+        "textScale": 2,
+        "language": "es",
+        "layout": {
+          "width": 320,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "es",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 320,
+        "textScale": 2,
+        "language": "en",
+        "layout": {
+          "width": 320,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "en",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 360,
+        "textScale": 1,
+        "language": "es",
+        "layout": {
+          "width": 360,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "es",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 360,
+        "textScale": 1,
+        "language": "en",
+        "layout": {
+          "width": 360,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "en",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 360,
+        "textScale": 2,
+        "language": "es",
+        "layout": {
+          "width": 360,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "es",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 360,
+        "textScale": 2,
+        "language": "en",
+        "layout": {
+          "width": 360,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "en",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 412,
+        "textScale": 1,
+        "language": "es",
+        "layout": {
+          "width": 412,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "es",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 412,
+        "textScale": 1,
+        "language": "en",
+        "layout": {
+          "width": 412,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "en",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 412,
+        "textScale": 2,
+        "language": "es",
+        "layout": {
+          "width": 412,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "es",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      },
+      {
+        "width": 412,
+        "textScale": 2,
+        "language": "en",
+        "layout": {
+          "width": 412,
+          "horizontalOverflow": false,
+          "overflowingContent": [],
+          "overflow": [],
+          "undersized": [],
+          "composerFocused": true,
+          "diagnosticPairs": 16,
+          "language": "en",
+          "focusRestored": true
+        },
+        "unnamedInteractive": [],
+        "status": "PASS"
+      }
+    ],
+    "limitations": [
+      "Chromium emulation, not Samsung hardware or TalkBack",
+      "Root font scaling, not Android system font scaling or pinch zoom",
+      "Checks names, layout, button targets and composer focus; not a complete WCAG audit",
+      "Unenrolled local fixture: populated operational cards are covered by other browser tests"
+    ]
+  },
+  "soakSmoke": {
+    "version": 1,
+    "status": "PASS",
+    "evidence": "SUSTAINED_LOCAL_HTTP_REAL_TIME",
+    "startedAt": "2026-10-05T06:16:39.417Z",
+    "completedAt": "2026-10-05T06:17:41.994Z",
+    "observedMs": 61143.153045,
+    "qualifiesThreeHours": false,
+    "configuration": {
+      "durationMs": 5000,
+      "intervalMs": 5000,
+      "devices": 30,
+      "restartEvery": 20,
+      "seed": 20261005
+    },
+    "counts": {
+      "rounds": 1,
+      "commands": 3,
+      "notices": 3,
+      "receiptAcknowledgements": 54,
+      "packetAcknowledgements": 81,
+      "duplicates": 0,
+      "heartbeats": 1,
+      "rateLimited": 1,
+      "restarts": 0
+    },
+    "audits": [
+      {
+        "label": "FINAL",
+        "round": 1,
+        "acknowledgedPacketsVerified": 81,
+        "integrity": "ok",
+        "foreignKeyViolations": 0
+      }
+    ],
+    "acknowledgedPackets": 81,
+    "server": {
+      "samples": 61,
+      "maxRssBytes": 118566912,
+      "maxHeapUsedBytes": 15746376,
+      "maxEventLoopDelayMs": 56.328191,
+      "cpuUserMs": 696.6289999999998,
+      "cpuSystemMs": 239.337
+    },
+    "roundMs": {
+      "samples": 1,
+      "p50": 61139.691547,
+      "p95": 61139.691547,
+      "max": 61139.691547
+    },
+    "endpoints": {
+      "POST /api/operator/login": {
+        "requestMs": {
+          "samples": 1,
+          "p50": 97.17008299999998,
+          "p95": 97.17008299999998,
+          "max": 97.17008299999998
+        },
+        "statuses": {
+          "200": 1
+        },
+        "failures": 0
+      },
+      "POST /api/operator/checkins": {
+        "requestMs": {
+          "samples": 3,
+          "p50": 12.497783000000027,
+          "p95": 15.912466999999992,
+          "max": 15.912466999999992
+        },
+        "statuses": {
+          "201": 3
+        },
+        "failures": 0
+      },
+      "POST /api/operator/notices": {
+        "requestMs": {
+          "samples": 3,
+          "p50": 11.677664999999934,
+          "p95": 13.636790000000019,
+          "max": 13.636790000000019
+        },
+        "statuses": {
+          "201": 3
+        },
+        "failures": 0
+      },
+      "GET /api/mobile/inbox": {
+        "requestMs": {
+          "samples": 30,
+          "p50": 15.226263999999901,
+          "p95": 55.656574999999975,
+          "max": 66.23923200000013
+        },
+        "statuses": {
+          "200": 30
+        },
+        "failures": 0
+      },
+      "GET /api/mobile/notices": {
+        "requestMs": {
+          "samples": 30,
+          "p50": 6.852489999999989,
+          "p95": 44.5868989999999,
+          "max": 64.21850000000018
+        },
+        "statuses": {
+          "200": 30
+        },
+        "failures": 0
+      },
+      "POST /api/mobile/receipts": {
+        "requestMs": {
+          "samples": 54,
+          "p50": 29.096462999999858,
+          "p95": 70.20951500000001,
+          "max": 72.78801999999996
+        },
+        "statuses": {
+          "202": 54,
+          "429": 1
+        },
+        "failures": 0
+      },
+      "POST /api/packets": {
+        "requestMs": {
+          "samples": 81,
+          "p50": 29.64460700000018,
+          "p95": 64.99397399999998,
+          "max": 73.09620700000005
+        },
+        "statuses": {
+          "202": 81
+        },
+        "failures": 0
+      },
+      "GET /api/operator/checkins/:id": {
+        "requestMs": {
+          "samples": 3,
+          "p50": 4.59823999999935,
+          "p95": 7.1118940000014845,
+          "max": 7.1118940000014845
+        },
+        "statuses": {
+          "200": 3
+        },
+        "failures": 0
+      },
+      "GET /api/operator/notices/:id": {
+        "requestMs": {
+          "samples": 3,
+          "p50": 1.5097349999996368,
+          "p95": 2.673102000000654,
+          "max": 2.673102000000654
+        },
+        "statuses": {
+          "200": 3
+        },
+        "failures": 0
+      },
+      "GET /health": {
+        "requestMs": {
+          "samples": 1,
+          "p50": 1.2892719999945257,
+          "p95": 1.2892719999945257,
+          "max": 1.2892719999945257
+        },
+        "statuses": {
+          "200": 1
+        },
+        "failures": 0
+      },
+      "GET /api/areas": {
+        "requestMs": {
+          "samples": 1,
+          "p50": 1.6296560000046156,
+          "p95": 1.6296560000046156,
+          "max": 1.6296560000046156
+        },
+        "statuses": {
+          "200": 1
+        },
+        "failures": 0
+      }
+    },
+    "limitations": [
+      "Synthetic Node clients and local HTTP, no Android, browser, TLS, radio or battery evidence",
+      "Client ledger in parent memory, not a client-crash test",
+      "Planned backend SIGKILLs between rounds, not in-flight or physical power loss",
+      "Silence means no response, never danger",
+      "No SHOWN or human-attention claim",
+      "Fixed fixture keys are not pilot keys"
+    ],
+    "provenance": {
+      "baseCommit": "5bb4ebebce1489c915f6620d2a858fc98ca9d470",
+      "dirtyWorktree": false,
+      "sourceSha256": "8d8707233e0305818693282e5aba958b7e0abae6bef7f89379d67296e4917f00",
+      "sourceFiles": 176
+    },
+    "sourceUnchanged": true
+  },
+  "limitations": [
+    "Software qualification in Ubuntu WSL and loopback Chromium, not physical Android/LAN/radio validation",
+    "Short soak is not the separate three-hour real-time acceptance run",
+    "Not a production certification or guarantee of emergency assistance"
+  ]
+}

@@ -60,7 +60,7 @@ Need categories: `WATER`, `FOOD`, `MEDICATION`, `MEDICAL_CARE`, `EXTRACTION`, `S
 
 ## Encodings
 
-JSON uses the field names in this document and is intended for development and APIs. Binary transport uses deterministic CBOR with short stable keys. The implementation rejects indefinite-length objects, trailing bytes, unsafe integers, and malformed UTF-8.
+JSON uses the field names in this document and is intended for development and APIs. Binary transport uses deterministic CBOR with short stable keys. The implementation rejects indefinite-length objects, trailing bytes, unsafe or non-canonical integers, non-finite floats, malformed UTF-8, duplicate map keys, and short/long field aliases that expand to the same protocol name. Default decode limits are 65,536 input bytes, depth 32, 16,384 total values, 4,096 array items, 2,048 map entries, and 65,536 bytes per byte or text string. Map construction treats names such as `__proto__` as ordinary own data rather than inherited setters.
 
 Signatures cover deterministic CBOR of the expanded `EmergencyReport`, excluding only `signature` and properties whose value is undefined. They do not cover mutable envelope fields.
 

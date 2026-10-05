@@ -2,10 +2,14 @@
   "name": "Emergency Mesh",
   "short_name": "Emergency",
   "description": "Cliente offline de referencia para reportes de emergencia transportables",
+  "id": "/mobile/",
   "start_url": "/mobile/",
   "display": "standalone",
   "background_color": "#f4f1eb",
   "theme_color": "#9e2a2b",
   "lang": "es",
-  "scope": "/mobile/"
+  "scope": "/mobile/",
+  "icons": [
+    { "src": "/mobile/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
 }

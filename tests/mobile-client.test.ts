@@ -92,3 +92,19 @@ test("expired outbox item is never sent", async () => {
 test("all declared actions have a user-facing mapping", () => {
   assert.deepEqual(Object.keys(ACTIONS).sort(), ["ASSISTANCE_REQUEST", "LAST_SEEN", "PERSON_FOUND", "RESOURCE_REQUEST", "SAFE", "SOS", "THIRD_PARTY"]);
 });
+
+test("a success status without correlated BACKEND evidence never releases local custody", async () => {
+  const created = await createOutboxItem({ action: "SAFE", eventId: "evidence-client" }, unsignedIdentity, now, noSignature);
+  const valid = { acknowledgementId: "ack", eventId: created.eventId, packetId: created.envelope.packetId, level: "BACKEND", acknowledgedAt: now + 1, issuerId: "backend", status: "STORED" };
+  for (const evidence of [undefined, {}, { ...valid, level: "PEER" }, { ...valid, eventId: "other-event" }, { ...valid, packetId: "other-packet" },
+    { ...valid, acknowledgedAt: NaN }, { ...valid, acknowledgedAt: now - 1 }, { ...valid, acknowledgedAt: created.envelope.expiresAt },
+    { ...valid, status: "DUPLICATE" }, { ...valid, issuerId: "" }]) {
+    const store = new MemoryClientStore(); await store.put(created);
+    await synchronizeOutbox(store, async () => ({ ok: true, status: 202, json: async () => ({ status: "ACCEPTED", evidence }) }), "/api/packets", now + 1);
+    assert.equal((await store.get(created.eventId))?.state, "QUEUED");
+    assert.equal((await store.get(created.eventId))?.evidence.length, 0);
+  }
+  const store = new MemoryClientStore(); await store.put(created);
+  await synchronizeOutbox(store, async () => ({ ok: true, status: 202, json: async () => ({ status: "DUPLICATE", evidence: { ...valid, status: "DUPLICATE" } }) }), "/api/packets", now + 1);
+  assert.equal((await store.get(created.eventId))?.state, "SYNCED");
+});

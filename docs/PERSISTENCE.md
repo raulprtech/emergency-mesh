@@ -15,9 +15,24 @@ const queue = new SqliteStoreAndForwardQueue("device-queue.sqlite");
 const node = new SimulatedNode("node-a", routing, context, queue);
 ```
 
+## Durable peer custody
+
+`SqliteCustodyQueue` extends the device queue with an atomic `custody_receipts` ledger. `acceptCustody()` verifies the report signature and expiration, applies queue capacity policy, inserts a new active record, and persists its `PEER` ACK in one `BEGIN IMMEDIATE` transaction. If any step fails, neither custody nor an ACK is recorded.
+
+Exact `(eventId, packetId)` retries replay the stored acknowledgement across restart without re-enqueueing released work. A different packet id can receive `DUPLICATE` only when its SHA-256 digest of the canonical signed report matches an earlier receipt for that event. This blocks conflicting content from obtaining custody merely by reusing an event id. Connect it through `CustodyBridgeTransportAdapter.connectCustodyReceiver()`; the volatile and durable receiver APIs are intentionally mutually exclusive.
+
+```ts
+const queue = new SqliteCustodyQueue("device-queue.sqlite");
+bridge.connectCustodyReceiver((envelope) =>
+  queue.acceptCustody(envelope, "local-node-id"),
+);
+```
+
 ## Backend
 
 `SqliteBackend` stores one immutable JSON report, the exact canonical CBOR bytes covered by its signature, and every arrival separately. The duplicate check and first insert run inside one immediate transaction, so concurrent ingests cannot create two semantic reports. Arrival evidence retains packet id, receipt time, signature result, and transport history.
+
+The reference HTTP server selects this backend when `EMERGENCY_MESH_DATABASE_PATH` is set, creates the parent directory when necessary, reports the storage mode through `/health`, and closes SQLite on `SIGINT` or `SIGTERM`. Without that variable it retains the seeded in-memory demonstration behavior.
 
 ```ts
 const backend = new SqliteBackend("backend.sqlite");

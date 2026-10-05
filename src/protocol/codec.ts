@@ -2,6 +2,11 @@ import { decodeCbor, encodeCbor } from "./cbor.ts";
 import { validateEnvelope, type EmergencyEnvelope } from "./types.ts";
 
 // Short keys are stable wire identifiers. New optional keys may be added in minor versions.
+function defineUnique(result: Record<string, unknown>, key: string, value: unknown): void {
+  if (Object.hasOwn(result, key)) throw new Error(`Duplicate protocol field ${key}`);
+  Object.defineProperty(result, key, { value, enumerable: true, configurable: true, writable: true });
+}
+
 function compact(value: unknown, context = "envelope"): unknown {
   if (Array.isArray(value)) return value.map((item) => compact(item, context));
   if (!value || typeof value !== "object" || value instanceof Uint8Array) return value;
@@ -11,7 +16,7 @@ function compact(value: unknown, context = "envelope"): unknown {
   for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
     if (item === undefined) continue;
     const mapped = forward[key] ?? key;
-    result[mapped] = compact(item, key);
+    defineUnique(result, mapped, compact(item, key));
   }
   return result;
 }
@@ -34,7 +39,7 @@ function expand(value: unknown, context = "envelope"): unknown {
   const result: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
     const mapped = reverse[key] ?? key;
-    result[mapped] = expand(item, mapped);
+    defineUnique(result, mapped, expand(item, mapped));
   }
   return result;
 }

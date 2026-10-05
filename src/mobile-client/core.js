@@ -19,6 +19,9 @@ const transitions = {
   EXPIRED: new Set(),
 };
 
+export const MAX_BACKEND_RETRY_AFTER_MS = 60 * 60_000;
+export const OUTBOX_REQUEST_TIMEOUT_MS = 10_000;
+
 export const DELIVERY_LABELS = {
   CREATED: "Creado localmente",
   QUEUED: "En cola; aún no hay confirmación de entrega",
@@ -109,31 +112,59 @@ export class MemoryClientStore {
   async remove(eventId) { this.items.delete(eventId); }
 }
 
-export async function synchronizeOutbox(store, fetcher = globalThis.fetch, endpoint = "/api/packets", now = Date.now()) {
+export function validBackendEvidence(evidence, item, outcomeStatus, now = Date.now()) {
+  return Boolean(evidence && evidence.level === "BACKEND"
+    && evidence.eventId === item.eventId && evidence.packetId === item.envelope.packetId
+    && typeof evidence.acknowledgementId === "string" && evidence.acknowledgementId.length > 0 && evidence.acknowledgementId.length <= 256
+    && typeof evidence.issuerId === "string" && evidence.issuerId.length > 0 && evidence.issuerId.length <= 80
+    && Number.isSafeInteger(evidence.acknowledgedAt) && evidence.acknowledgedAt >= item.envelope.report.createdAt
+    && evidence.acknowledgedAt < item.envelope.expiresAt && evidence.acknowledgedAt <= now + 5 * 60_000
+    && evidence.status === (outcomeStatus === "DUPLICATE" ? "DUPLICATE" : "STORED"));
+}
+
+export async function synchronizeOutbox(store, fetcher = globalThis.fetch, endpoint = "/api/packets", now = Date.now(), options = {}) {
+  const timeoutMs = options.requestTimeoutMs ?? OUTBOX_REQUEST_TIMEOUT_MS;
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 30_000) throw new Error("Invalid outbox request timeout");
   const results = [];
   for (const current of await store.list()) {
     if (current.state === "SYNCED" || current.state === "EXPIRED") continue;
     if (current.envelope.expiresAt <= now) {
       const expired = transitionDelivery(current, "EXPIRED", now); await store.put(expired); results.push(expired); continue;
     }
+    if (Number.isSafeInteger(current.nextAttemptAt) && current.nextAttemptAt > now) { results.push(current); continue; }
     let item = current.state === "FORWARDED" || current.state === "GATEWAY_FOUND"
       ? transitionDelivery(current, "QUEUED", now)
       : current;
     item = transitionDelivery(item, "FORWARDED", now);
     item.attempts += 1;
     await store.put(item);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetcher(endpoint, { method: "POST", headers: { "content-type": "application/cbor" }, body: canonicalCbor(item.envelope) });
+      const response = await fetcher(endpoint, { method: "POST", headers: { "content-type": "application/cbor" }, body: canonicalCbor(item.envelope), signal: controller.signal });
       const outcome = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(outcome.error ?? outcome.errors?.join("; ") ?? "HTTP " + response.status);
+      if (!response.ok) {
+        const bodyRetryAfter = Number(outcome.retryAfterMs);
+        const headerRetryAfter = Number(response.headers?.get?.("retry-after")) * 1_000;
+        const requestedRetryAfter = Number.isSafeInteger(bodyRetryAfter) && bodyRetryAfter > 0 ? bodyRetryAfter
+          : Number.isSafeInteger(headerRetryAfter) && headerRetryAfter > 0 ? headerRetryAfter
+          : undefined;
+        const failure = new Error(outcome.error ?? outcome.errors?.join("; ") ?? "HTTP " + response.status);
+        if (response.status === 429 && requestedRetryAfter) failure.retryAfterMs = Math.min(requestedRetryAfter, MAX_BACKEND_RETRY_AFTER_MS);
+        throw failure;
+      }
       if (outcome.status !== "ACCEPTED" && outcome.status !== "DUPLICATE") throw new Error(outcome.status ?? "backend rejected packet");
+      if (!validBackendEvidence(outcome.evidence, item, outcome.status, now)) throw new Error("Missing or mismatched backend custody evidence");
       item = transitionDelivery(item, "GATEWAY_FOUND", now);
       item = transitionDelivery(item, "SYNCED", now, outcome.evidence);
       item.lastError = undefined;
+      item.nextAttemptAt = undefined;
     } catch (error) {
       item = transitionDelivery(item, "QUEUED", now);
-      item.lastError = error instanceof Error ? error.message : "Error de sincronización";
-    }
+      item.lastError = controller.signal.aborted ? "Request timed out; delivery remains unconfirmed" : error instanceof Error ? error.message : "Error de sincronización";
+      const retryAfterMs = error && typeof error === "object" ? error.retryAfterMs : undefined;
+      item.nextAttemptAt = Number.isSafeInteger(retryAfterMs) && retryAfterMs > 0 ? Math.min(now + retryAfterMs, item.envelope.expiresAt) : undefined;
+    } finally { clearTimeout(timer); }
     await store.put(item);
     results.push(item);
   }

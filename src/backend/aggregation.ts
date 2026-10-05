@@ -1,13 +1,13 @@
-import type { EmergencyReport } from "../protocol/types.ts";
+import { NEED_CATEGORIES, type EmergencyReport } from "../protocol/types.ts";
 
 export interface AreaAggregate {
   areaId: string;
   timeBucketStart?: number;
   timeBucketEnd?: number;
   total: number;
-  critical: number;
-  sos: number;
-  needs: Record<string, number>;
+  critical: number | null;
+  sos: number | null;
+  needs: Record<string, number | null>;
   newestObservedAt: number;
 }
 
@@ -20,6 +20,8 @@ export interface AggregationPolicy {
   minimumGroupSize: number;
   /** Ignore observations older than this duration. */
   maximumAgeMs: number;
+  /** Withhold related breakdowns together when a small count can be inferred. */
+  protectBreakdowns?: boolean;
 }
 
 export interface AggregationResult {
@@ -27,6 +29,7 @@ export interface AggregationResult {
   privacy: AggregationPolicy & {
     generatedAt: number;
     suppressedGroups: number;
+    breakdownProtection: boolean;
   };
 }
 
@@ -35,6 +38,7 @@ export const INTERNAL_AGGREGATION_POLICY: AggregationPolicy = {
   timeBucketMs: 0,
   minimumGroupSize: 1,
   maximumAgeMs: Number.MAX_SAFE_INTEGER,
+  protectBreakdowns: false,
 };
 
 export const PUBLIC_AGGREGATION_POLICY: AggregationPolicy = {
@@ -42,6 +46,7 @@ export const PUBLIC_AGGREGATION_POLICY: AggregationPolicy = {
   timeBucketMs: 60 * 60_000,
   minimumGroupSize: 3,
   maximumAgeMs: 24 * 60 * 60_000,
+  protectBreakdowns: true,
 };
 
 export function validateAggregationPolicy(policy: AggregationPolicy): string[] {
@@ -50,6 +55,7 @@ export function validateAggregationPolicy(policy: AggregationPolicy): string[] {
   if (!Number.isInteger(policy.timeBucketMs) || policy.timeBucketMs < 0) errors.push("timeBucketMs must be a non-negative integer");
   if (!Number.isInteger(policy.minimumGroupSize) || policy.minimumGroupSize < 1) errors.push("minimumGroupSize must be a positive integer");
   if (!Number.isFinite(policy.maximumAgeMs) || policy.maximumAgeMs < 0) errors.push("maximumAgeMs must be non-negative");
+  if (policy.protectBreakdowns !== undefined && typeof policy.protectBreakdowns !== "boolean") errors.push("protectBreakdowns must be boolean");
   return errors;
 }
 
@@ -69,9 +75,11 @@ export function aggregateReports(
 ): AggregationResult {
   const errors = validateAggregationPolicy(policy);
   if (errors.length) throw new Error(`Invalid aggregation policy: ${errors.join("; ")}`);
-  const groups = new Map<string, AreaAggregate>();
+  const groups = new Map<string, AreaAggregate & { critical: number; sos: number; needs: Record<string, number> }>();
   const oldest = now - policy.maximumAgeMs;
   for (const report of reports) {
+    // Operational instructions and check-ins are private device state, not public reports.
+    if (report.eventType.startsWith("x-coluvi-")) continue;
     if (policy.maximumAgeMs !== Number.MAX_SAFE_INTEGER && (report.observedAt < oldest || report.observedAt > now + 5 * 60_000)) continue;
     const areaId = areaFor(report, policy.spatialPrecisionDecimals);
     const timeBucketStart = policy.timeBucketMs > 0
@@ -92,16 +100,27 @@ export function aggregateReports(
     if (report.priority === "CRITICAL") area.critical += 1;
     if (report.eventType === "SOS") area.sos += 1;
     area.newestObservedAt = Math.max(area.newestObservedAt, report.observedAt);
-    for (const need of report.needs ?? []) area.needs[need.category] = (area.needs[need.category] ?? 0) + 1;
+    for (const category of new Set((report.needs ?? []).map(need => need.category))) area.needs[category] = (area.needs[category] ?? 0) + 1;
     groups.set(key, area);
   }
   let suppressedGroups = 0;
-  const areas = [...groups.values()]
+  const breakdownProtection = policy.protectBreakdowns ?? policy.minimumGroupSize > 1;
+  const categories = NEED_CATEGORIES;
+  const areas: AreaAggregate[] = [...groups.values()]
     .filter((area) => {
       const visible = area.total >= policy.minimumGroupSize;
       if (!visible) suppressedGroups += 1;
       return visible;
     })
-    .sort((left, right) => right.critical - left.critical || right.total - left.total || left.areaId.localeCompare(right.areaId));
-  return { areas, privacy: { ...policy, generatedAt: now, suppressedGroups } };
+    .map((area): AreaAggregate => {
+      if (!breakdownProtection) return area;
+      // Joint suppression also prevents reconstructing small complementary counts
+      // or simple differences between released breakdowns. This is not differential privacy.
+      const counts = [...new Set([0, area.total, area.critical, area.sos, ...categories.map(key => area.needs[key] ?? 0)])].sort((a, b) => a - b);
+      const withheld = area.total < 2 * policy.minimumGroupSize || counts.some((count, index) => index > 0 && count - counts[index - 1] < policy.minimumGroupSize);
+      return { ...area, critical: withheld ? null : area.critical, sos: withheld ? null : area.sos,
+        needs: Object.fromEntries(categories.map(key => [key, withheld ? null : area.needs[key] ?? 0])) };
+    })
+    .sort((left, right) => (right.critical ?? -1) - (left.critical ?? -1) || right.total - left.total || left.areaId.localeCompare(right.areaId));
+  return { areas, privacy: { ...policy, generatedAt: now, suppressedGroups, breakdownProtection } };
 }
