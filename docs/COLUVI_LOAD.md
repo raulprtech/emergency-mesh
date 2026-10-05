@@ -62,7 +62,7 @@ La calificación acredita el recorrido de software probado. No sustituye el pilo
 
 ## Evidencia actual de RC2
 
-La [calificación de software de RC2 con el primer verificador](coluvi-qualification-20261005-rc2-final.json) aprobó 225 pruebas y ocho etapas sobre `54c4c03`, con árbol limpio. Los [perfiles mixtos, la comparación concurrente y la puerta de entrega](COLUVI_RC2.md) se documentan por separado: aprobar una carga de 990 no garantiza repetirla mientras se ejecuta otra batería pesada. El [ensayo de tres horas](coluvi-soak-3h-20261005.json) terminó con 167 rondas y ocho reinicios. La revisión de su divergencia gradual entre relojes exige recalificar el verificador actualizado; no se sustituye el resultado largo por el ensayo breve incluido en la calificación.
+La [calificación vigente de RC2](coluvi-qualification-20261005-rc2-chronology.json) aprobó 231 pruebas y ocho etapas sobre `5bb4ebe`, con árbol limpio. Los [perfiles mixtos, la comparación concurrente y la comprobación de entrega](COLUVI_RC2.md) se documentan por separado: aprobar una carga de 990 no garantiza repetirla mientras se ejecuta otra batería pesada. El [ensayo de tres horas](coluvi-soak-3h-20261005.json) terminó con 167 rondas y ocho reinicios. Ambos relojes superaron tres horas, aunque divergieron 56,01 segundos; la cronología completa y el verificador actualizado aprobaron su revisión y calificación. La causa de esa divergencia sigue sin establecerse. No se sustituye el resultado largo por el ensayo breve incluido en la calificación.
 
 ## Antecedentes de RC1
 

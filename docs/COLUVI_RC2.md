@@ -1,6 +1,6 @@
 # Preparación y verificación de Coluvi RC2
 
-Este bloque ejecuta el plan de diez horas autorizado después de la RC1. El objetivo es preparar un ensayo reproducible con el Samsung S26 Ultra y el A54, sin requerir esos dispositivos durante el desarrollo. La RC1 publicada es `coluvi-simulacro-20261004-rc1`; no se cuentan sus funciones como entregables nuevos. RC2 sigue en desarrollo y no está calificada para entrega.
+Este bloque completa el plan autónomo autorizado después de la RC1. La versión de software `coluvi-simulacro-20261005-rc2` queda preparada para el ensayo con el Samsung S26 Ultra y el A54: 231 pruebas, ocho etapas de calificación y una observación real de más de tres horas, con sus límites documentados. La RC1 publicada es `coluvi-simulacro-20261004-rc1`; no se cuentan sus funciones como entregables nuevos. Las pruebas físicas, la aplicación nativa y la postulación siguen pendientes.
 
 ## Alcance y criterios de salida
 
@@ -11,7 +11,7 @@ Este bloque ejecuta el plan de diez horas autorizado después de la RC1. El obje
 | Simulacros repetibles | 2 h | Escenarios ficticios con cortes intermitentes, llegada tardía, cambios, avisos vencidos y no respuesta; cronología y comparación entre esperado y observado | Seis escenarios implementados y verificados, incluidos cambios fuera de orden; ejecutor con directorio exclusivo, informe, cronología, semilla, procedencia y cancelación |
 | Carga mixta | 2 h | Reproducción instrumentada del límite observado con 990 dispositivos; mapa, avisos y respuestas concurrentes; causa y corrección verificadas o límite reproducible documentado | Perfiles aprobados con 30, 300 y 990 dispositivos; corregido el actor ante 429 privado. El timeout de diez segundos se reprodujo dos veces al añadir la calificación concurrente; la misma semilla aprobó sin ella. Causa interna no aislada |
 | Continuidad del cliente | 1,5 h | Cierre abrupto del navegador, actualización con cola pendiente y fallos de almacenamiento; no afirmar guardado cuando falla una escritura | Verificada en Chromium con archivos RC1 reales, SIGKILL del navegador, reapertura sin servidor, actualización v10 a v12 y fallos inyectados de IndexedDB |
-| Calificación y entrega | 1,5 h | Suite, navegador, reproducción limpia, documentación reconciliada, paquete de ensayo físico y versión identificada en GitHub | Calificación de ocho etapas con 225 pruebas y guía Samsung preparadas. Observación larga terminada; pendiente recalificar el verificador de cronología y publicar RC2 |
+| Calificación y entrega | 1,5 h | Suite, navegador, reproducción limpia, documentación reconciliada, paquete de ensayo físico y versión identificada en GitHub | Ocho etapas y 231 pruebas aprobadas; evidencia de tres horas y cronología verificadas; guía Samsung y versión `coluvi-simulacro-20261005-rc2` preparadas |
 
 La ejecución sostenida requerida terminó sobre una copia limpia y fija de `c7f6ce9864e84435153e7639d503192256ea82d4`, con datos desechables. El [informe completo](coluvi-soak-3h-20261005.json) registra PASS, 10.855,94 segundos monotónicos y 10.911,95 segundos entre sus fechas UTC. Ambos superan tres horas, pero difieren en 56,01 segundos; la revisión de relojes se documenta más abajo. No se sumaron ejecuciones breves ni se utilizó tiempo virtual. Coincidió parcialmente con mediciones de carga mixta, lo que debe tenerse en cuenta al interpretar los tiempos.
 
@@ -97,7 +97,7 @@ El ensayo largo completó 167 rondas de treinta dispositivos simulados: 13.527 r
 
 La [cronología original](coluvi-soak-progress-20261005.jsonl) conserva inicio y las 167 rondas, sin reescribir sus fechas ni duraciones. El inicio UTC fue `2026-10-05T03:05:43.475Z` y el final, `2026-10-05T06:07:35.422Z`. El tiempo monotónico fue de tres horas y 55,94 segundos; el intervalo UTC, de tres horas, un minuto y 51,95 segundos. La primera ejecución del verificador sobre estos archivos salió con `SOAK_CLOCK_INCONSISTENT`: exigía menos de cinco segundos de diferencia acumulada durante toda la observación.
 
-La traza muestra divergencia gradual entre ambos relojes, no una ronda omitida. Su causa no está establecida: que el sistema informe NTP sincronizado no explica por sí solo este comportamiento. El verificador actualizado exige ahora ambos mínimos de tres horas y la cronología completa: verifica secuencia, contadores, tiempos monotónicos, orden UTC, duración de cada ronda y concordancia del cierre. Conserva el límite de cinco segundos por intervalo para rechazar saltos grandes y emite la divergencia acumulada explícitamente. No modifica el informe ni permite que un solo reloj compense una duración insuficiente en el otro. Sus catorce pruebas unitarias aprobaron; falta repetir la calificación completa del código actualizado antes de etiquetar.
+La traza muestra divergencia gradual entre ambos relojes, no una ronda omitida. Su causa no está establecida: que el sistema informe NTP sincronizado no explica por sí solo este comportamiento. El verificador actualizado exige ahora ambos mínimos de tres horas y la cronología completa: verifica secuencia, contadores, tiempos monotónicos, orden UTC, duración de cada ronda y concordancia del cierre. Conserva el límite de cinco segundos por intervalo para rechazar saltos grandes y emite la divergencia acumulada explícitamente. No modifica el informe ni permite que un solo reloj compense una duración insuficiente en el otro. La mayor diferencia por intervalo fue 2.436,66 ms. Sus catorce pruebas unitarias y la posterior calificación completa de 231 pruebas aprobaron.
 
 ## Pantallas pequeñas y texto ampliado
 
@@ -116,11 +116,13 @@ La emulación no equivale a TalkBack, a la escala de texto del sistema Android n
 
 ## Calificación limpia y procedencia
 
-La [calificación de software con el primer verificador](coluvi-qualification-20261005-rc2-final.json) aprobó 225 pruebas y las ocho etapas en 280,14 segundos, sobre una copia limpia de `54c4c0398d49439afae713a11c7dff7171c1af1f`. Su huella completa es `366b1eee676fa0d1f189e7adc29d71673a75f837a5168a5002e96cb477a62860`. El [CI de esta revisión](https://github.com/raulprtech/emergency-mesh/actions/runs/37262531998) también aprobó. Esta calificación precede al ajuste de comprobación de cronología, que debe recalificarse; el informe de 217 pruebas siguiente queda como antecedente.
+La [calificación vigente](coluvi-qualification-20261005-rc2-chronology.json) aprobó 231 pruebas sin fallos, cancelaciones u omisiones y las ocho etapas, desde una copia limpia de `5bb4ebebce1489c915f6620d2a858fc98ca9d470`. El ejecutor midió 299,36 segundos. La huella completa es `8d8707233e0305818693282e5aba958b7e0abae6bef7f89379d67296e4917f00`; el [CI del código](https://github.com/raulprtech/emergency-mesh/actions/runs/37271404269) también aprobó. Incluye el verificador de cronología actualizado, además de simulacros, navegador, continuidad RC1–v12, doce casos visuales, mapa, ensayo breve y carga base de 300.
+
+La [calificación de software con el primer verificador](coluvi-qualification-20261005-rc2-final.json) aprobó 225 pruebas y las ocho etapas en 280,14 segundos, sobre una copia limpia de `54c4c0398d49439afae713a11c7dff7171c1af1f`. Su huella completa es `366b1eee676fa0d1f189e7adc29d71673a75f837a5168a5002e96cb477a62860`. El [CI de esta revisión](https://github.com/raulprtech/emergency-mesh/actions/runs/37262531998) también aprobó. Se conserva como antecedente previo a la comprobación de cronología, igual que el informe de 217 pruebas siguiente.
 
 El [informe integrado](coluvi-qualification-20261005-rc2.json) registra PASS para `0eb4f761b105c33cbc8d9a49f2da82c5085d6981`, desde una copia limpia, con SHA-256 de fuentes `27b30fd3f4c028e3f5baa451541440355dbc66a2ff301cc5fdae1b79dd99f7e9`. Aprobó 217 pruebas sin fallos, cancelaciones u omisiones, seis simulacros, navegador integrado, continuidad RC1–v12, doce casos visuales, mapa offline, ensayo breve y carga base de 300 dispositivos. Las ocho etapas tardaron 307,59 segundos y coincidieron con la observación sostenida. El [CI de la revisión](https://github.com/raulprtech/emergency-mesh/actions/runs/37260074835) también aprobó.
 
-La carga mixta y la observación de tres horas usan `c7f6ce9`, con SHA-256 `57e66eb28871611f5dfb2c64397713e30567aa8faa612c23319fd9141ee1b185`. Entre ese código y `0eb4f76`, los únicos archivos modificados dentro de `src` son `mobile-client/styles.css`, `mobile-client/sw.js` y la comprobación de versión de caché en `mobile-client/app.js`. El backend, la persistencia y los ejecutores de carga y observación no cambiaron. Las adiciones de pruebas visuales y su integración explican el cambio de huella; no se presenta la observación como una prueba de tres horas de la PWA v12.
+La carga mixta y la observación de tres horas usan `c7f6ce9`, con SHA-256 `57e66eb28871611f5dfb2c64397713e30567aa8faa612c23319fd9141ee1b185`. Entre ese código y la calificación vigente, los únicos archivos modificados dentro de `src` son `mobile-client/styles.css`, `mobile-client/sw.js` y la comprobación de versión de caché en `mobile-client/app.js`. El backend, la persistencia y los ejecutores de carga y observación no cambiaron. Su huella compartida de código ejercitado es `825b892955f440c96e80978391bf2c8a4a221177261a7fb171d673bfac275dd9`. Las adiciones de pruebas visuales y herramientas de comprobación explican el cambio de huella completa; no se presenta la observación como una prueba de tres horas de la PWA v12.
 
 El informe integrado contiene algún identificador aleatorio del fixture ficticio, no credenciales ni datos del piloto. Los informes de diagnóstico descargables de la PWA tienen un contrato distinto: excluyen también esos identificadores. El ensayo breve integrado tiene `qualifiesThreeHours: false`. RC2 no se etiqueta como terminada hasta comprobar toda la evidencia contra el código calificado.
 
@@ -128,15 +130,20 @@ El informe integrado contiene algún identificador aleatorio del fixture fictici
 
 ```bash
 node scripts/verify-coluvi-rc2.mjs \
-  /ruta/qualification.json /ruta/mixed-300.json \
-  /ruta/mixed-990.json /ruta/soak-tres-horas.json /ruta/progress.jsonl
+  docs/coluvi-qualification-20261005-rc2-chronology.json \
+  docs/coluvi-mixed-300-20261005.json \
+  docs/coluvi-mixed-990-20261005.json \
+  docs/coluvi-soak-3h-20261005.json \
+  docs/coluvi-soak-progress-20261005.jsonl
 ```
 
 El verificador exige Ubuntu WSL y un árbol limpio. Lee cuatro informes locales y la cronología JSONL del ensayo largo, sin modificarlos. Comprueba pruebas y etapas completas, recuperación del cliente, privacidad, casos visuales, auditorías de carga y las tres horas medidas por ambos relojes, con la secuencia completa de rondas. Recalcula las huellas de los commits desde Git y exige que todo el código actual esté cubierto por la calificación. El código de backend y de los actores usados en carga y observación debe coincidir; solo excluye de esa segunda comparación los tres archivos de presentación de PWA documentados anteriormente. No excluye contratos ni lógica móvil de firmas o sincronización.
 
 Una etiqueta PASS escrita en un JSON no basta: los controles rechazan duración insuficiente, auditorías faltantes, una fuente distinta, cronologías incompletas, saltos de reloj grandes y resultados contradictorios. Las catorce pruebas del verificador incluyen datos sintéticos para sus casos positivos; esos fixtures no acreditan que haya ocurrido una observación real. El comando emite hashes de los cinco archivos y un resumen, pero no crea una etiqueta, no publica nada y no autentica informes obtenidos de terceros.
 
-También se ejecutó el CLI real desde la copia limpia, con la calificación final y los dos perfiles mixtos aprobados, pero usando deliberadamente el ensayo breve como cuarto argumento. Salió con código 1 y `SOAK_TOO_SHORT`. Esto verifica el rechazo del caso real que podría confundirse con el periodo de aceptación; no sustituye la comprobación positiva pendiente del informe largo.
+También se ejecutó el CLI real desde la copia limpia, con la calificación y los dos perfiles mixtos aprobados, pero usando deliberadamente el ensayo breve como cuarto argumento. Salió con código 1 y `SOAK_TOO_SHORT`. El CLI actualizado repitió ese rechazo y rechazó además combinar el informe largo con la cronología breve mediante `SOAK_TIMELINE_INCOMPLETE`. Son pruebas negativas, no resultados fallidos del ensayo largo.
+
+La [comprobación final real](coluvi-rc2-release-check-20261005.json) aprobó sobre el código limpio `5bb4ebe`. Verificó las huellas de los cinco archivos, la calificación vigente, ambas cargas mixtas y las 167 rondas originales. Su resultado mantiene `physicalAndroid: PENDING`, `originalTimeoutCause: NOT_ESTABLISHED` y la advertencia `DIVERGENT_BOTH_EXCEED_MINIMUM`. Las revisiones finales de documentación no alteran la huella del código calificado. La versión reproducible es [coluvi-simulacro-20261005-rc2](https://github.com/raulprtech/emergency-mesh/tree/coluvi-simulacro-20261005-rc2).
 
 ## Restricciones operativas
 

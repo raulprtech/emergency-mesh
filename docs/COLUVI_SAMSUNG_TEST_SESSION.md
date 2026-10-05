@@ -2,6 +2,8 @@
 
 Esta guía prepara la primera prueba física con el S26 Ultra y el A54. La computadora será el centro de mando y cada teléfono utilizará la PWA como participante ficticio. No se necesita Bitchat ni una app nativa. El resultado de esta sesión sigue pendiente: las pruebas de Chromium y clientes simulados no sustituyen lo que ocurra en los teléfonos.
 
+La versión de software preparada es `coluvi-simulacro-20261005-rc2`. Su [registro de evidencia](COLUVI_RC2.md) conserva la calificación, la observación prolongada y sus límites. No marques los pasos siguientes como aprobados hasta realizarlos en cada teléfono.
+
 Usa solo datos de simulacro. SYNCED significa que un backend confirmó almacenamiento, no atención ni ayuda despachada. El mapa público no muestra las respuestas privadas del piloto.
 
 La instalación todavía se identifica como «Emergency Mesh» y puede mostrar «Emergency» como nombre corto. Es la PWA de este prototipo de Coluvi, no otra aplicación que debas descargar. Durante la sesión no ejecutes en el centro de mando calificaciones completas, simulaciones masivas ni ensayos de carga: la combinación con 990 actores produjo timeouts reproducibles. Las pruebas automatizadas se realizan antes o después del piloto, con sus propios datos temporales.
