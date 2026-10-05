@@ -18,7 +18,7 @@ function workerHarness() {
     URL,
     self: { location: { origin: "https://pilot.test" }, addEventListener: (name: string, handler: (event: any) => void) => handlers.set(name, handler), clients: { claim: async () => {} } },
     caches: {
-      keys: async () => ["emergency-mesh-mobile-v7", "emergency-mesh-mobile-v8", "emergency-mesh-mobile-v9", "emergency-mesh-mobile-v10", "emergency-mesh-mobile-v11", "unrelated-cache"],
+      keys: async () => ["emergency-mesh-mobile-v7", "emergency-mesh-mobile-v8", "emergency-mesh-mobile-v9", "emergency-mesh-mobile-v10", "emergency-mesh-mobile-v11", "emergency-mesh-mobile-v12", "unrelated-cache"],
       delete: async (key: string) => { deleted.push(key); },
       open: async () => ({ put: async (request: any) => { puts.push(request.url); } }),
       match: async () => undefined,
@@ -55,7 +55,7 @@ test("worker caches only successful shell assets and purges its old caches witho
   let activation: Promise<unknown> | undefined;
   harness.handlers.get("activate")!({ waitUntil: (value: Promise<unknown>) => { activation = value; } });
   await activation;
-  assert.deepEqual(harness.deleted, ["emergency-mesh-mobile-v7", "emergency-mesh-mobile-v8", "emergency-mesh-mobile-v9", "emergency-mesh-mobile-v10"]);
+  assert.deepEqual(harness.deleted, ["emergency-mesh-mobile-v7", "emergency-mesh-mobile-v8", "emergency-mesh-mobile-v9", "emergency-mesh-mobile-v10", "emergency-mesh-mobile-v11"]);
 });
 
 test("authenticated asset requests never enter the shell cache", async () => {

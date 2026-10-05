@@ -240,7 +240,7 @@ async function requirePrivateSafeWorker() {
     const timer = setTimeout(() => { channel.port1.close(); reject(new Error(catalog.pilotWorkerUpdate)); }, 3_000);
     channel.port1.onmessage = (event) => {
       clearTimeout(timer); channel.port1.close();
-      event.data?.cache === "emergency-mesh-mobile-v11" && event.data?.privateApiCache === false ? resolve() : reject(new Error(catalog.pilotWorkerUpdate));
+      event.data?.cache === "emergency-mesh-mobile-v12" && event.data?.privateApiCache === false ? resolve() : reject(new Error(catalog.pilotWorkerUpdate));
     };
     worker.postMessage({ type: "COLUVI_CACHE_VERSION" }, [channel.port2]);
   });

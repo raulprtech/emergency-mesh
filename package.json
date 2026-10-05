@@ -29,6 +29,7 @@
     "smoke:browser": "node examples/browser-smoke.mjs",
     "smoke:coluvi": "node examples/coluvi-browser-smoke.mjs",
     "smoke:continuity": "node examples/mobile-continuity-smoke.mjs",
+    "smoke:readiness": "node examples/mobile-readiness-smoke.mjs",
     "smoke:map": "node examples/public-map-browser-smoke.mjs",
     "smoke:accessibility": "node examples/accessibility-smoke.mjs",
     "meshtastic:contract": "npm --prefix integrations/meshtastic-node-serial run contract",

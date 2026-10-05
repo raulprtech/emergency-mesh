@@ -9,8 +9,8 @@ Este bloque ejecuta el plan de diez horas autorizado después de la RC1. El obje
 | Preparación guiada del piloto | 1 h | Configuración, base, certificado y conexión opcional con resultados separados; sin secretos, cambios de red ni falsas afirmaciones de acceso Android | Preflight implementado; pruebas HTTP, HTTPS y fallos aprobadas |
 | Diagnóstico de la PWA | 2 h | Estados de cola, última confirmación, almacenamiento cuando esté disponible, consulta de servidor y exportación sin reportes ni identificadores; comprobación en navegador offline y conectado | Implementado; pruebas unitarias y Chromium integrado aprobados: tres reportes guardados, dos pendientes durante el corte y tres confirmados al reconectar; exportación sin valores privados verificada |
 | Simulacros repetibles | 2 h | Escenarios ficticios con cortes intermitentes, llegada tardía, cambios, avisos vencidos y no respuesta; cronología y comparación entre esperado y observado | Seis escenarios implementados y verificados, incluidos cambios fuera de orden; ejecutor con directorio exclusivo, informe, cronología, semilla, procedencia y cancelación |
-| Carga mixta | 2 h | Reproducción instrumentada del límite observado con 990 dispositivos; mapa, avisos y respuestas concurrentes; causa y corrección verificadas o límite reproducible documentado | Perfil instrumentado aprobado con 30 y 300 dispositivos; medición de 990 en curso |
-| Continuidad del cliente | 1,5 h | Cierre abrupto del navegador, actualización con cola pendiente y fallos de almacenamiento; no afirmar guardado cuando falla una escritura | Verificada en Chromium con archivos RC1 reales, SIGKILL del navegador, reapertura sin servidor, actualización v10 a v11 y fallos inyectados de IndexedDB |
+| Carga mixta | 2 h | Reproducción instrumentada del límite observado con 990 dispositivos; mapa, avisos y respuestas concurrentes; causa y corrección verificadas o límite reproducible documentado | Perfiles aprobados con 30, 300 y 990 dispositivos; corregido el actor ante 429 privado. El timeout de RC1 no se reprodujo y su causa sigue sin establecerse |
+| Continuidad del cliente | 1,5 h | Cierre abrupto del navegador, actualización con cola pendiente y fallos de almacenamiento; no afirmar guardado cuando falla una escritura | Verificada en Chromium con archivos RC1 reales, SIGKILL del navegador, reapertura sin servidor, actualización v10 a v12 y fallos inyectados de IndexedDB |
 | Calificación y entrega | 1,5 h | Suite, navegador, reproducción limpia, documentación reconciliada, paquete de ensayo físico y versión identificada en GitHub | Pendiente |
 
 Además se requiere una ejecución sostenida de al menos tres horas de tiempo real sobre una versión fija, con datos desechables y resultados persistidos. Comenzó el 5 de octubre de 2026 aproximadamente a las 03:05 UTC (21:05 del día 4 en Ciudad de México), sobre una copia limpia de `c7f6ce9864e84435153e7639d503192256ea82d4`. Sigue en curso; no tiene resultado aprobado. No se sustituirá por tiempo virtual ni por sumar varias ejecuciones breves. Coincide parcialmente con mediciones de carga mixta, lo que debe tenerse en cuenta al interpretar los tiempos.
@@ -41,7 +41,7 @@ Las cuatro pruebas de `tests/coluvi-rehearsal.test.ts` verifican escenarios, rep
 
 ## Continuidad y recuperación del cliente
 
-`examples/mobile-continuity-smoke.mjs` sirve los archivos reales de la etiqueta RC1 desde Git, guarda un reporte, detiene el acceso al servidor y termina el grupo de procesos de Chromium mediante SIGKILL. Abre después el mismo perfil sin servidor y comprueba que el paquete firmado permanece idéntico. Tras restaurar el acceso, actualiza el service worker de v10 a v11 y carga los archivos nuevos sin perder la cola. Requiere la etiqueta RC1 disponible localmente; las copias limpias deben incluir las etiquetas.
+`examples/mobile-continuity-smoke.mjs` sirve los archivos reales de la etiqueta RC1 desde Git, guarda un reporte, detiene el acceso al servidor y termina el grupo de procesos de Chromium mediante SIGKILL. Abre después el mismo perfil sin servidor y comprueba que el paquete firmado permanece idéntico. Tras restaurar el acceso, actualiza el service worker de v10 a v12 y carga los archivos nuevos sin perder la cola. Requiere la etiqueta RC1 disponible localmente; las copias limpias deben incluir las etiquetas. La primera verificación usó v11; se repitió correctamente con v12 después de corregir el diseño con texto ampliado.
 
 La prueba inyecta `QuotaExceededError` y abortos de transacciones IndexedDB. Comprueba que se conserve el borrador, que el reporte anterior permanezca intacto y que no aparezca un reporte falsamente guardado. También inyecta un fallo de lectura después de confirmar el guardado: la interfaz distingue ese caso de un fallo al guardar. Finalmente impide persistir un acuse de backend; el siguiente envío recibe una respuesta de duplicado, guarda su confirmación y mantiene exactamente dos reportes únicos en el servidor. Al recuperarse desaparece el aviso de error obsoleto.
 
@@ -63,6 +63,8 @@ El primer perfil mixto de 300 dispositivos, sobre una copia limpia del commit `2
 
 La repetición mixta de 300 dispositivos aprobó sobre `c7f6ce9`, con árbol limpio y código sin cambios. El [informe completo](coluvi-mixed-300-20261005.json) registra 810 paquetes únicos, 810 duplicados del reenvío, dos auditorías de persistencia correctas y 2.523 lecturas exitosas. Se respetaron 48 rechazos de ingestión y cinco de API privada; seis lecturas interrumpidas corresponden al corte deliberado, sin lecturas inesperadamente fallidas. Duró 136,83 segundos; las solicitudes exitosas tuvieron mediana de 60,16 ms, percentil 95 de 415,55 ms y máximo de 2.337,18 ms. El máximo observado de RSS fue 125,3 MiB y el retraso máximo del bucle de eventos, 816,84 ms. Coincidió con el inicio del ensayo sostenido. No reprodujo el timeout previo de diez segundos ni establece su causa.
 
+El [perfil mixto de 990](coluvi-mixed-990-20261005.json), sobre la misma copia limpia, también aprobó: 2.673 paquetes únicos conservados, 2.673 duplicados del reenvío y 9.677 lecturas exitosas. Hubo 384 rechazos de ingestión, 22 de API privada y seis lecturas interrumpidas por el corte planificado; ninguna lectura inesperadamente fallida. Duró 534,82 segundos. Las solicitudes exitosas tuvieron mediana de 111,85 ms, percentil 95 de 664,50 ms y máximo de 4.609,82 ms. El máximo RSS fue 134,6 MiB y el retraso máximo del bucle de eventos, 879,76 ms. Coincidió con la observación sostenida y, hacia el final, con comprobaciones visuales breves. Esto demuestra las invariantes de esa ejecución, no capacidad garantizada bajo cualquier carga del equipo. No hubo timeout de diez segundos: su causa original sigue abierta y no debe atribuirse al 429 del actor.
+
 ## Ensayo sostenido con tiempo real
 
 ```bash
@@ -76,6 +78,19 @@ El comando crea una observación de al menos 10800 segundos reales, con treinta 
 Las pruebas cortas verifican reinicios, conservación byte a byte de reportes firmados, deduplicación, avisos y rechazo de parámetros o cancelación. La inscripción inicial se provisiona directamente en la base de prueba; no mide inscripción masiva. Los acuses son RECEIVED, no SHOWN ni atención humana. Los límites por origen se conservan, por lo que las esperas del cliente forman parte del tiempo observado. La ejecución de tres horas está en curso en `/tmp/coluvi-rc2-soak-3h-20261005-01`; los registros parciales no equivalen a su resultado final.
 
 El ensayo previo del comando, solicitado con mínimo de cinco segundos y treinta dispositivos, completó su primera ronda en aproximadamente 61 segundos al respetar el límite de API privada. Confirmó 81 paquetes y terminó como PASS con `qualifiesThreeHours: false`. Su informe está en `/tmp/coluvi-rc2-soak-preflight-20261005-01/soak.json`. La calificación incluye este ensayo breve, pero exige tratar por separado el informe de tres horas.
+
+## Pantallas pequeñas y texto ampliado
+
+```bash
+COLUVI_CHROMIUM_PATH=/ruta/al/chromium \
+  node examples/mobile-readiness-smoke.mjs /tmp/coluvi-pantallas-nuevas
+```
+
+Se verifican doce combinaciones: 320, 360 y 412 píxeles CSS, español e inglés y texto raíz al 100 % y 200 %. Cada caso abre un documento nuevo, despliega inscripción y diagnóstico, abre el formulario de recursos, comprueba nombres accesibles, botones y desplegables de al menos 44 píxeles, foco y retorno con Escape, y ausencia de desbordamiento horizontal. Conserva el informe y dos capturas ficticias; no escribe reportes ni usa el piloto real.
+
+La comprobación aislada inicial confirmó que las seis combinaciones con texto al 200 % desbordaban la pantalla. Se corrigieron títulos flexibles, mínimos de formularios, campos de necesidades y ajuste de textos largos, sin ocultar contenido ni reducir su tamaño. Las doce combinaciones aprobaron después en `/tmp/coluvi-rc2-readiness-20261005-07/readiness.json`; también se inspeccionaron las capturas. La caché pasa a v12 para distribuir esos estilos. La calificación integrada incorpora esta prueba.
+
+La emulación no equivale a TalkBack, a la escala de texto del sistema Android ni a una auditoría completa de WCAG. La observación sostenida sigue en su copia inmutable `c7f6ce9`: estos cambios posteriores afectan la PWA y sus pruebas, no los módulos del backend ni el ejecutor de observación. La entrega debe identificar ambas procedencias y calificar de nuevo la PWA modificada.
 
 ## Restricciones operativas
 

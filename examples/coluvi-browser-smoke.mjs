@@ -151,7 +151,7 @@ try {
   })()`);
   await mobile.send("Page.navigate", { url: origin + "/mobile/" });
   await mobile.until("Boolean(document.querySelector('#identity-status')?.textContent)", "mobile startup");
-  await mobile.until("Boolean(navigator.serviceWorker.controller)", "worker v11 control");
+  await mobile.until("Boolean(navigator.serviceWorker.controller)", "worker v12 control");
   const migration = await mobile.evaluate(`(async () => {
     const { openClientDatabase } = await import('/mobile/idb.js'); const db = await openClientDatabase();
     try { return { preservedIdentity: (await db.getSetting('identity')).anonymousDeviceId === ${JSON.stringify(originalId)}, preservedReport: (await db.list()).some(item => item.envelope.report.shortMessage === 'SIMULACRO anterior a migración'), missingIsUndefined: (await db.getSetting('missing')) === undefined }; }

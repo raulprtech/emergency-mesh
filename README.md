@@ -78,7 +78,7 @@ Signatures demonstrate integrity and pseudonymous continuity, **not truth, autho
 
 ## Status
 
-RC1 is the completed software baseline described below. [RC2](docs/COLUVI_RC2.md) adds pilot preflight, privacy-filtered device diagnostics, six repeatable rehearsals and browser crash/upgrade/storage-failure recovery. Its instrumented mixed workload passed with 300 fictional devices; the 990-device run and separate three-hour real-time observation are underway. RC2 is not yet qualified for release. The [Samsung session guide](docs/COLUVI_SAMSUNG_TEST_SESSION.md) separates these software results from the pending physical checks.
+RC1 is the completed software baseline described below. [RC2](docs/COLUVI_RC2.md) adds pilot preflight, privacy-filtered device diagnostics, six repeatable rehearsals and browser crash/upgrade/storage-failure recovery. Instrumented mixed workloads passed with 300 and 990 fictional devices. Twelve small-screen/language/text-size combinations passed after layout fixes. The separate three-hour real-time observation is underway; RC2 is not yet qualified for release. The [Samsung session guide](docs/COLUVI_SAMSUNG_TEST_SESSION.md) separates these software results from the pending physical checks.
 
 The simulated vertical slice and bilingual offline mobile PWA are implemented and tested with progressive Background Sync, focus restoration, and real Chromium offline and constrained-mobile accessibility smoke tests. Meshtastic now has a researched raw-frame policy, a structural active-SDK-compatible port and pinned serial bench, and a custody bridge with atomic SQLite custody/ACK recovery across restart, but has not been tested on physical hardware; no physical BLE, Bitchat, LoRa, Wi-Fi, or SMS integration exists yet.
 

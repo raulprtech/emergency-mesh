@@ -1,0 +1,301 @@
+{
+  "version": 1,
+  "recordedAt": "2026-10-05T03:23:59.690Z",
+  "evidence": "LOCAL_HTTP_SQLITE_ONLY",
+  "scenario": "SIMULACRO fictitious flood load and crash recovery",
+  "harnessSha256": "d44d28b565cae87d742ad7f604b6da084171ce1a13d8f5b51afbb89075697abc",
+  "environment": {
+    "node": "v24.18.0",
+    "platform": "linux",
+    "distro": "Ubuntu"
+  },
+  "configuration": {
+    "devices": 990,
+    "zones": 3,
+    "concurrency": 48,
+    "seed": 20261006,
+    "mixed": true,
+    "admissionLimits": {
+      "windowMs": 60000,
+      "globalRequests": 600,
+      "identityRequests": 60,
+      "trackedIdentities": 10000
+    },
+    "privateApiLimits": {
+      "globalRequests": 600,
+      "perSourceRequests": 120,
+      "windowMs": 60000
+    },
+    "enrollment": "trusted fixture provisioning, not HTTP enrollment",
+    "silentDevices": 99
+  },
+  "measurements": {
+    "server": {
+      "samples": 517,
+      "cpuUserMs": 26217.978999999985,
+      "cpuSystemMs": 3052.2650000000012,
+      "maxRssBytes": 141164544,
+      "maxHeapUsedBytes": 23733000,
+      "maxEventLoopDelayMs": 879.755263,
+      "maxSampleGapMs": 1602.5720779999974
+    },
+    "mixedWorkload": {
+      "enabled": true,
+      "concurrentReaders": 6,
+      "readerPauseMs": 100,
+      "successfulReads": 9677,
+      "interruptedReadsAtPlannedCrash": 6,
+      "failedReads": 0,
+      "noticesIssued": 3,
+      "privateApiRateLimited": 22
+    },
+    "endpoints": {
+      "POST /api/operator/login": {
+        "requests": 3,
+        "errors": {},
+        "httpStatuses": {
+          "200": 3
+        },
+        "responseHeadersMs": {
+          "samples": 3,
+          "p50": 101.54959899996174,
+          "p95": 120.2705730000016,
+          "maximum": 120.2705730000016
+        }
+      },
+      "GET /api/mobile/inbox": {
+        "requests": 249,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 243,
+          "429": 5
+        },
+        "responseHeadersMs": {
+          "samples": 248,
+          "p50": 55.29248900001403,
+          "p95": 199.2408429999996,
+          "maximum": 827.354748999991
+        }
+      },
+      "GET /api/operator/session": {
+        "requests": 2,
+        "errors": {},
+        "httpStatuses": {
+          "200": 1,
+          "401": 1
+        },
+        "responseHeadersMs": {
+          "samples": 2,
+          "p50": 4.009550000000672,
+          "p95": 5.917166999999608,
+          "maximum": 5.917166999999608
+        }
+      },
+      "POST /api/operator/notices": {
+        "requests": 3,
+        "errors": {},
+        "httpStatuses": {
+          "201": 3
+        },
+        "responseHeadersMs": {
+          "samples": 3,
+          "p50": 13.045790000000125,
+          "p95": 15.284002000000328,
+          "maximum": 15.284002000000328
+        }
+      },
+      "POST /api/packets": {
+        "requests": 5779,
+        "errors": {
+          "CONNECTION_ERROR": 47
+        },
+        "httpStatuses": {
+          "202": 5346,
+          "400": 2,
+          "429": 384
+        },
+        "responseHeadersMs": {
+          "samples": 5732,
+          "p50": 109.82451999996556,
+          "p95": 692.9037620000017,
+          "maximum": 4609.644753999979
+        }
+      },
+      "GET /health": {
+        "requests": 4383,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 4382
+        },
+        "responseHeadersMs": {
+          "samples": 4382,
+          "p50": 2.160981000008178,
+          "p95": 49.7167709999776,
+          "maximum": 1216.9804869999934
+        }
+      },
+      "GET /api/areas": {
+        "requests": 4358,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 4357
+        },
+        "responseHeadersMs": {
+          "samples": 4357,
+          "p50": 2.149792999996862,
+          "p95": 35.33911200000148,
+          "maximum": 4588.422590000002
+        }
+      },
+      "GET /api/operator/checkins": {
+        "requests": 241,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 235,
+          "429": 5
+        },
+        "responseHeadersMs": {
+          "samples": 240,
+          "p50": 55.4696690000128,
+          "p95": 191.17853000000105,
+          "maximum": 827.0316489999968
+        }
+      },
+      "GET /api/operator/notices": {
+        "requests": 242,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 235,
+          "429": 6
+        },
+        "responseHeadersMs": {
+          "samples": 241,
+          "p50": 55.38587400002871,
+          "p95": 198.32759499999884,
+          "maximum": 827.2457259999937
+        }
+      },
+      "GET /api/mobile/notices": {
+        "requests": 242,
+        "errors": {
+          "CONNECTION_ERROR": 1
+        },
+        "httpStatuses": {
+          "200": 235,
+          "429": 6
+        },
+        "responseHeadersMs": {
+          "samples": 241,
+          "p50": 55.43977100000484,
+          "p95": 183.1387080000004,
+          "maximum": 831.6801680000062
+        }
+      },
+      "GET /api/operator/checkins/:id": {
+        "requests": 48,
+        "errors": {},
+        "httpStatuses": {
+          "200": 48
+        },
+        "responseHeadersMs": {
+          "samples": 48,
+          "p50": 21.959193999995477,
+          "p95": 30.13844699994661,
+          "maximum": 31.880566000007093
+        }
+      }
+    }
+  },
+  "counts": {
+    "uniqueSignedPackets": 2673,
+    "stateEvents": 1782,
+    "needsEvents": 891,
+    "requested": 990,
+    "responded": 891,
+    "safe": 396,
+    "needsHelp": 495,
+    "pending": 99,
+    "activeWater": 495,
+    "activeTransport": 495
+  },
+  "http": {
+    "accepted": 2673,
+    "duplicates": 2673,
+    "rateLimited": 384,
+    "interruptedRequests": 47,
+    "maximumInFlight": 48,
+    "requestsOutstandingAtKill": 47,
+    "fullReplayDuplicates": 2673
+  },
+  "crashes": [
+    {
+      "label": "during-concurrent-updates",
+      "signal": "SIGKILL",
+      "acknowledgedVerified": 12,
+      "persisted": 12,
+      "committedWithoutObservedAck": 0,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    },
+    {
+      "label": "after-all-confirmations",
+      "signal": "SIGKILL",
+      "acknowledgedVerified": 2673,
+      "persisted": 2673,
+      "committedWithoutObservedAck": 0,
+      "integrity": "ok",
+      "foreignKeyViolations": 0
+    }
+  ],
+  "checks": {
+    "allAcknowledgedReportsDurable": true,
+    "immutableHistoryAfterReplay": true,
+    "allRecipientPagesVerified": true,
+    "missingPredecessorsExplicitBeforeArrival": true,
+    "independentlyArrivingNeedsVerified": true,
+    "invalidPacketsRejectedWithoutAck": 2,
+    "privateReportsExcludedFromPublicMap": true,
+    "sampledCredentialsSurviveRestarts": 3,
+    "operatorSessionInvalidated": true
+  },
+  "timing": {
+    "wallMs": 534823.21965,
+    "setupMs": 11366.421982,
+    "replayMs": 258970.47728400002,
+    "successfulRequestMs": {
+      "samples": 5346,
+      "p50": 111.84793499999796,
+      "p95": 664.4951799999981,
+      "maximum": 4609.818922999984
+    }
+  },
+  "limitations": [
+    "Synthetic Node clients, not simultaneous PWA instances or physical Android phones",
+    "Loopback HTTP; no LAN, Internet, TLS, radio, range or battery measurement",
+    "SIGKILL of backend process, not host power loss or disk failure",
+    "Client ledger remains in parent memory; not proof of client crash recovery",
+    "Successful request timings exclude queue and Retry-After waiting; wall time includes them",
+    "Seed fixes fixture identities and scheduling shuffle, not OS timing or the crash commit boundary",
+    "Notice publication and inbox reads measured; no human presentation or receipt throughput claim",
+    "HTTP enrollment throughput not measured"
+  ],
+  "status": "PASS",
+  "provenance": {
+    "baseCommit": "c7f6ce9864e84435153e7639d503192256ea82d4",
+    "dirtyWorktree": false,
+    "sourceSha256": "57e66eb28871611f5dfb2c64397713e30567aa8faa612c23319fd9141ee1b185",
+    "sourceFiles": 171
+  },
+  "startedAt": "2026-10-05T03:15:04.870Z",
+  "sourceUnchanged": true
+}

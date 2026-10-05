@@ -77,6 +77,10 @@ try {
   assert.equal(continuity.status, "PASS"); assert.equal(continuity.browserKilledWithSIGKILL, true);
   assert.equal(continuity.actualRC1AssetsUsed, true); assert.equal(continuity.pendingPacketUnchangedAfterUpgrade, true);
   assert.equal(continuity.failedLocalAckRetriedAsDuplicate, true); assert.deepEqual(continuity.diagnostics, []);
+  await run("mobile-readiness", ["examples/mobile-readiness-smoke.mjs", join(destination, "mobile-readiness")], 3 * 60_000);
+  const readiness = JSON.parse(readFileSync(join(destination, "mobile-readiness", "readiness.json"), "utf8"));
+  assert.equal(readiness.status, "PASS"); assert.equal(readiness.sourceUnchanged, true); assert.equal(readiness.cases.length, 12);
+  assert.ok(readiness.cases.every(item => item.status === "PASS"));
   const map = JSON.parse(await run("map-browser", ["examples/public-map-browser-smoke.mjs"], 3 * 60_000));
   assert.equal(map.status, "PASS"); assert.equal(map.offlineAfterAbruptStop, true); assert.equal(map.expiredSnapshotRejected, true);
   await run("soak-smoke", ["scripts/soak-coluvi.mjs", join(destination, "soak-smoke"), "5", "5"], 3 * 60_000);
@@ -88,7 +92,7 @@ try {
   assert.equal(sourceHash(), provenance.sourceSha256, "Source changed during qualification; results cannot qualify the current tree");
   const report = { version: 1, status: "PASS", startedAt, completedAt: new Date().toISOString(), wallMs: performance.now() - started,
     provenance, environment: { node: process.version, distro: process.env.WSL_DISTRO_NAME }, steps, tests: testSummary,
-    integrated, map, load, rehearsal, continuity, soakSmoke, limitations: ["Software qualification in Ubuntu WSL and loopback Chromium, not physical Android/LAN/radio validation", "Short soak is not the separate three-hour real-time acceptance run", "Not a production certification or guarantee of emergency assistance"] };
+    integrated, map, load, rehearsal, continuity, readiness, soakSmoke, limitations: ["Software qualification in Ubuntu WSL and loopback Chromium, not physical Android/LAN/radio validation", "Short soak is not the separate three-hour real-time acceptance run", "Not a production certification or guarantee of emergency assistance"] };
   save("qualification.json", JSON.stringify(report, null, 2) + "\n");
   process.stdout.write(JSON.stringify({ status: report.status, report: join(destination, "qualification.json"), tests: testSummary.tests, devices: load.configuration.devices }, null, 2) + "\n");
 } catch (error) {

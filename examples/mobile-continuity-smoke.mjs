@@ -88,7 +88,7 @@ try {
   assert.equal(await client.evaluate(workerVersion), "emergency-mesh-mobile-v10");
   serveBaseline = false; await startProxy();
   await client.evaluate("navigator.serviceWorker.getRegistration('/mobile/').then(registration => registration.update())");
-  await client.until(`(${workerVersion}).then(version => version === 'emergency-mesh-mobile-v11')`, "current worker activated");
+  await client.until(`(${workerVersion}).then(version => version === 'emergency-mesh-mobile-v12')`, "current worker activated");
   await reloadDocument(client, "upgraded client document");
   await client.until("Boolean(document.querySelector('#diagnostics-panel')) && Boolean(document.querySelector('#identity-status')?.textContent)", "new application assets active");
   assert.deepEqual(await client.evaluate(sourceWitness), before);
@@ -139,7 +139,7 @@ try {
     writeFileSync(process.env.COLUVI_CONTINUITY_SCREENSHOT, Buffer.from(shot.data, "base64"), { flag: "wx", mode: 0o600 });
   }
   console.log(JSON.stringify({ version: 1, status: "PASS", baselineCommit, baselineTag: baseline, evidence: "CHROMIUM_LOOPBACK_REAL_INDEXEDDB",
-    browserKilledWithSIGKILL: true, reopenedWithoutServer: true, signedPacketUnchangedAfterCrash: true, workerUpgrade: "v10 to v11", actualRC1AssetsUsed: true,
+    browserKilledWithSIGKILL: true, reopenedWithoutServer: true, signedPacketUnchangedAfterCrash: true, workerUpgrade: "v10 to v12", actualRC1AssetsUsed: true,
     pendingPacketUnchangedAfterUpgrade: true, faultEvidence, postCommitReadFailureDistinguished: true, failedLocalAckRetriedAsDuplicate: true,
     backendUniqueReports: 2, packetRequests, diagnostics: [], limitations: ["Injected browser API failures, not a physical full disk", "Browser SIGKILL, not OS or power failure", "Manual synchronization actor disables browser background sync", "No Android or radio evidence"] }, null, 2));
   await stopProxy();
